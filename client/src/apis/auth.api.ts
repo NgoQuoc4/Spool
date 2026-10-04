@@ -1,0 +1,43 @@
+import http, { tokenStore } from "./http";
+import { ENDPOINTS } from "@/constants/endpoints";
+import type {
+  LoginBody,
+  RegisterBody,
+  AuthResponse,
+  RefreshTokenResponse,
+} from "@/types/auth.types";
+import type { User } from "@/types/user.types";
+
+export const authApi = {
+  signIn: (body: LoginBody) => http.post<AuthResponse>(ENDPOINTS.SIGN_IN, body),
+
+  signUp: (body: RegisterBody) =>
+    http.post<AuthResponse>(ENDPOINTS.SIGN_UP, body),
+
+  logout: () => {
+    const refresh_token = tokenStore.getRefresh();
+    return http.post(ENDPOINTS.LOGOUT, { refresh_token });
+  },
+
+  getMe: () => http.get<{ message: string; result: User }>(ENDPOINTS.ME),
+
+  refreshToken: (refresh_token: string) =>
+    http.post<RefreshTokenResponse>(ENDPOINTS.REFRESH_TOKEN, { refresh_token }),
+
+  verifyEmail: (email_verify_token: string) =>
+    http.post(ENDPOINTS.VERIFY_EMAIL, { email_verify_token }),
+
+  resendVerifyEmail: () => http.post(ENDPOINTS.RESEND_VERIFY_EMAIL),
+
+  forgotPassword: (email: string) =>
+    http.post(ENDPOINTS.FORGOT_PASSWORD, { email }),
+
+  verifyForgotPassword: (forgot_password_token: string) =>
+    http.post(ENDPOINTS.VERIFY_FORGOT_PASSWORD, { forgot_password_token }),
+
+  resetPassword: (body: {
+    forgot_password_token: string;
+    password: string;
+    confirm_password: string;
+  }) => http.post(ENDPOINTS.RESET_PASSWORD, body),
+};
