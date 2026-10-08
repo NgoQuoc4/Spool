@@ -28,7 +28,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Khi load app: nếu có token thì fetch lại profile
   useEffect(() => {
     const token = tokenStore.getAccess();
-    console.log("token", token);
     if (!token) {
       setIsLoading(false);
       return;

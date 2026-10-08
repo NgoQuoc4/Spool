@@ -1,0 +1,10 @@
+<svg aria-label="Spool" fill="var(--icon-primary, currentColor)" role="img" shape-rendering="geometricPrecision" viewBox="0 0 1120 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Spool Vortex Mark on Left -->
+  <g transform="translate(36, 16)" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="134" cy="134" r="23" fill="currentColor" stroke="none" />
+    <path stroke-width="29" d="M 52,134 A 82,82 0 0,1 216,134 C 216,178 180,212 134,212 C 100,212 73,189 73,159" />
+    <path stroke-width="29" d="M 216,134 A 82,82 0 0,1 52,134 C 52,90 88,56 134,56 C 168,56 195,79 195,109" />
+  </g>
+  <!-- Wordmark "spool" with Italic Dynamic Slant matching Threads aesthetic -->
+  <text x="350" y="222" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="192" font-weight="800" font-style="italic" letter-spacing="-3.5">spool</text>
+</svg>

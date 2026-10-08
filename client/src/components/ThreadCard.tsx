@@ -13,10 +13,12 @@ import FileSpool from "./SpoolCard/FileSpool";
 interface ThreadCardProps {
   post: ThreadPost;
   currentUser: Author;
-  onLikeToggle: (postId: string) => void;
-  onRepostToggle: (postId: string) => void;
-  onReplyAdded: (postId: string, text: string) => void;
+  onLikeToggle?: (postId: string) => void;
+  onRepostToggle?: (postId: string) => void;
+  onReplyAdded?: (postId: string, text: string) => void;
   onShare: (post: ThreadPost) => void;
+  onDelete: (id: string) => void;
+  onBookmark: (post: ThreadPost) => void;
 }
 
 export const ThreadCard: React.FC<ThreadCardProps> = ({
@@ -26,6 +28,8 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
   onRepostToggle,
   onReplyAdded,
   onShare,
+  onDelete,
+  onBookmark,
 }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -56,14 +60,16 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
   const hasReplies = post.replies && post.replies.length > 0;
 
   // Extract all media types (supporting both post.medias array and post.media object)
-  const imageUrls: string[] = [
-    ...(post.media?.type === "image" || post.media?.type === "carousel"
-      ? post.media.urls
-      : []),
-    ...(post.medias?.filter((m) => m.type === "image").flatMap((m) => m.urls) ||
-      []),
-  ];
-
+  const imageUrls: string[] = Array.from(
+    new Set([
+      ...(post.media?.type === "image" || post.media?.type === "carousel"
+        ? post.media.urls
+        : []),
+      ...(post.medias
+        ?.filter((m) => m.type === "image")
+        .flatMap((m) => m.urls) || []),
+    ]),
+  );
   const videoItems = [
     ...(post.media?.type === "video" || post.media?.type === "hls"
       ? [{ type: post.media.type, urls: post.media.urls }]
@@ -125,7 +131,13 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
           }}
         >
           <InforSpool post={post} />
-          <OptionsSpool post={post} onShare={onShare} />
+          <OptionsSpool
+            post={post}
+            onShare={onShare}
+            onDelete={(id) => {
+              onDelete(id);
+            }}
+          />
         </div>
 
         {/* Content, Media, Poll, Actions Column */}
@@ -271,6 +283,7 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
             post={post}
             onRepostToggle={onRepostToggle}
             onShare={onShare}
+            onBookmark={onBookmark}
           />
 
           {/* Counts & Activity footer */}

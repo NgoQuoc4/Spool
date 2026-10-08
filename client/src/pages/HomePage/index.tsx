@@ -1,108 +1,68 @@
-import { useState } from "react";
 import "@/App.css";
+import { useState, useEffect } from "react";
 import { ThreadCard } from "@/components/ThreadCard";
-import { CURRENT_USER, INITIAL_THREADS } from "@/mockData";
-import type { ThreadPost, ThreadReply } from "@/types";
-import { useOutletContext } from "react-router-dom";
-import type { LayoutContextType } from "@/layouts/MainLayout";
+import type { ThreadPost, Author } from "@/types";
 import TopBar from "@/components/TopBar";
 import { ColumnMenu } from "@/components/ColumnMenu";
+import { ColumnPanel } from "@/components/ColumnPanel";
 import SpoolsFound from "@/components/SpoolCard/SpoolsFound";
+import { useApp } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTweets } from "@/hooks/useTweets";
+import { formatTweets } from "@/utils/tweet.helper";
+import { useTweetActions } from "@/hooks/useTweetActions";
 
 const HomePage = () => {
-  const { showToast, setIsModalOpen } = useOutletContext<LayoutContextType>();
-  const [threads, setThreads] = useState<ThreadPost[]>(INITIAL_THREADS);
-  const [searchQuery] = useState<string>("");
+  const { profile } = useAuth();
+  const { setIsModalOpen, columns } = useApp();
+  const [threads, setThreads] = useState<ThreadPost[]>([]);
 
-  // Like Toggle
-  const handleLikeToggle = (postId: string) => {
-    setThreads((prev) =>
-      prev.map((p) => {
-        if (p.id === postId) {
-          const isLiked = !p.isLiked;
-          return {
-            ...p,
-            isLiked,
-            likes: isLiked ? p.likes + 1 : p.likes - 1,
-          };
-        }
-        return p;
-      }),
-    );
+  const currentUser: Author = {
+    id: profile._id,
+    name: profile.name,
+    username: profile.username?.trim() || "user",
+    avatar:
+      profile.avatar?.trim() ||
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
+    verified: true,
   };
 
-  // Repost Toggle
-  const handleRepostToggle = (postId: string) => {
-    setThreads((prev) =>
-      prev.map((p) => {
-        if (p.id === postId) {
-          const isReposted = !p.isReposted;
-          showToast(isReposted ? "Reposted to your profile" : "Removed repost");
-          return {
-            ...p,
-            isReposted,
-            repostsCount: isReposted ? p.repostsCount + 1 : p.repostsCount - 1,
-          };
-        }
-        return p;
-      }),
-    );
-  };
+  const { data, isFetchingNextPage, isLoading, isError, refetch, sentinelRef } =
+    useTweets({ queryKey: "feeds" });
 
-  // Reply Added
-  const handleReplyAdded = (postId: string, text: string) => {
-    const newReply: ThreadReply = {
-      id: `reply-${Date.now()}`,
-      author: CURRENT_USER,
-      content: text,
-      createdAt: "Just now",
-      likes: 0,
-      isLiked: false,
-    };
+  // Đồng bộ tweets từ React Query vào state threads (giữ lại trạng thái Like/Repost nếu đã bấm)
+  useEffect(() => {
+    if (!data) return;
+    const newThreads = formatTweets(data, threads);
 
-    setThreads((prev) =>
-      prev.map((p) => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            repliesCount: p.repliesCount + 1,
-            replies: [...(p.replies || []), newReply],
-          };
-        }
-        return p;
-      }),
-    );
-    showToast("Reply posted");
-  };
-
-  // Share link
-  const handleShare = (post: ThreadPost) => {
-    const fakeUrl = `https://spool.app/@${post.author.username}/post/${post.id}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(fakeUrl);
+    // Nếu số lượng bài viết tăng lên -> có dữ liệu mới
+    if (newThreads.length > threads.length) {
+      setThreads(newThreads);
+      return;
     }
-    showToast("Link copied to clipboard");
-  };
 
-  // Filter threads for display based on search query
-  const filteredThreads = threads.filter((post) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchContent = post.content.toLowerCase().includes(q);
-      const matchAuthor =
-        post.author.name.toLowerCase().includes(q) ||
-        post.author.username.toLowerCase().includes(q);
-      if (!matchContent && !matchAuthor) return false;
-    }
-    return true;
-  });
+    // Ngược lại -> chỉ update trạng thái (like/repost/bookmark)
+    const updatedMap = new Map(newThreads.map((t) => [t.id, t]));
+    const merged = threads.map((t) => updatedMap.get(t.id) || t);
+    setThreads(merged);
+  }, [data]);
+
+  //------------- Action post -------------------
+
+  const {
+    handleLikeToggle,
+    handleRepostToggle,
+    handleReplyAdded,
+    handleDeletePost,
+    handleBookmark,
+    handleShare,
+  } = useTweetActions({ threads, setThreads });
 
   return (
-    <div className="content-area">
-      <main className="feed-column">
-        <TopBar />
+    <div className="content-area" style={{ overflowX: "auto" }}>
+      <div className="feed-column">
+        <TopBar type="home" />
         <section className="feed-section">
-          {/* Header Bar: For you */}
           {/* Quick Add Post */}
           <div
             onClick={() => setIsModalOpen(true)}
@@ -125,8 +85,8 @@ const HomePage = () => {
               }}
             >
               <img
-                src={CURRENT_USER.avatar}
-                alt={CURRENT_USER.name}
+                src={currentUser.avatar}
+                alt={currentUser.name}
                 style={{
                   width: "36px",
                   height: "36px",
@@ -135,10 +95,7 @@ const HomePage = () => {
                 }}
               />
               <span
-                style={{
-                  fontSize: "15px",
-                  color: "var(--text-secondary)",
-                }}
+                style={{ fontSize: "15px", color: "var(--text-secondary)" }}
               >
                 What's new?
               </span>
@@ -158,59 +115,79 @@ const HomePage = () => {
             </button>
           </div>
 
-          {/* filter see*/}
-          {/* {searchQuery && (
-          <div
-            style={{
-              padding: "10px 16px",
-              margin: "12px 16px",
-              backgroundColor: "var(--bg-card)",
-              borderRadius: "12px",
-              border: "1px solid var(--border-color)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>
-              Filtering by:{" "}
-              <b style={{ color: "var(--text-main)" }}>"{searchQuery}"</b>
-            </span>
-            <button
-              onClick={() => setSearchQuery("")}
-              style={{
-                fontSize: "13px",
-                color: "var(--accent-blue)",
-                fontWeight: "600",
-              }}
-            >
-              Clear
-            </button>
-          </div>
-        )} */}
-
           {/* Feeds view */}
           <div className="feed-scrollable">
-            {filteredThreads.length > 0 ? (
-              filteredThreads.map((post) => (
+            {isLoading ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "30px",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                Đang tải tin...
+              </div>
+            ) : isError ? (
+              <div
+                style={{
+                  textAlign: "center",
+                  padding: "30px",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <p>Không thể tải bài viết. Vui lòng thử lại!</p>
+                <button
+                  onClick={() => refetch()}
+                  style={{
+                    marginTop: "10px",
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                  }}
+                >
+                  Thử lại
+                </button>
+              </div>
+            ) : threads.length > 0 ? (
+              threads.map((post) => (
                 <ThreadCard
                   key={post.id}
                   post={post}
-                  currentUser={CURRENT_USER}
+                  currentUser={currentUser}
                   onLikeToggle={handleLikeToggle}
                   onRepostToggle={handleRepostToggle}
                   onReplyAdded={handleReplyAdded}
                   onShare={handleShare}
+                  onDelete={handleDeletePost}
+                  onBookmark={handleBookmark}
                 />
               ))
             ) : (
               <SpoolsFound />
             )}
+
+            {/* Điểm neo để kích hoạt tải trang tiếp theo */}
+            <div ref={sentinelRef} style={{ height: "20px", margin: "10px 0" }}>
+              {isFetchingNextPage && (
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "var(--text-secondary)",
+                  }}
+                >
+                  Đang tải thêm...
+                </p>
+              )}
+            </div>
           </div>
         </section>
-      </main>
+      </div>
 
-      {/* Thêm cột bên để hiển thị các thông tin */}
+      {/* Column panels */}
+      {columns.map((col) => (
+        <ColumnPanel key={col.type} type={col.type} label={col.label} />
+      ))}
+
       <ColumnMenu />
     </div>
   );

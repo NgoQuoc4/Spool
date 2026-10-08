@@ -1,81 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
-  <defs>
-    <!-- Background rounded card gradient/shadow -->
-    <filter id="subtle-shadow" x="-10%" y="-10%" width="120%" height="125%" filterUnits="userSpaceOnUse">
-      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0f2b38" flood-opacity="0.18" />
-    </filter>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="spool-title">
+  <title id="spool-title">Spool</title>
+  <style>
+    .spool-glyph { stroke: #0f172a; }
+    .spool-core { fill: #0f172a; }
+    @media (prefers-color-scheme: dark) {
+      .spool-glyph { stroke: #f8fafc; }
+      .spool-core { fill: #f8fafc; }
+    }
+  </style>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Center spindle core dot -->
+    <circle cx="128" cy="128" r="20" class="spool-core" stroke="none" />
 
-    <!-- Gradients -->
-    <linearGradient id="tealGradDark" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#246587"/>
-      <stop offset="100%" stop-color="#12374a"/>
-    </linearGradient>
+    <!-- Upper winding thread arm -->
+    <path class="spool-glyph" stroke-width="26" d="
+      M 56,128
+      A 72,72 0 0,1 200,128
+      C 200,168 168,198 128,198
+      C 98,198 74,178 74,152
+    " />
 
-    <linearGradient id="tealGradLight" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#2f7da3"/>
-      <stop offset="100%" stop-color="#1b4a61"/>
-    </linearGradient>
-
-    <linearGradient id="woodGrad" x1="20%" y1="0%" x2="80%" y2="100%">
-      <stop offset="0%" stop-color="#e8be89"/>
-      <stop offset="50%" stop-color="#d6a267"/>
-      <stop offset="100%" stop-color="#be874b"/>
-    </linearGradient>
-
-    <!-- Wood grain pattern / lines -->
-    <pattern id="woodLines" width="60" height="60" patternTransform="rotate(25 0 0)" patternUnits="userSpaceOnUse">
-      <line x1="0" y1="12" x2="60" y2="12" stroke="#b0773d" stroke-width="1.2" stroke-opacity="0.35" stroke-dasharray="15,4,20,6"/>
-      <line x1="0" y1="28" x2="60" y2="28" stroke="#b0773d" stroke-width="1.4" stroke-opacity="0.3" stroke-dasharray="25,5,10,4"/>
-      <line x1="0" y1="44" x2="60" y2="44" stroke="#b0773d" stroke-width="1.2" stroke-opacity="0.35" stroke-dasharray="12,6,18,5"/>
-    </pattern>
-  </defs>
-
-  <!-- Optional soft card background (can be removed if pure icon is desired) -->
-  <rect x="24" y="24" width="464" height="464" rx="104" fill="#f0f2f4" />
-
-  <!-- Main Spool Emblem Group -->
-  <g filter="url(#subtle-shadow)">
-    <!-- Base Outer Ring (Deep Teal) -->
-    <circle cx="256" cy="256" r="172" fill="url(#tealGradDark)" stroke="#0e2938" stroke-width="4"/>
-
-    <!-- Wood swirl arc -->
-    <path d="M 256,92 
-             A 164,164 0 0,1 410,210 
-             C 390,260 330,340 240,320 
-             C 170,305 155,230 190,175 
-             C 210,140 240,110 256,92 Z" 
-          fill="url(#woodGrad)" />
-
-    <!-- Wood texture overlay -->
-    <path d="M 256,92 
-             A 164,164 0 0,1 410,210 
-             C 390,260 330,340 240,320 
-             C 170,305 155,230 190,175 
-             C 210,140 240,110 256,92 Z" 
-          fill="url(#woodLines)" />
-
-    <!-- Wood swirl outline border -->
-    <path d="M 256,92 
-             C 285,140 250,210 215,225
-             C 170,245 180,310 256,318
-             C 320,325 385,250 410,210" 
-          fill="none" stroke="#0e2938" stroke-width="5" stroke-linecap="round"/>
-
-    <!-- Dynamic Thread/Vortex Swirl (Teal blue) -->
-    <path d="M 120,315 
-             C 145,395 240,425 320,410 
-             C 400,395 424,320 405,250 
-             C 395,295 340,370 260,365 
-             C 185,360 145,310 160,240 
-             C 170,195 210,150 256,120
-             C 160,145 105,225 120,315 Z" 
-          fill="url(#tealGradLight)"/>
-
-    <!-- Inner Core Background (Off-white spindle recess) -->
-    <circle cx="256" cy="256" r="62" fill="#eaf0f3" stroke="#0e2938" stroke-width="4"/>
-
-    <!-- Central Spool Hole (Dark Center) -->
-    <circle cx="256" cy="256" r="26" fill="#152b36" />
-    <circle cx="256" cy="256" r="24" fill="#0d1b22" />
+    <!-- Lower winding thread arm (180° rotated complement) -->
+    <path class="spool-glyph" stroke-width="26" d="
+      M 200,128
+      A 72,72 0 0,1 56,128
+      C 56,88 88,58 128,58
+      C 158,58 182,78 182,104
+    " />
   </g>
 </svg>

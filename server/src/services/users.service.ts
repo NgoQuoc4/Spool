@@ -255,23 +255,36 @@ class UsersService {
   }
 
   async getMe(user_id: string) {
-    const user = await dataservice.users.findOne(
-      {
-        _id: new ObjectId(user_id),
-      },
-      {
-        projection: {
-          _id: 0,
-          password: 0,
-          email_verify_token: 0,
-          forgot_password_token: 0,
+    const objectUserId = new ObjectId(user_id);
+    const [user, followersCount, followingCount] = await Promise.all([
+      dataservice.users.findOne(
+        {
+          _id: objectUserId,
         },
-      },
-    );
+        {
+          projection: {
+            password: 0,
+            email_verify_token: 0,
+            forgot_password_token: 0,
+          },
+        },
+      ),
+      dataservice.follows.countDocuments({
+        followed_user_id: objectUserId,
+      }),
+      dataservice.follows.countDocuments({
+        user_id: objectUserId,
+      }),
+    ]);
+
     if (!user) {
       throw new Error("User not found");
     }
-    return user;
+    return {
+      ...user,
+      followers_count: followersCount,
+      following_count: followingCount,
+    };
   }
 
   async patchMe(user_id: string, payload: UpdateMeRequestBody) {
@@ -307,7 +320,6 @@ class UsersService {
       },
       {
         projection: {
-          _id: 0,
           password: 0,
           email_verify_token: 0,
           forgot_password_token: 0,

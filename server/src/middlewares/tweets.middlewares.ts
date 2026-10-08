@@ -86,6 +86,12 @@ export const createTweetValidator = validate(
       isArray: true,
       custom: {
         options: (value: string[]) => {
+          if (value.length > 1) {
+            throw new ErrorWithStatus({
+              message: "Only 1 hashtag is allowed",
+              status: HTTP_STATUS.BAD_REQUEST,
+            });
+          }
           for (const item of value) {
             if (typeof item !== "string") {
               throw new ErrorWithStatus({

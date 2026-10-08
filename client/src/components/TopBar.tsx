@@ -1,8 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AddColumnIcon, MoreHorizontalIcon, RemoveColumnIcon } from "./Icons";
 import { useApp } from "@/contexts/AppContext";
+import { COLUMN_LABELS, type ColumnKey } from "@/types/column.types";
 
+interface TopBarProps {
+  type?: ColumnKey;
+}
 const pageTitles: Record<string, string> = {
   "/": "For you",
   "/following": "Following",
@@ -15,13 +19,18 @@ const pageTitles: Record<string, string> = {
   "/saved": "Saved",
 };
 
-const TopBar = () => {
+const TopBar = ({ type }: TopBarProps) => {
   const location = useLocation();
-  const { showToast } = useApp();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { showToast, removeColumn, addColumn, columns } = useApp();
 
-  const activeTitle = pageTitles[location.pathname] || "For you";
+  // Hiển thị tiêu đề chính xác theo type của cột (khi nhúng trong đa cột), fallback theo pathname
+  const activeTitle =
+    (type && type !== "home" && COLUMN_LABELS[type]) ||
+    pageTitles[location.pathname] ||
+    "For you";
 
   // Click outside to close popup
   useEffect(() => {
@@ -40,11 +49,28 @@ const TopBar = () => {
   }, [isOpen]);
 
   const handleAddColumn = () => {
-    showToast("Đã thêm cột mới");
+    if (!type || type === "home") return;
+    const isExist = columns.some((col) => col.type === type);
+    if (isExist) {
+      showToast("Cột này đã tồn tại");
+      return;
+    }
+    showToast(`Đã thêm cột "${COLUMN_LABELS[type] || type}"`);
+    addColumn({
+      type: type,
+      label: COLUMN_LABELS[type] || type,
+    });
     setIsOpen(false);
+
+    // Nếu đang ở trang khác, chuyển về trang Home để thấy ngay cột vừa thêm
+    if (location.pathname !== "/") {
+      navigate("/");
+    }
   };
 
   const handleRemoveColumn = () => {
+    if (!type) return;
+    removeColumn(type);
     showToast("Đã gỡ cột");
     setIsOpen(false);
   };
@@ -67,33 +93,42 @@ const TopBar = () => {
         {activeTitle}
       </h2>
 
-      <div className="topbar-options-wrapper" ref={menuRef}>
-        <button
-          className="topbar-more-btn"
-          onClick={() => setIsOpen((prev) => !prev)}
-          title="Options"
-          aria-label="Options"
-          aria-expanded={isOpen}
-        >
-          <MoreHorizontalIcon size={16} />
-        </button>
+      {/* Ẩn menu cho cột trang chủ chính (cột cố định) */}
+      {type !== "home" && (
+        <div className="topbar-options-wrapper" ref={menuRef}>
+          <button
+            className="topbar-more-btn"
+            onClick={() => setIsOpen((prev) => !prev)}
+            title="Options"
+            aria-label="Options"
+            aria-expanded={isOpen}
+          >
+            <MoreHorizontalIcon size={16} />
+          </button>
 
-        {isOpen && (
-          <div className="topbar-dropdown-menu">
-            <button className="topbar-dropdown-item" onClick={handleAddColumn}>
-              <span>Thêm cột</span>
-              <AddColumnIcon />
-            </button>
-            <button
-              className="topbar-dropdown-item"
-              onClick={handleRemoveColumn}
-            >
-              <span>Gỡ cột</span>
-              <RemoveColumnIcon />
-            </button>
-          </div>
-        )}
-      </div>
+          {isOpen && (
+            <div className="topbar-dropdown-menu">
+              {columns.some((column) => column.type === type) ? (
+                <button
+                  className="topbar-dropdown-item"
+                  onClick={handleRemoveColumn}
+                >
+                  <span>Gỡ cột</span>
+                  <RemoveColumnIcon />
+                </button>
+              ) : (
+                <button
+                  className="topbar-dropdown-item"
+                  onClick={handleAddColumn}
+                >
+                  <span>Thêm cột</span>
+                  <AddColumnIcon />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

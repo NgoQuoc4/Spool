@@ -1,28 +1,49 @@
 import React, { useState, useRef, useEffect } from "react";
-import { AddColumnIcon, ChevronRightIcon } from "./Icons";
-import { useApp } from "@/contexts/AppContext";
-import { useNavigate } from "react-router-dom";
+import { AddColumnIcon, ChevronRightIcon, ChevronLeftIcon } from "./Icons";
+import { useApp, type ColumnType } from "@/contexts/AppContext";
 
 interface ColumnMenuProps {
   onToggleTwoColumns?: (enabled: boolean) => void;
   onSelectOption?: (optionKey: string) => void;
 }
 
-export const ColumnMenu: React.FC<ColumnMenuProps> = ({
-  onToggleTwoColumns,
-  onSelectOption,
-}) => {
+type MenuItemType = {
+  key: string;
+  label: string;
+  type?: ColumnType["type"];
+};
+
+const MENUS: MenuItemType[] = [
+  { key: "search", label: "Tìm kiếm", type: "search" },
+  { key: "activity", label: "Hoạt động", type: "activity" },
+  { key: "insights", label: "Insights", type: "insights" },
+  { key: "other_feeds", label: "Feeds khác", type: "other_feeds" },
+];
+
+const OTHER_FEEDS: MenuItemType[] = [
+  { key: "following", label: "Following", type: "follow" },
+  { key: "for_you", label: "For you", type: "like" },
+  { key: "messages", label: "Messages", type: "message" },
+  { key: "archive", label: "Archive", type: "archive" },
+  { key: "liked", label: "Liked", type: "like" },
+  { key: "saved", label: "Saved", type: "save" },
+  { key: "ghost", label: "Ghost", type: "ghost" },
+];
+
+export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onSelectOption }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isTwoColumns, setIsTwoColumns] = useState(true);
+  const [currentView, setCurrentView] = useState<"main" | "other_feeds">(
+    "main",
+  );
   const menuRef = useRef<HTMLDivElement>(null);
   const { showToast } = useApp();
-  const navigate = useNavigate();
-
+  const { columns, addColumn, setIsModalOpen } = useApp();
   // Click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setCurrentView("main");
       }
     };
 
@@ -34,26 +55,41 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({
     };
   }, [isOpen]);
 
-  const handleToggleSwitch = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const nextState = !isTwoColumns;
-    setIsTwoColumns(nextState);
-    if (onToggleTwoColumns) {
-      onToggleTwoColumns(nextState);
-    }
-    showToast(nextState ? "Đã bật chế độ 2 cột" : "Đã tắt chế độ 2 cột");
-  };
-
-  const handleItemClick = (key: string, label: string, path?: string) => {
+  const handleItemClick = (
+    key: string,
+    label: string,
+    type?: ColumnType["type"],
+  ) => {
     if (onSelectOption) {
       onSelectOption(key);
     }
-    if (path) {
-      navigate(path);
-    } else {
+    if (columns.some((column) => column.type === type)) {
       showToast(`Đã chọn: ${label}`);
+    } else {
+      addColumn({
+        type,
+        label,
+      });
+      setIsModalOpen(false);
     }
     setIsOpen(false);
+    setCurrentView("main");
+  };
+
+  const menuItemStyle: React.CSSProperties = {
+    width: "100%",
+    textAlign: "left",
+    padding: "9px 8px",
+    fontSize: "15px",
+    fontWeight: "700",
+    color: "var(--text-main)",
+    backgroundColor: "transparent",
+    border: "none",
+    borderRadius: "10px",
+    cursor: "pointer",
+    transition: "background-color 0.15s ease",
+    display: "flex",
+    alignItems: "center",
   };
 
   return (
@@ -124,231 +160,173 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({
             userSelect: "none",
           }}
         >
-          {/* Header Row: Hiển thị 2 cột + Toggle Switch */}
-          <div
-            onClick={handleToggleSwitch}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "4px 6px 8px 6px",
-              cursor: "pointer",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "15px",
-                fontWeight: "700",
-                color: "var(--text-main)",
-              }}
-            >
-              Hiển thị 2 cột
-            </span>
-
-            {/* Toggle switch iOS/Threads style */}
-            <div
-              style={{
-                width: "42px",
-                height: "24px",
-                borderRadius: "12px",
-                backgroundColor: isTwoColumns
-                  ? "var(--text-main)"
-                  : "var(--bg-input)",
-                border: `1.5px solid ${isTwoColumns ? "var(--text-main)" : "var(--border-color)"}`,
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                padding: "2px",
-                transition:
-                  "background-color 0.2s ease, border-color 0.2s ease",
-              }}
-            >
+          {currentView === "main" ? (
+            <>
+              {/* Header Row: Hiển thị 2 cột + Toggle Switch */}
               <div
                 style={{
-                  width: "18px",
-                  height: "18px",
-                  borderRadius: "50%",
-                  backgroundColor: isTwoColumns
-                    ? "var(--bg-main)"
-                    : "var(--text-secondary)",
-                  transform: isTwoColumns
-                    ? "translateX(18px)"
-                    : "translateX(0px)",
-                  transition:
-                    "transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "4px 6px 8px 6px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: "700",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Thêm cột
+                </span>
+              </div>
+
+              {/* Đường phân cách */}
+              <div
+                style={{
+                  height: "1px",
+                  backgroundColor: "var(--border-color)",
+                  margin: "6px 0 10px 0",
                 }}
               />
-            </div>
-          </div>
 
-          {/* Đường phân cách */}
-          <div
-            style={{
-              height: "1px",
-              backgroundColor: "var(--border-color)",
-              margin: "6px 0 10px 0",
-            }}
-          />
+              {/* Danh sách hành động */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "2px" }}
+              >
+                {MENUS.map((menu) => {
+                  if (menu.key === "other_feeds") {
+                    return (
+                      <button
+                        key={menu.key}
+                        onClick={() => setCurrentView("other_feeds")}
+                        className="column-menu-item"
+                        style={{
+                          ...menuItemStyle,
+                          justifyContent: "space-between",
+                        }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "var(--bg-card-hover)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
+                      >
+                        <span>Bảng feed khác</span>
+                        <ChevronRightIcon size={16} />
+                      </button>
+                    );
+                  }
 
-          {/* Section Header: Thêm cột */}
-          <div
-            style={{
-              fontSize: "13px",
-              fontWeight: "600",
-              color: "var(--text-secondary)",
-              padding: "0 6px 6px 6px",
-            }}
-          >
-            Thêm cột
-          </div>
+                  return (
+                    <button
+                      key={menu.key}
+                      onClick={() =>
+                        handleItemClick(menu.key, menu.label, menu.type)
+                      }
+                      className="column-menu-item"
+                      style={menuItemStyle}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor =
+                          "var(--bg-card-hover)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      {menu.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Header Submenu with Back button */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "4px 6px 8px 6px",
+                }}
+              >
+                <button
+                  onClick={() => setCurrentView("main")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "var(--text-main)",
+                    borderRadius: "6px",
+                    transition: "background-color 0.15s ease",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.backgroundColor =
+                      "var(--bg-card-hover)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = "transparent")
+                  }
+                  aria-label="Quay lại"
+                >
+                  <ChevronLeftIcon size={18} />
+                </button>
+                <span
+                  style={{
+                    fontSize: "15px",
+                    fontWeight: "700",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  Bảng feed khác
+                </span>
+              </div>
 
-          {/* Danh sách hành động */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <button
-              onClick={() => handleItemClick("search", "Tìm kiếm", "/search")}
-              className="column-menu-item"
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "9px 8px",
-                fontSize: "15px",
-                fontWeight: "700",
-                color: "var(--text-main)",
-                backgroundColor: "transparent",
-                border: "none",
-                borderRadius: "10px",
-                cursor: "pointer",
-                transition: "background-color 0.15s ease",
-                display: "flex",
-                alignItems: "center",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--bg-card-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              Tìm kiếm
-            </button>
+              {/* Đường phân cách */}
+              <div
+                style={{
+                  height: "1px",
+                  backgroundColor: "var(--border-color)",
+                  margin: "6px 0 10px 0",
+                }}
+              />
 
-            <button
-              onClick={() =>
-                handleItemClick("activity", "Hoạt động", "/notifications")
-              }
-              className="column-menu-item"
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "9px 8px",
-                fontSize: "15px",
-                fontWeight: "700",
-                color: "var(--text-main)",
-                backgroundColor: "transparent",
-                border: "none",
-                borderRadius: "10px",
-                cursor: "pointer",
-                transition: "background-color 0.15s ease",
-                display: "flex",
-                alignItems: "center",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--bg-card-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              Hoạt động
-            </button>
-
-            <button
-              onClick={() =>
-                handleItemClick("profile", "Trang cá nhân", "/profile")
-              }
-              className="column-menu-item"
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "9px 8px",
-                fontSize: "15px",
-                fontWeight: "700",
-                color: "var(--text-main)",
-                backgroundColor: "transparent",
-                border: "none",
-                borderRadius: "10px",
-                cursor: "pointer",
-                transition: "background-color 0.15s ease",
-                display: "flex",
-                alignItems: "center",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--bg-card-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              Trang cá nhân
-            </button>
-
-            <button
-              onClick={() => handleItemClick("insights", "Thông tin chi tiết")}
-              className="column-menu-item"
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "9px 8px",
-                fontSize: "15px",
-                fontWeight: "700",
-                color: "var(--text-main)",
-                backgroundColor: "transparent",
-                border: "none",
-                borderRadius: "10px",
-                cursor: "pointer",
-                transition: "background-color 0.15s ease",
-                display: "flex",
-                alignItems: "center",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--bg-card-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              Thông tin chi tiết
-            </button>
-
-            <button
-              onClick={() => handleItemClick("other_feeds", "Bảng feed khác")}
-              className="column-menu-item"
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "9px 8px",
-                fontSize: "15px",
-                fontWeight: "700",
-                color: "var(--text-main)",
-                backgroundColor: "transparent",
-                border: "none",
-                borderRadius: "10px",
-                cursor: "pointer",
-                transition: "background-color 0.15s ease",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--bg-card-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              <span>Bảng feed khác</span>
-              <ChevronRightIcon size={16} />
-            </button>
-          </div>
+              {/* Danh sách các feed khác */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "2px" }}
+              >
+                {OTHER_FEEDS.map((menu) => {
+                  console.log("menu", menu);
+                  return (
+                    <button
+                      key={menu.key}
+                      onClick={() =>
+                        handleItemClick(menu.key, menu.label, menu.type)
+                      }
+                      className="column-menu-item"
+                      style={menuItemStyle}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.backgroundColor =
+                          "var(--bg-card-hover)")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
+                    >
+                      {menu.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

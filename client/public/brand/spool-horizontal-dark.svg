@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" width="720" height="180" role="img" aria-label="Spool Logo Horizontal Dark">
+  <defs>
+    <linearGradient id="spoolHGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+  </defs>
+
+  <!-- Optional Dark Background -->
+  <rect width="720" height="180" rx="20" fill="#0b0e14" />
+
+  <!-- Symbol Mark (Left) -->
+  <g transform="translate(36, 26) scale(0.5)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="128" cy="128" r="20" fill="#38bdf8" stroke="none" />
+    <path stroke="url(#spoolHGrad)" stroke-width="26" d="M 56,128 A 72,72 0 0,1 200,128 C 200,168 168,198 128,198 C 98,198 74,178 74,152" />
+    <path stroke="url(#spoolHGrad)" stroke-width="26" d="M 200,128 A 72,72 0 0,1 56,128 C 56,88 88,58 128,58 C 158,58 182,78 182,104" />
+  </g>
+
+  <!-- Custom Geometric Wordmark "spool" -->
+  <text x="184" y="112" fill="#f8fafc" font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', 'Segoe UI', Roboto, sans-serif" font-size="76" font-weight="800" letter-spacing="-1.5">spool</text>
+</svg>

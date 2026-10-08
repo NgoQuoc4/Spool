@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Spool App Icon">
+  <defs>
+    <linearGradient id="appBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#182234" />
+      <stop offset="100%" stop-color="#090d14" />
+    </linearGradient>
+    <linearGradient id="appStrokeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+
+  <!-- iOS/macOS 22% Squircle -->
+  <rect width="512" height="512" rx="112" fill="url(#appBgGrad)" />
+  <rect width="510" height="510" x="1" y="1" rx="111" fill="none" stroke="#2a3952" stroke-width="2" />
+
+  <!-- Centered Vortex Mark -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="256" cy="256" r="38" fill="#38bdf8" stroke="none" />
+    <path stroke="#f8fafc" stroke-width="50" d="M 112,256 A 144,144 0 0,1 400,256 C 400,336 336,396 256,396 C 196,396 148,356 148,304" />
+    <path stroke="#f8fafc" stroke-width="50" d="M 400,256 A 144,144 0 0,1 112,256 C 112,176 176,116 256,116 C 316,116 364,156 364,208" />
+  </g>
+</svg>

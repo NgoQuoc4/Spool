@@ -31,7 +31,6 @@ const http: AxiosInstance = axios.create({
 // Request: gắn access_token vào mọi request
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = tokenStore.getAccess();
-  console.log("token", token);
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="title-b">
+  <title id="title-b">Spool Concept B - The Spool Vortex</title>
+  <!-- Symmetrical 180° rotational Spool Vortex forming an iconic S -->
+  <g fill="currentColor">
+    <!-- Center spindle core dot -->
+    <circle cx="128" cy="128" r="22" />
+
+    <!-- Top-Right Winding Thread Wing -->
+    <path d="
+      M 128,24
+      C 178,24 220,62 226,112
+      C 228,126 218,138 204,138
+      C 192,138 182,128 180,116
+      C 176,82 146,54 112,54
+      C 94,54 78,61 66,72
+      C 56,82 40,81 31,71
+      C 22,61 23,45 33,35
+      C 58,12 92,0 128,24
+      Z
+    " style="display:none" />
+  </g>
+
+  <!-- Clean, bold geometric construction using pure arcs -->
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Center Spool Hub with Negative Hole -->
+    <circle cx="128" cy="128" r="20" fill="currentColor" stroke="none" />
+    <circle cx="128" cy="128" r="48" stroke-width="8" stroke-dasharray="6 14" opacity="0.4" />
+
+    <!-- Upper Winding Thread Arm -->
+    <path stroke-width="26" d="
+      M 56,128
+      A 72,72 0 0,1 200,128
+      C 200,168 168,198 128,198
+      C 98,198 74,178 74,152
+    "/>
+
+    <!-- Lower Winding Thread Arm (Rotated / Complementary) -->
+    <path stroke-width="26" d="
+      M 200,128
+      A 72,72 0 0,1 56,128
+      C 56,88 88,58 128,58
+      C 158,58 182,78 182,104
+    "/>
+  </g>
+</svg>

@@ -5,9 +5,11 @@ import type { ThreadPost } from "@/types";
 const OptionsSpool = ({
   post,
   onShare,
+  onDelete,
 }: {
   post: ThreadPost;
   onShare: (post: ThreadPost) => void;
+  onDelete: (id: string) => void;
 }) => {
   const [showMenu, setShowMenu] = useState(false);
 
@@ -71,6 +73,7 @@ const OptionsSpool = ({
             >
               Copy link
             </button>
+
             <button
               onClick={() => setShowMenu(false)}
               style={{
@@ -90,6 +93,31 @@ const OptionsSpool = ({
               }
             >
               Unfollow @{post.author.username}
+            </button>
+
+            <button
+              onClick={() => {
+                onDelete(post.id);
+                setShowMenu(false);
+              }}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "8px 12px",
+                fontSize: "14px",
+                borderRadius: "8px",
+                color: "var(--error-color)",
+                display: "block",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor =
+                  "var(--bg-error-hover)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }
+            >
+              Delete
             </button>
           </div>
         )}

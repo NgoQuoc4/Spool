@@ -20,6 +20,8 @@ export interface User {
   username: string;
   avatar: string;
   cover_photo: string;
+  followers_count?: number;
+  following_count?: number;
 }
 
 export interface UpdateMeBody {

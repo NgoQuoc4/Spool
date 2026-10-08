@@ -18,7 +18,6 @@ import {
   PlusIcon,
 } from "./Icons";
 import type { Author } from "../types";
-import { authApi } from "@/apis/auth.api";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface NavbarProps {
@@ -27,7 +26,7 @@ interface NavbarProps {
   openCreateModal: () => void;
   theme: "dark" | "light";
   toggleTheme: () => void;
-  currentUser: Author;
+  currentUser?: Author;
   unreadCount?: number;
 }
 
@@ -39,11 +38,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   toggleTheme,
   unreadCount = 3,
 }) => {
-  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
   const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -616,7 +614,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <GhostIcon size={20} />
               <span>Ghost posts</span>
             </div>
-            <span style={{ fontSize: "14px", opacity: 0.6 }}>⏰</span>
           </NavLink>
 
           <NavLink

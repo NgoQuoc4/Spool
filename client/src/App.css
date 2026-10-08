@@ -14,7 +14,7 @@
 .content-area {
   flex: 1;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   height: 100vh;
   height: 100dvh;
   position: relative;
@@ -40,6 +40,7 @@
   flex-direction: column;
   background-color: var(--bg-main);
   position: relative;
+  margin-left: 10px;
 }
 
 .feed-section {
@@ -52,6 +53,35 @@
   border-radius: 16px; 
   padding-bottom: 40px;
 }
+.content-area {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+/* Custom thanh cuộn ngang mỏng & tinh tế chuẩn phong cách Threads */
+.content-area::-webkit-scrollbar {
+  height: 6px;
+}
+
+.content-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.content-area::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+.content-area::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-secondary);
+}
+
 
 /* Firefox only fallback */
 @supports (-moz-appearance: none) {
@@ -199,6 +229,7 @@
 
 /* Thread Conversation Header (like screenshot: ← Thread   (...)) */
 .thread-header-bar {
+  min-height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -394,5 +425,16 @@
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes columnPanelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }

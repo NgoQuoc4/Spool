@@ -360,36 +360,6 @@ const Login: React.FC = () => {
               <span>Continue with Google</span>
             </button>
           )}
-
-          <button
-            onClick={() => {
-              setSuccessMessage("Instagram login demo triggered!");
-              setTimeout(() => navigate("/"), 1200);
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "10px",
-              backgroundColor: "var(--bg-input)",
-              border: "1px solid var(--border-color)",
-              borderRadius: "14px",
-              padding: "11px",
-              color: "var(--text-main)",
-              fontSize: "14px",
-              fontWeight: "600",
-              transition: "background-color 0.15s ease",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "var(--bg-pill-hover)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "var(--bg-input)")
-            }
-          >
-            <InstagramIcon size={18} />
-            <span>Continue with Instagram</span>
-          </button>
         </div>
       </div>
 

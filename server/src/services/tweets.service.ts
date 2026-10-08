@@ -48,6 +48,22 @@ class TweetsService {
     return tweet;
   }
 
+  async deleteTweet(tweet_id: string, user_id: string) {
+    const [_, __, ___] = await Promise.all([
+      dataservice.tweets.deleteOne({
+        _id: new ObjectId(tweet_id),
+        user_id: new ObjectId(user_id),
+      }),
+      dataservice.likes.deleteMany({
+        tweet_id: new ObjectId(tweet_id),
+      }),
+      dataservice.bookmarks.deleteMany({
+        tweet_id: new ObjectId(tweet_id),
+      }),
+    ]);
+    return true;
+  }
+
   async getTweet(tweet_id: string, user_id?: string) {
     const tweets = await dataservice.tweets
       .aggregate([
@@ -162,7 +178,13 @@ class TweetsService {
         {
           $addFields: {
             likes_count: { $size: "$likes" },
+            is_liked: {
+              $in: [user_id, "$likes.user_id"],
+            },
             bookmarks_count: { $size: "$bookmarks" },
+            is_bookmarked: {
+              $in: [user_id, "$bookmarks.user_id"],
+            },
             mentions: {
               $map: {
                 input: "$mentions",
@@ -204,9 +226,30 @@ class TweetsService {
     return tweets[0] || null;
   }
 
-  async getAllTweet(limit: number, page: number, user_id: string) {
-    const currentUserId = new ObjectId(user_id);
+  async getAllTweet(
+    limit: number,
+    page: number,
+    currentUserIdStr: string,
+    author_id?: string,
+  ) {
+    const currentUserId = new ObjectId(currentUserIdStr);
     // 1. Lấy danh sách ID những người mà user này đang follow
+    let filterQuery: any;
+    if (author_id) {
+      // Lấy bài đăng của một user cụ thể
+      filterQuery = { user_id: new ObjectId(author_id) };
+    } else {
+      // Mặc định -> Lấy News Feed (bản thân + người đang follow)
+      const followedUsers = await dataservice.follows
+        .find(
+          { user_id: currentUserId },
+          { projection: { followed_user_id: 1, _id: 0 } },
+        )
+        .toArray();
+      const followedUserIds = followedUsers.map((u) => u.followed_user_id);
+      filterQuery = { user_id: { $in: [...followedUserIds, currentUserId] } };
+    }
+
     const followedUsers = await dataservice.follows
       .find(
         { user_id: currentUserId },
@@ -216,7 +259,6 @@ class TweetsService {
     const followedUserIds = followedUsers.map((user) => user.followed_user_id);
     // Thêm chính user_id vào danh sách nếu muốn hiển thị cả bài đăng của bản thân trên feed
     const targetUserIds = [...followedUserIds, currentUserId];
-    const filterQuery = { user_id: { $in: targetUserIds } };
 
     const [tweets, total] = await Promise.all([
       dataservice.tweets
@@ -281,7 +323,13 @@ class TweetsService {
           {
             $addFields: {
               likes_count: { $size: "$likes" },
+              is_liked: {
+                $in: [currentUserId, "$likes.user_id"],
+              },
               bookmarks_count: { $size: "$bookmarks" },
+              is_bookmarked: {
+                $in: [currentUserId, "$bookmarks.user_id"],
+              },
               mentions: {
                 $map: {
                   input: "$mentions",

@@ -1,63 +1,230 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { Author, ThreadPost } from "@/types";
-import { CloseIcon, GifIcon, ImageIcon, TagIcon } from "./Icons";
+import { ChevronRightIcon, ImageIcon } from "./Icons";
+import { tweetsApi } from "@/apis/tweets.api";
+import { TweetAudienceType, TweetType, MediaType } from "@/types/tweet.types";
+import { useApp } from "@/contexts/AppContext";
+import {
+  createTweetSchema,
+  type CreateTweetFormValues,
+} from "@/schemas/tweet.schema";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { usersApi } from "@/apis/users.api";
+import { useAuth } from "@/contexts/AuthContext";
+import { mediasApi } from "@/apis/medias.api";
+import SpoolsSlider from "./SpoolCard/SpoolsSlider";
 
 interface CreateThreadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentUser: Author;
   onPostCreated: (post: ThreadPost) => void;
 }
 
 export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
   isOpen,
   onClose,
-  currentUser,
   onPostCreated,
 }) => {
-  const [content, setContent] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [showImageInput, setShowImageInput] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showToast } = useApp();
+  const { profile } = useAuth();
+  const [searchUser, setSearchUser] = useState<Author[]>([]); // @mention suggestions
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null); // query @mention
+  const [topicTag, setTopicTag] = useState(""); // query #hashtag
+  const [cursorPosition, setCursorPosition] = useState<number>(0); // cursor position
+
+  // ---- upload image
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  // ---- upload image
+
+  useEffect(() => {
+    if (!mentionQuery || mentionQuery.trim() === "") {
+      setSearchUser([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await usersApi.getProfile(mentionQuery);
+        if (res?.data?.result) {
+          const user = res.data.result;
+          setSearchUser([
+            {
+              id: user._id,
+              name: user.name,
+              username: user.username,
+              avatar:
+                user.avatar ||
+                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+              isFollowing: false,
+            },
+          ]);
+        }
+      } catch {
+        setSearchUser([]);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [mentionQuery]);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<CreateTweetFormValues>({
+    resolver: zodResolver(createTweetSchema),
+    defaultValues: {
+      content: "",
+      imageUrl: "",
+    },
+  });
+
+  const content = watch("content") || "";
+  const imageUrl = watch("imageUrl") || [];
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!content.trim() && !imageUrl.trim()) return;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from((e.target.files as FileList) || []);
+    console.log("file", files);
+    if (files.length === 0) return;
 
-    setIsSubmitting(true);
+    if (imageUrls.length + files.length > 6) {
+      showToast("Chỉ được tải lên tối đa 6 ảnh");
+      return;
+    }
 
-    const newPost: ThreadPost = {
-      id: `user-thread-${Date.now()}`,
-      author: currentUser,
-      content: content.trim(),
-      createdAt: "Just now",
-      media: imageUrl.trim()
-        ? {
-            type: "image",
-            urls: [imageUrl.trim()],
-          }
-        : undefined,
-      likes: 0,
-      repliesCount: 0,
-      repostsCount: 0,
-      isLiked: false,
-    };
+    // check file size
+    for (const file of files) {
+      if (file.size > 4 * 1024 * 1024) {
+        showToast("File size must be less than 4MB");
+        return;
+      }
+    }
 
-    setTimeout(() => {
-      onPostCreated(newPost);
-      setContent("");
-      setImageUrl("");
-      setShowImageInput(false);
-      setIsSubmitting(false);
-      onClose();
-    }, 200);
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("image", file);
+    });
+
+    try {
+      setIsUploading(true);
+
+      const res = await mediasApi.uploadImage(formData);
+      console.log("🚀 ~ handleImageUpload ~ res:", res);
+      if (res?.data?.url && res.data.url.length > 0) {
+        setImageUrls((prev) => [...prev, ...res.data.url]);
+        showToast("Image uploaded successfully");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Tải ảnh thất bại, vui lòng thử lại");
+    } finally {
+      setIsUploading(false);
+      // Reset input để có thể chọn lại cùng 1 file nếu cần
+      if (e.target) e.target.value = "";
+    }
   };
 
-  const handleQuickImageAdd = (sampleUrl: string) => {
-    setImageUrl(sampleUrl);
-    setShowImageInput(true);
+  const handleRemoveImage = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const renderHighlightedContent = (content: string) => {
+    if (!content) return null;
+    // Bắt cả @mention và #hashtag đứng sau khoảng trắng hoặc đầu dòng
+    const parts = content.split(/(?<=\s|^)([@#][\w.]+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith("@") || part.startsWith("#")) {
+        return (
+          <span
+            key={index}
+            style={{
+              color: "var(--accent-blue, #0095f6)",
+              fontWeight: "500",
+            }}
+          >
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursor = e.target.selectionStart || 0;
+    setCursorPosition(cursor);
+    const textBeforeCursor = value.slice(0, cursor);
+    const match = textBeforeCursor.match(/(?<=\s|^)@([\w.]*)$/);
+    if (match) {
+      setMentionQuery(match[1].toLowerCase());
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const handleSelectUser = (selectedUsername: string) => {
+    if (mentionQuery === null) return;
+    const textBeforeCursor = content.slice(0, cursorPosition);
+    const textAfterCursor = content.slice(cursorPosition);
+    const newTextBefore = textBeforeCursor.replace(
+      /(?<=\s|^)@[\w.]*$/,
+      `@${selectedUsername} `,
+    );
+    const newContent = newTextBefore + textAfterCursor;
+    setValue("content", newContent);
+    setMentionQuery(null);
+  };
+
+  const onSubmit = async (data: CreateTweetFormValues) => {
+    try {
+      // Chuẩn hóa topicTag: bỏ dấu # nếu có, lấy tối đa 1 hashtag dạng string
+      const hashtag = topicTag.trim().replace(/^#/, "");
+      const medias = imageUrls.map((url) => ({
+        url,
+        type: MediaType.IMAGE,
+      }));
+      const response = await tweetsApi.createTweet({
+        content: data.content.trim(),
+        type: TweetType.TWEET,
+        audience: TweetAudienceType.EVERYONE,
+        parent_id: null,
+        hashtags: hashtag ? [hashtag] : [],
+        mentions: [],
+        medias,
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        showToast("Post created successfully");
+        const createdPost: ThreadPost = {
+          id: response.data?.result?._id || `thread-${Date.now()}`,
+          author: profile,
+          content: data.content.trim(),
+          createdAt: "Just now",
+          media:
+            imageUrls.length > 0
+              ? { type: "image", urls: imageUrls }
+              : undefined,
+          likes: 0,
+          repliesCount: 0,
+          repostsCount: 0,
+          isLiked: false,
+        };
+        onPostCreated?.(createdPost);
+        reset();
+        setImageUrls([]);
+        onClose();
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to create post");
+    }
   };
 
   return (
@@ -128,7 +295,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
         </div>
 
         {/* Modal Content */}
-        <form onSubmit={handleSubmit} style={{ padding: "20px" }}>
+        <form onSubmit={handleSubmit(onSubmit)} style={{ padding: "20px" }}>
           <div style={{ display: "flex", gap: "14px" }}>
             {/* Left: Avatar + Connector Thread line */}
             <div
@@ -139,8 +306,8 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
               }}
             >
               <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
+                src={profile.avatar}
+                alt={profile.name}
                 style={{
                   width: "42px",
                   height: "42px",
@@ -173,96 +340,229 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
             <div
               style={{
                 flex: 1,
+                minWidth: 0,
                 display: "flex",
                 flexDirection: "column",
                 gap: "8px",
               }}
             >
-              <span
-                style={{
-                  fontWeight: "600",
-                  fontSize: "15px",
-                  color: "var(--text-main)",
-                }}
+              <div
+                style={{ display: "flex", gap: "4px", alignItems: "center" }}
               >
-                {currentUser.username}
-              </span>
+                <span
+                  style={{
+                    fontWeight: "600",
+                    fontSize: "15px",
+                    color: "var(--text-main)",
+                  }}
+                >
+                  {profile.username}
+                </span>
 
-              <textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Start a spool..."
-                rows={4}
-                autoFocus
+                <ChevronRightIcon />
+
+                {/* Input nhập Hashtags/Topic */}
+                <input
+                  type="text"
+                  value={topicTag}
+                  onChange={(e) => setTopicTag(e.target.value)}
+                  placeholder="#hashtag"
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    color: topicTag
+                      ? "var(--accent-blue, #0095f6)"
+                      : "var(--text-muted, #777)",
+                    fontSize: "14px",
+                    fontWeight: topicTag ? "500" : "400",
+                    padding: "2px 4px",
+                    borderRadius: "6px",
+                    width: "200px",
+                  }}
+                />
+              </div>
+              {/* Editor 2 lớp: Backdrop highlight + Textarea trong suốt */}
+              <div
                 style={{
+                  position: "relative",
                   width: "100%",
-                  resize: "none",
-                  fontSize: "15px",
-                  lineHeight: "1.45",
-                  color: "var(--text-main)",
                   minHeight: "80px",
                 }}
-              />
+              >
+                {/* Lớp 1: Nằm dưới, hiển thị màu xanh cho @mention và màu trắng cho chữ thường */}
+                <div
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    pointerEvents: "none",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
+                    fontSize: "15px",
+                    lineHeight: "1.45",
+                    fontFamily: "inherit",
+                    padding: 0,
+                    margin: 0,
+                    color: "var(--text-main)",
+                    zIndex: 1,
+                    overflow: "hidden",
+                  }}
+                >
+                  {renderHighlightedContent(content)}
+                </div>
 
-              {/* Image Input field */}
-              {showImageInput && (
-                <div style={{ marginBottom: "8px" }}>
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Enter image URL (https://...)"
+                {/* Lớp 2: Textarea thật để gõ, chữ trong suốt để lộ lớp dưới */}
+                <textarea
+                  {...register("content")}
+                  onChange={(e) => {
+                    register("content").onChange(e); // Gọi để react-hook-form cập nhật
+                    handleTextareaChange(e);
+                  }}
+                  onKeyUp={(e) => {
+                    // Cập nhật vị trí con trỏ khi bấm phím mũi tên
+                    const target = e.target as HTMLTextAreaElement;
+                    const textBefore = target.value.slice(
+                      0,
+                      target.selectionStart,
+                    );
+                    const match = textBefore.match(/(?<=\s|^)@([\w.]*)$/);
+                    setMentionQuery(match ? match[1].toLowerCase() : null);
+                  }}
+                  placeholder={content ? "" : "Start a spool..."}
+                  rows={4}
+                  autoFocus
+                  style={{
+                    position: "relative",
+                    width: "100%",
+                    resize: "none",
+                    fontSize: "15px",
+                    lineHeight: "1.45",
+                    fontFamily: "inherit",
+                    padding: 0,
+                    margin: 0,
+                    minHeight: "80px",
+                    border: "none",
+                    outline: "none",
+                    backgroundColor: "transparent",
+                    color: "transparent",
+                    caretColor: "var(--text-main)",
+                    zIndex: 2,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
+                  }}
+                />
+
+                {/* Dropdown Gợi ý User khi gõ @ */}
+                {mentionQuery !== null && searchUser.length > 0 && (
+                  <div
                     style={{
-                      width: "100%",
-                      backgroundColor: "var(--bg-input)",
-                      padding: "8px 12px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--border-color)",
-                      fontSize: "13px",
-                      color: "var(--text-main)",
+                      position: "absolute",
+                      top: "100%",
+                      left: 0,
+                      right: 0,
+                      zIndex: 50,
+                      backgroundColor: "var(--bg-modal, #181818)",
+                      border: "1px solid var(--border-color, #333)",
+                      borderRadius: "14px",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                      overflow: "hidden",
+                      marginTop: "6px",
                     }}
-                  />
-                  {imageUrl && (
-                    <div
-                      style={{
-                        position: "relative",
-                        marginTop: "8px",
-                        maxWidth: "300px",
-                      }}
-                    >
-                      <img
-                        src={imageUrl}
-                        alt="Preview"
+                  >
+                    {searchUser.map((user) => (
+                      <div
+                        key={user.id}
+                        onClick={() => handleSelectUser(user.username)}
                         style={{
-                          width: "100%",
-                          maxHeight: "180px",
-                          objectFit: "cover",
-                          borderRadius: "12px",
-                          border: "1px solid var(--border-color)",
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setImageUrl("")}
-                        style={{
-                          position: "absolute",
-                          top: "6px",
-                          right: "6px",
-                          backgroundColor: "rgba(0, 0, 0, 0.6)",
-                          color: "#fff",
-                          borderRadius: "50%",
-                          padding: "4px",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
+                          gap: "10px",
+                          padding: "10px 14px",
+                          cursor: "pointer",
+                          transition: "background 0.15s ease",
                         }}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "rgba(255, 255, 255, 0.08)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.backgroundColor =
+                            "transparent")
+                        }
                       >
-                        <CloseIcon size={14} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <div
+                          style={{ display: "flex", flexDirection: "column" }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: "600",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            {user.name}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: "var(--accent-blue, #0095f6)",
+                            }}
+                          >
+                            @{user.username}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Image Input field */}
+              <div style={{ marginBottom: "8px" }}>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  style={{
+                    display: "none",
+                  }}
+                />
+                {/* loading upload image  */}
+                {isUploading && (
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--text-secondary)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Đang tải ảnh lên...
+                  </div>
+                )}
+                {/* preview image when upload image */}
+                {/* Preview danh sách ảnh */}
+                {imageUrls.length > 0 && !isUploading && (
+                  <SpoolsSlider
+                    images={imageUrls}
+                    handleRemoveImage={handleRemoveImage}
+                  />
+                )}
+              </div>
 
               {/* Action Icons */}
               <div
@@ -273,43 +573,58 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
                   color: "var(--text-secondary)",
                 }}
               >
+                {/* Image upload button */}
                 <button
                   type="button"
-                  onClick={() => setShowImageInput(!showImageInput)}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
                   style={{
-                    color: showImageInput
-                      ? "var(--text-main)"
+                    cursor: isUploading ? "not-allowed" : "pointer",
+                    color: imageUrl
+                      ? "var(--accent-blue, #0095f6)"
                       : "var(--text-secondary)",
                     padding: "4px",
+                    background: "none",
+                    border: "none",
+                    display: "flex",
+                    alignItems: "center",
                   }}
                   title="Attach Image"
                 >
                   <ImageIcon size={20} />
                 </button>
-                <button
+
+                {/* <button
                   type="button"
-                  onClick={() =>
-                    handleQuickImageAdd(
+                  onClick={() => {
+                    setValue(
+                      "imageUrl",
                       "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
-                    )
-                  }
+                    );
+                    // setShowImageInput(true);
+                  }}
                   style={{ color: "var(--text-secondary)", padding: "4px" }}
                   title="Demo tech image"
                 >
                   <GifIcon size={20} />
-                </button>
-                <button
+                </button> */}
+                {/* <button
                   type="button"
-                  onClick={() => setContent((prev) => prev + " #spool #webdev")}
+                  onClick={() =>
+                    setValue(
+                      "content",
+                      (content ? content + " " : "") + "#spool #webdev",
+                    )
+                  }
                   style={{ color: "var(--text-secondary)", padding: "4px" }}
                   title="Add Tag"
                 >
                   <TagIcon size={20} />
-                </button>
+                </button> */}
               </div>
 
               {/* Add to spool prompt */}
-              <div
+              {/* <div
                 style={{
                   color: "var(--text-muted)",
                   fontSize: "14px",
@@ -321,7 +636,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
                 }}
               >
                 <span>Add to spool</span>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -350,14 +665,14 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
 
             <button
               type="submit"
-              disabled={(!content.trim() && !imageUrl.trim()) || isSubmitting}
+              disabled={(!content.trim() && !imageUrls.length) || isSubmitting}
               style={{
                 backgroundColor:
-                  content.trim() || imageUrl.trim()
+                  content.trim() || imageUrls.length
                     ? "var(--accent-white)"
                     : "var(--bg-pill)",
                 color:
-                  content.trim() || imageUrl.trim()
+                  content.trim() || imageUrls.length
                     ? "var(--bg-main)"
                     : "var(--text-secondary)",
                 fontWeight: "600",
@@ -365,7 +680,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
                 borderRadius: "9999px",
                 fontSize: "15px",
                 cursor:
-                  content.trim() || imageUrl.trim() ? "pointer" : "default",
+                  content.trim() || imageUrls.length ? "pointer" : "default",
                 transition: "all 0.15s ease",
               }}
             >

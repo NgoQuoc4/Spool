@@ -22,6 +22,7 @@ export const ENDPOINTS = {
   TWEETS: "/tweets",
   CREATE_TWEET: "/tweets/create-tweet",
   TWEET: (id: string) => `/tweets/${id}`,
+  DELETE_TWEET: (id: string) => `/tweets/delete-tweet/${id}`,
   // Interactions
   LIKES: "/likes",
   BOOKMARKS: "/bookmarks",

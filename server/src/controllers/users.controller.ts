@@ -118,7 +118,6 @@ export const patchMeController = async (
   res: Response,
 ) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
-  console.log("user_id", req.body);
   const result = await usersService.patchMe(user_id, req.body);
   return res.status(200).json({ message: "Patch me success", result });
 };

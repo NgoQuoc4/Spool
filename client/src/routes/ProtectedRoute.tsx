@@ -6,7 +6,6 @@ import { PATH } from "@/constants/path";
 const ProtectedRoute = () => {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return null; // đang kiểm tra session
-  console.log("isAuthenticated", isAuthenticated);
   return isAuthenticated ? <Outlet /> : <Navigate to={PATH.LOGIN} replace />;
 };
 

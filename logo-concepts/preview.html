@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spool Brand Mark Concepts · Logo Design Evaluation</title>
+  <style>
+    :root {
+      --bg: #090c10;
+      --card-bg: #111620;
+      --card-border: #1e2638;
+      --text-main: #f0f4f8;
+      --text-muted: #8b9bb4;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      padding: 40px 24px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 48px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 16px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Concept Grid */
+    .concepts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      margin-bottom: 56px;
+    }
+
+    .concept-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .concept-card:hover {
+      border-color: #3b82f6;
+      transform: translateY(-2px);
+    }
+
+    .concept-card.recommended {
+      border-color: var(--accent);
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+
+    .rec-tag {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: var(--accent);
+      color: #000;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .concept-header {
+      margin-bottom: 20px;
+    }
+
+    .concept-letter {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .concept-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .concept-type {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Main Showcase Canvas */
+    .showcase-stage {
+      background: #000;
+      border: 1px solid #1a2233;
+      border-radius: 16px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .showcase-stage.light {
+      background: #ffffff;
+      border-color: #e2e8f0;
+      color: #000;
+    }
+
+    .showcase-stage svg {
+      width: 120px;
+      height: 120px;
+      transition: transform 0.3s ease;
+    }
+
+    .showcase-stage:hover svg {
+      transform: scale(1.05);
+    }
+
+    .idea-box {
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .idea-box strong {
+      color: #fff;
+    }
+
+    /* Scale Ladder */
+    .scale-test {
+      margin-top: auto;
+      border-top: 1px solid var(--card-border);
+      padding-top: 16px;
+    }
+
+    .scale-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .scale-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      background: #05070a;
+      padding: 14px;
+      border-radius: 12px;
+    }
+
+    .scale-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scale-label {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    /* Real Context Mockups Section */
+    .context-section {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 36px;
+      margin-bottom: 56px;
+    }
+
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .mockup-card {
+      background: #07090e;
+      border: 1px solid #1a2233;
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .mockup-header {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    /* Navbar Simulation */
+    .nav-sim {
+      background: #0f141d;
+      border: 1px solid #1e283d;
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.3px;
+    }
+
+    /* App Icon Simulation */
+    .app-icon-sim {
+      width: 72px;
+      height: 72px;
+      border-radius: 18px;
+      background: #161d2b;
+      border: 1px solid #28344d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .app-icon-sim.gradient {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Spool Brand Identity</span>
+      <h1>Spool Logo Redesign Concepts</h1>
+      <p class="subtitle">
+        Evaluated against the core identity criteria: instant recognition at 16px, geometric craft, strong narrative link to threads and social velocity, and timeless simplicity.
+      </p>
+    </header>
+
+    <div class="concepts-grid">
+      <!-- CONCEPT A -->
+      <div class="concept-card recommended">
+        <span class="rec-tag">Recommended</span>
+        <div class="concept-header">
+          <div class="concept-letter">Concept A</div>
+          <div class="concept-title">The Filament Loop</div>
+          <div class="concept-type">Letterform "S" &amp; Spool Spindle Core</div>
+        </div>
+
+        <div class="showcase-stage" style="color: #38bdf8;">
+          <svg viewBox="0 0 256 256">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="128" cy="80" r="15" fill="currentColor" stroke="none" />
+              <circle cx="128" cy="176" r="15" fill="currentColor" stroke="none" />
+              <path stroke-width="26" d="
+                M 186,88
+                C 186,52 160,26 128,26
+                C 96,26 70,52 70,84
+                C 70,116 98,134 128,142
+                C 158,150 186,168 186,200
+                C 186,232 160,258 128,258
+                C 96,258 70,232 70,200
+              "/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="idea-box">
+          <strong>Idea:</strong> A single continuous filament winding smoothly around two cylindrical spindle cores into an iconic, flowing "S".
+          <br><br>
+          <strong>Why it fits:</strong> Directly encodes "Thread" + "Spool" + "S". Clean, friendly, scalable down to 16px without losing any structural detail.
+        </div>
+
+        <div class="scale-test">
+          <div class="scale-title">Optical Scale Ladder</div>
+          <div class="scale-row">
+            <div class="scale-item">
+              <div style="width: 16px; height: 16px; color: #38bdf8;">
+                <svg viewBox="0 0 256 256" width="16" height="16">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="80" r="16" fill="currentColor" stroke="none"/><circle cx="128" cy="176" r="16" fill="currentColor" stroke="none"/><path stroke-width="32" d="M 186,88 C 186,52 160,26 128,26 C 96,26 70,52 70,84 C 70,116 98,134 128,142 C 158,150 186,168 186,200 C 186,232 160,258 128,258 C 96,258 70,232 70,200"/></g>
+                </svg>
+              </div>
+              <span class="scale-label">16px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 24px; height: 24px; color: #38bdf8;">
+                <svg viewBox="0 0 256 256" width="24" height="24">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="80" r="15" fill="currentColor" stroke="none"/><circle cx="128" cy="176" r="15" fill="currentColor" stroke="none"/><path stroke-width="28" d="M 186,88 C 186,52 160,26 128,26 C 96,26 70,52 70,84 C 70,116 98,134 128,142 C 158,150 186,168 186,200 C 186,232 160,258 128,258 C 96,258 70,232 70,200"/></g>
+                </svg>
+              </div>
+              <span class="scale-label">24px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 32px; height: 32px; color: #38bdf8;">
+                <svg viewBox="0 0 256 256" width="32" height="32">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="80" r="15" fill="currentColor" stroke="none"/><circle cx="128" cy="176" r="15" fill="currentColor" stroke="none"/><path stroke-width="26" d="M 186,88 C 186,52 160,26 128,26 C 96,26 70,52 70,84 C 70,116 98,134 128,142 C 158,150 186,168 186,200 C 186,232 160,258 128,258 C 96,258 70,232 70,200"/></g>
+                </svg>
+              </div>
+              <span class="scale-label">32px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 48px; height: 48px; color: #38bdf8;">
+                <svg viewBox="0 0 256 256" width="48" height="48">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="80" r="15" fill="currentColor" stroke="none"/><circle cx="128" cy="176" r="15" fill="currentColor" stroke="none"/><path stroke-width="26" d="M 186,88 C 186,52 160,26 128,26 C 96,26 70,52 70,84 C 70,116 98,134 128,142 C 158,150 186,168 186,200 C 186,232 160,258 128,258 C 96,258 70,232 70,200"/></g>
+                </svg>
+              </div>
+              <span class="scale-label">48px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCEPT B -->
+      <div class="concept-card">
+        <div class="concept-header">
+          <div class="concept-letter">Concept B</div>
+          <div class="concept-title">The Spool Vortex</div>
+          <div class="concept-type">Geometric Abstract &amp; Rotational Energy</div>
+        </div>
+
+        <div class="showcase-stage" style="color: #60a5fa;">
+          <svg viewBox="0 0 256 256">
+            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="128" cy="128" r="20" fill="currentColor" stroke="none" />
+              <path stroke-width="26" d="
+                M 56,128
+                A 72,72 0 0,1 200,128
+                C 200,168 168,198 128,198
+                C 98,198 74,178 74,152
+              "/>
+              <path stroke-width="26" d="
+                M 200,128
+                A 72,72 0 0,1 56,128
+                C 56,88 88,58 128,58
+                C 158,58 182,78 182,104
+              "/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="idea-box">
+          <strong>Idea:</strong> Overhead perspective of a spool with dual sweeping thread wings winding around a central spindle in perpetual rotation.
+          <br><br>
+          <strong>Why it fits:</strong> High kinetic energy, broadcasts the idea of sharing, active feed circulation, and community discourse.
+        </div>
+
+        <div class="scale-test">
+          <div class="scale-title">Optical Scale Ladder</div>
+          <div class="scale-row">
+            <div class="scale-item">
+              <div style="width: 16px; height: 16px; color: #60a5fa;">
+                <svg viewBox="0 0 256 256" width="16" height="16">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="128" r="22" fill="currentColor" stroke="none"/><path stroke-width="32" d="M 56,128 A 72,72 0 0,1 200,128 C 200,168 168,198 128,198 C 98,198 74,178 74,152"/><path stroke-width="32" d="M 200,128 A 72,72 0 0,1 56,128 C 56,88 88,58 128,58 C 158,58 182,78 182,104"/></g>
+                </svg>
+              </div>
+              <span class="scale-label">16px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 24px; height: 24px; color: #60a5fa;">
+                <svg viewBox="0 0 256 256" width="24" height="24">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="128" r="20" fill="currentColor" stroke="none"/><path stroke-width="28" d="M 56,128 A 72,72 0 0,1 200,128 C 200,168 168,198 128,198 C 98,198 74,178 74,152"/><path stroke-width="28" d="M 200,128 A 72,72 0 0,1 56,128 C 56,88 88,58 128,58 C 158,58 182,78 182,104"/></g>
+                </svg>
+              </div>
+              <span class="scale-label">24px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 32px; height: 32px; color: #60a5fa;">
+                <svg viewBox="0 0 256 256" width="32" height="32">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="128" r="20" fill="currentColor" stroke="none"/><path stroke-width="26" d="M 56,128 A 72,72 0 0,1 200,128 C 200,168 168,198 128,198 C 98,198 74,178 74,152"/><path stroke-width="26" d="M 200,128 A 72,72 0 0,1 56,128 C 56,88 88,58 128,58 C 158,58 182,78 182,104"/></g>
+                </svg>
+              </div>
+              <span class="scale-label">32px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 48px; height: 48px; color: #60a5fa;">
+                <svg viewBox="0 0 256 256" width="48" height="48">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="128" r="20" fill="currentColor" stroke="none"/><path stroke-width="26" d="M 56,128 A 72,72 0 0,1 200,128 C 200,168 168,198 128,198 C 98,198 74,178 74,152"/><path stroke-width="26" d="M 200,128 A 72,72 0 0,1 56,128 C 56,88 88,58 128,58 C 158,58 182,78 182,104"/></g>
+                </svg>
+              </div>
+              <span class="scale-label">48px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCEPT C -->
+      <div class="concept-card">
+        <div class="concept-header">
+          <div class="concept-letter">Concept C</div>
+          <div class="concept-title">The Interlaced Helix</div>
+          <div class="concept-type">Woven Monogram &amp; Dimensional Weave</div>
+        </div>
+
+        <div class="showcase-stage" style="color: #a78bfa;">
+          <svg viewBox="0 0 256 256">
+            <g fill="currentColor">
+              <path fill-rule="evenodd" d="
+                M 128,26
+                C 166.6,26 198,57.4 198,96
+                C 198,124.6 180.8,149.2 156.4,160
+                L 142.2,143
+                C 159.4,134.8 171.6,116.8 171.6,96
+                C 171.6,71.9 152.1,52.4 128,52.4
+                C 103.9,52.4 84.4,71.9 84.4,96
+                C 84.4,106.8 88.3,116.7 94.8,124.4
+                L 74.4,141.2
+                C 64.1,128.8 58,113.1 58,96
+                C 58,57.4 89.4,26 128,26
+                Z
+              "/>
+              <path d="M 76,82 L 180,174 L 162,194 L 58,102 Z"/>
+              <path fill-rule="evenodd" d="
+                M 128,230
+                C 89.4,230 58,198.6 58,160
+                C 58,131.4 75.2,106.8 99.6,96
+                L 113.8,113
+                C 96.6,121.2 84.4,139.2 84.4,160
+                C 84.4,184.1 103.9,203.6 128,203.6
+                C 152.1,203.6 171.6,184.1 171.6,160
+                C 171.6,149.2 167.7,139.3 161.2,131.6
+                L 181.6,114.8
+                C 191.9,127.2 198,142.9 198,160
+                C 198,198.6 166.6,230 128,230
+                Z
+              "/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="idea-box">
+          <strong>Idea:</strong> Two interlaced thread ribbons crossing over each other, creating depth and a tactile textile weave that forms an "S".
+          <br><br>
+          <strong>Why it fits:</strong> Represents two voices or dialogue threads interweaving. Strong physical presence, architectural silhouette.
+        </div>
+
+        <div class="scale-test">
+          <div class="scale-title">Optical Scale Ladder</div>
+          <div class="scale-row">
+            <div class="scale-item">
+              <div style="width: 16px; height: 16px; color: #a78bfa;">
+                <svg viewBox="0 0 256 256" width="16" height="16">
+                  <path fill="currentColor" d="M128 30 C160 30 190 60 190 95 C190 120 175 140 155 150 L140 135 C155 128 165 112 165 95 C165 75 148 60 128 60 C108 60 91 75 91 95 L65 95 C65 60 95 30 128 30 Z M70 85 L186 171 L168 189 L52 103 Z M128 226 C95 226 65 196 65 161 C65 136 80 116 100 106 L115 121 C100 128 90 144 90 161 C90 181 107 196 128 196 C148 196 165 181 165 161 L191 161 C191 196 161 226 128 226 Z"/>
+                </svg>
+              </div>
+              <span class="scale-label">16px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 24px; height: 24px; color: #a78bfa;">
+                <svg viewBox="0 0 256 256" width="24" height="24">
+                  <path fill="currentColor" d="M128 30 C160 30 190 60 190 95 C190 120 175 140 155 150 L140 135 C155 128 165 112 165 95 C165 75 148 60 128 60 C108 60 91 75 91 95 L65 95 C65 60 95 30 128 30 Z M70 85 L186 171 L168 189 L52 103 Z M128 226 C95 226 65 196 65 161 C65 136 80 116 100 106 L115 121 C100 128 90 144 90 161 C90 181 107 196 128 196 C148 196 165 181 165 161 L191 161 C191 196 161 226 128 226 Z"/>
+                </svg>
+              </div>
+              <span class="scale-label">24px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 32px; height: 32px; color: #a78bfa;">
+                <svg viewBox="0 0 256 256" width="32" height="32">
+                  <path fill="currentColor" d="M128 30 C160 30 190 60 190 95 C190 120 175 140 155 150 L140 135 C155 128 165 112 165 95 C165 75 148 60 128 60 C108 60 91 75 91 95 L65 95 C65 60 95 30 128 30 Z M70 85 L186 171 L168 189 L52 103 Z M128 226 C95 226 65 196 65 161 C65 136 80 116 100 106 L115 121 C100 128 90 144 90 161 C90 181 107 196 128 196 C148 196 165 181 165 161 L191 161 C191 196 161 226 128 226 Z"/>
+                </svg>
+              </div>
+              <span class="scale-label">32px</span>
+            </div>
+            <div class="scale-item">
+              <div style="width: 48px; height: 48px; color: #a78bfa;">
+                <svg viewBox="0 0 256 256" width="48" height="48">
+                  <path fill="currentColor" d="M128 30 C160 30 190 60 190 95 C190 120 175 140 155 150 L140 135 C155 128 165 112 165 95 C165 75 148 60 128 60 C108 60 91 75 91 95 L65 95 C65 60 95 30 128 30 Z M70 85 L186 171 L168 189 L52 103 Z M128 226 C95 226 65 196 65 161 C65 136 80 116 100 106 L115 121 C100 128 90 144 90 161 C90 181 107 196 128 196 C148 196 165 181 165 161 L191 161 C191 196 161 226 128 226 Z"/>
+                </svg>
+              </div>
+              <span class="scale-label">48px</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UI CONTEXTS -->
+    <div class="context-section">
+      <div class="section-title">In Real Application Contexts</div>
+      <div class="section-desc">Testing the marks inside Spool's actual web interface (desktop navbar and app icon).</div>
+
+      <div class="mockup-grid">
+        <!-- Mockup A -->
+        <div class="mockup-card">
+          <div class="mockup-header">Concept A in Navbar</div>
+          <div class="nav-sim">
+            <div class="nav-brand">
+              <div style="width: 28px; height: 28px; color: #fff;">
+                <svg viewBox="0 0 256 256" width="28" height="28">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="80" r="15" fill="currentColor" stroke="none"/><circle cx="128" cy="176" r="15" fill="currentColor" stroke="none"/><path stroke-width="26" d="M 186,88 C 186,52 160,26 128,26 C 96,26 70,52 70,84 C 70,116 98,134 128,142 C 158,150 186,168 186,200 C 186,232 160,258 128,258 C 96,258 70,232 70,200"/></g>
+                </svg>
+              </div>
+              <span>Spool</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">Home</div>
+          </div>
+          <div style="text-align: center; margin-top: 24px;">
+            <div class="app-icon-sim gradient">
+              <div style="width: 44px; height: 44px; color: #fff;">
+                <svg viewBox="0 0 256 256" width="44" height="44">
+                  <g fill="none" stroke="#fff" stroke-linecap="round"><circle cx="128" cy="80" r="15" fill="#fff" stroke="none"/><circle cx="128" cy="176" r="15" fill="#fff" stroke="none"/><path stroke-width="26" d="M 186,88 C 186,52 160,26 128,26 C 96,26 70,52 70,84 C 70,116 98,134 128,142 C 158,150 186,168 186,200 C 186,232 160,258 128,258 C 96,258 70,232 70,200"/></g>
+                </svg>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">App Icon (iOS / macOS)</div>
+          </div>
+        </div>
+
+        <!-- Mockup B -->
+        <div class="mockup-card">
+          <div class="mockup-header">Concept B in Navbar</div>
+          <div class="nav-sim">
+            <div class="nav-brand">
+              <div style="width: 28px; height: 28px; color: #fff;">
+                <svg viewBox="0 0 256 256" width="28" height="28">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="128" r="20" fill="currentColor" stroke="none"/><path stroke-width="26" d="M 56,128 A 72,72 0 0,1 200,128 C 200,168 168,198 128,198 C 98,198 74,178 74,152"/><path stroke-width="26" d="M 200,128 A 72,72 0 0,1 56,128 C 56,88 88,58 128,58 C 158,58 182,78 182,104"/></g>
+                </svg>
+              </div>
+              <span>Spool</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">Home</div>
+          </div>
+          <div style="text-align: center; margin-top: 24px;">
+            <div class="app-icon-sim" style="background: #000; border-color: #27272a;">
+              <div style="width: 44px; height: 44px; color: #38bdf8;">
+                <svg viewBox="0 0 256 256" width="44" height="44">
+                  <g fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="128" cy="128" r="20" fill="currentColor" stroke="none"/><path stroke-width="26" d="M 56,128 A 72,72 0 0,1 200,128 C 200,168 168,198 128,198 C 98,198 74,178 74,152"/><path stroke-width="26" d="M 200,128 A 72,72 0 0,1 56,128 C 56,88 88,58 128,58 C 158,58 182,78 182,104"/></g>
+                </svg>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">App Icon (Dark AMOLED)</div>
+          </div>
+        </div>
+
+        <!-- Mockup C -->
+        <div class="mockup-card">
+          <div class="mockup-header">Concept C in Navbar</div>
+          <div class="nav-sim">
+            <div class="nav-brand">
+              <div style="width: 28px; height: 28px; color: #fff;">
+                <svg viewBox="0 0 256 256" width="28" height="28">
+                  <path fill="currentColor" d="M128 30 C160 30 190 60 190 95 C190 120 175 140 155 150 L140 135 C155 128 165 112 165 95 C165 75 148 60 128 60 C108 60 91 75 91 95 L65 95 C65 60 95 30 128 30 Z M70 85 L186 171 L168 189 L52 103 Z M128 226 C95 226 65 196 65 161 C65 136 80 116 100 106 L115 121 C100 128 90 144 90 161 C90 181 107 196 128 196 C148 196 165 181 165 161 L191 161 C191 196 161 226 128 226 Z"/>
+                </svg>
+              </div>
+              <span>Spool</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">Home</div>
+          </div>
+          <div style="text-align: center; margin-top: 24px;">
+            <div class="app-icon-sim" style="background: linear-gradient(135deg, #18181b 0%, #09090b 100%); border-color: #3f3f46;">
+              <div style="width: 44px; height: 44px; color: #a78bfa;">
+                <svg viewBox="0 0 256 256" width="44" height="44">
+                  <path fill="currentColor" d="M128 30 C160 30 190 60 190 95 C190 120 175 140 155 150 L140 135 C155 128 165 112 165 95 C165 75 148 60 128 60 C108 60 91 75 91 95 L65 95 C65 60 95 30 128 30 Z M70 85 L186 171 L168 189 L52 103 Z M128 226 C95 226 65 196 65 161 C65 136 80 116 100 106 L115 121 C100 128 90 144 90 161 C90 181 107 196 128 196 C148 196 165 181 165 161 L191 161 C191 196 161 226 128 226 Z"/>
+                </svg>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">App Icon (Minimal Dark)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

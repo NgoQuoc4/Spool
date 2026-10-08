@@ -1,12 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 interface ToastProps {
   message: string | null;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 export const Toast: React.FC<ToastProps> = ({ message }) => {
-  if (!message) return null;
+  const [currentMessage, setCurrentMessage] = useState<string | null>(message);
+  const [isExiting, setIsExiting] = useState(false);
+
+  useEffect(() => {
+    if (message) {
+      setCurrentMessage(message);
+      setIsExiting(false);
+    } else if (currentMessage) {
+      setIsExiting(true);
+      const timer = setTimeout(() => {
+        setCurrentMessage(null);
+        setIsExiting(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [message]);
+
+  if (!currentMessage) return null;
 
   return (
     <div
@@ -26,11 +43,14 @@ export const Toast: React.FC<ToastProps> = ({ message }) => {
         display: "flex",
         alignItems: "center",
         gap: "8px",
-        animation: "fadeIn 0.2s ease-out",
+        pointerEvents: "none",
+        animation: isExiting
+          ? "toastOut 0.2s ease-in forwards"
+          : "toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards",
       }}
     >
       <span>✓</span>
-      <span>{message}</span>
+      <span>{currentMessage}</span>
     </div>
   );
 };

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@1,800&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; gap: 40px; font-family: sans-serif; }
+    .box { border: 1px solid #222; padding: 24px 32px; border-radius: 12px; background: #0a0a0a; width: 600px; text-align: center; }
+    .box.light { background: #fff; color: #000; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div style="font-size: 12px; color: #888; margin-bottom: 12px;">Dark Theme Lockup</div>
+    <svg viewBox="0 0 1100 300" width="100%" height="auto" fill="currentColor">
+      <!-- Spool Vortex Mark on Left -->
+      <g transform="translate(30, 20) scale(1.0)" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="130" cy="130" r="22" fill="currentColor" stroke="none" />
+        <path stroke-width="28" d="M 52,130 A 78,78 0 0,1 208,130 C 208,172 174,204 130,204 C 98,204 72,182 72,154" />
+        <path stroke-width="28" d="M 208,130 A 78,78 0 0,1 52,130 C 52,88 86,56 130,56 C 162,56 188,78 188,106" />
+      </g>
+      <!-- Wordmark "spool" with Italic Dynamic Slant matching Threads aesthetic -->
+      <text x="330" y="215" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="185" font-weight="800" font-style="italic" letter-spacing="-4">spool</text>
+    </svg>
+  </div>
+
+  <div class="box light">
+    <div style="font-size: 12px; color: #666; margin-bottom: 12px;">Light Theme Lockup</div>
+    <svg viewBox="0 0 1100 300" width="100%" height="auto" fill="currentColor">
+      <g transform="translate(30, 20) scale(1.0)" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="130" cy="130" r="22" fill="currentColor" stroke="none" />
+        <path stroke-width="28" d="M 52,130 A 78,78 0 0,1 208,130 C 208,172 174,204 130,204 C 98,204 72,182 72,154" />
+        <path stroke-width="28" d="M 208,130 A 78,78 0 0,1 52,130 C 52,88 86,56 130,56 C 162,56 188,78 188,106" />
+      </g>
+      <text x="330" y="215" font-family="'Plus Jakarta Sans', system-ui, -apple-system, sans-serif" font-size="185" font-weight="800" font-style="italic" letter-spacing="-4">spool</text>
+    </svg>
+  </div>
+</body>
+</html>

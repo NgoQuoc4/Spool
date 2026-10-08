@@ -2,10 +2,11 @@ import { CreateThreadModal } from "@/components/CreateThreadModal";
 import { PlusIcon } from "@/components/Icons";
 import { Navbar } from "@/components/Navbar";
 import { Toast } from "@/components/Toast";
-import { CURRENT_USER } from "@/mockData";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface LayoutContextType {
   showToast: (msg: string) => void;
@@ -13,21 +14,22 @@ export interface LayoutContextType {
 }
 
 const MainLayout = () => {
-  const { isModalOpen, setIsModalOpen, showToast, toastMessage } = useApp();
+  const { profile } = useAuth();
+  const queryClient = useQueryClient();
+  const {
+    isModalOpen,
+    setIsModalOpen,
+    showToast,
+    toastMessage,
+    theme,
+    toggleTheme,
+  } = useApp();
   const [activeNavTab, setActiveNavTab] = useState<string>("forYou");
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   // Apply theme to document
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
   const handlePostCreated = () => {
-    showToast("Spool posted successfully");
+    queryClient.invalidateQueries({ queryKey: ["tweets"] });
+    showToast("Đã đăng bài!");
   };
   return (
     <div className="app-container">
@@ -38,12 +40,14 @@ const MainLayout = () => {
         openCreateModal={() => setIsModalOpen(true)}
         theme={theme}
         toggleTheme={toggleTheme}
-        currentUser={CURRENT_USER}
+        currentUser={profile}
       />
 
       <main className="main-content">
-        {/* Outlet là nơi render các page như Home, Profile */}
-        <Outlet context={{ showToast, setIsModalOpen }} />
+        <div className="content-area">
+          {/* Outlet là nơi render các page như Home, Profile */}
+          <Outlet context={{ showToast, setIsModalOpen }} />
+        </div>
       </main>
 
       {/* Button add new post ở góc phải dưới */}
@@ -60,7 +64,6 @@ const MainLayout = () => {
       <CreateThreadModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        currentUser={CURRENT_USER}
         onPostCreated={handlePostCreated}
       />
       {/* Toast Notification */}

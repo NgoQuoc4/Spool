@@ -1,13 +1,14 @@
-import http from './http';
-import { ENDPOINTS } from '@/constants/endpoints';
-import type { Tweet, CreateTweetBody } from '@/types/tweet.types';
+import http from "./http";
+import { ENDPOINTS } from "@/constants/endpoints";
+import type { Tweet, CreateTweetBody } from "@/types/tweet.types";
 
 interface TweetsQuery {
   limit?: number;
   page?: number;
+  author_id?: string;
 }
 
-interface TweetsResponse {
+export interface TweetsResponse {
   message: string;
   result: {
     tweets: Tweet[];
@@ -26,4 +27,9 @@ export const tweetsApi = {
 
   createTweet: (body: CreateTweetBody) =>
     http.post<{ message: string; result: Tweet }>(ENDPOINTS.CREATE_TWEET, body),
+
+  deleteTweet: (tweet_id: string) =>
+    http.delete<{ message: string; result: Tweet }>(
+      ENDPOINTS.DELETE_TWEET(tweet_id),
+    ),
 };

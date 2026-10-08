@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { CommentIcon, HeartIcon, RepostIcon, ShareIcon } from "../Icons";
+import {
+  BookmarkIcon,
+  CommentIcon,
+  HeartIcon,
+  RepostIcon,
+  ShareIcon,
+} from "../Icons";
 import type { ThreadPost } from "@/types";
 
 const ActionSpool = ({
@@ -7,12 +13,14 @@ const ActionSpool = ({
   post,
   onRepostToggle,
   onShare,
+  onBookmark,
 }: {
   rIdx?: number;
   post: ThreadPost;
   onLikeToggle: (id: string) => void;
   onRepostToggle: (id: string) => void;
   onShare: (post: ThreadPost) => void;
+  onBookmark: (post: ThreadPost) => void;
 }) => {
   const [showReplyBox, setShowReplyBox] = useState(false);
 
@@ -70,6 +78,19 @@ const ActionSpool = ({
           title="Repost"
         >
           <RepostIcon size={20} active={post.isReposted} />
+        </button>
+        {/* Bookmark button */}
+        <button
+          onClick={() => onBookmark(post)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "4px",
+          }}
+          title="Bookmark"
+        >
+          <BookmarkIcon size={20} active={post.isBookmarked} />
         </button>
 
         {/* Share button */}

@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { CloseIcon } from "../Icons";
 
 interface SpoolsSliderProps {
   images: string[];
@@ -6,6 +7,7 @@ interface SpoolsSliderProps {
   alt?: string;
   maxHeight?: string;
   onImageClick?: (index: number) => void;
+  handleRemoveImage?: (index: number) => void;
 }
 
 export const SpoolsSlider: React.FC<SpoolsSliderProps> = ({
@@ -14,6 +16,7 @@ export const SpoolsSlider: React.FC<SpoolsSliderProps> = ({
   alt = "Post media",
   maxHeight = "440px",
   onImageClick,
+  handleRemoveImage,
 }) => {
   const sliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -29,7 +32,7 @@ export const SpoolsSlider: React.FC<SpoolsSliderProps> = ({
     hasDragged.current = false;
     startX.current = e.pageX - sliderRef.current.offsetLeft;
     scrollLeft.current = sliderRef.current.scrollLeft;
-    setIsDragging(true);
+    // setIsDragging(true);
   };
 
   const handleMouseLeave = () => {
@@ -49,6 +52,7 @@ export const SpoolsSlider: React.FC<SpoolsSliderProps> = ({
     const walk = (x - startX.current) * 1.4; // Multiplier for smooth drag speed
     if (Math.abs(x - startX.current) > 4) {
       hasDragged.current = true;
+      if (!isDragging) setIsDragging(true);
     }
     sliderRef.current.scrollLeft = scrollLeft.current - walk;
   };
@@ -88,10 +92,36 @@ export const SpoolsSlider: React.FC<SpoolsSliderProps> = ({
           loading="lazy"
           onClick={() => onImageClick?.(0)}
         />
+        {handleRemoveImage && (
+          <button
+            type="button"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRemoveImage(0);
+            }}
+            style={{
+              position: "absolute",
+              top: "6px",
+              right: "6px",
+              backgroundColor: "rgba(0, 0, 0, 0.65)",
+              color: "#fff",
+              borderRadius: "50%",
+              padding: "5px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "none",
+              cursor: "pointer",
+            }}
+            title="Xóa ảnh này"
+          >
+            <CloseIcon size={14} />
+          </button>
+        )}
       </div>
     );
   }
-
   // Multi-image horizontal scroll view with mouse drag-to-scroll
   return (
     <div
@@ -124,7 +154,8 @@ export const SpoolsSlider: React.FC<SpoolsSliderProps> = ({
             overflow: "hidden",
             border: "1px solid var(--border-color)",
             backgroundColor: "var(--bg-card)",
-            pointerEvents: isDragging ? "none" : "auto",
+            cursor: onImageClick ? "pointer" : "default",
+            position: "relative",
           }}
         >
           <img
@@ -141,6 +172,33 @@ export const SpoolsSlider: React.FC<SpoolsSliderProps> = ({
             }}
             loading="lazy"
           />
+          {handleRemoveImage && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRemoveImage(idx);
+              }}
+              style={{
+                position: "absolute",
+                top: "6px",
+                right: "6px",
+                backgroundColor: "rgba(0, 0, 0, 0.65)",
+                color: "#fff",
+                borderRadius: "50%",
+                padding: "5px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: "none",
+                cursor: "pointer",
+              }}
+              title="Xóa ảnh này"
+            >
+              <CloseIcon size={14} />
+            </button>
+          )}
         </div>
       ))}
     </div>

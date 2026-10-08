@@ -31,3 +31,7 @@ uploads/
 .idea/
 .DS_Store
 Thumbs.db
+
+# AI Agents & Skills
+.agents/
+

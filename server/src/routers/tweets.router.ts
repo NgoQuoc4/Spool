@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createTweetController,
+  deleteTweetController,
   getAllTweetController,
   getTweetController,
 } from "~/controllers/tweets.controller";
@@ -27,6 +28,21 @@ tweetsRouter.post(
   accessTokenValidator,
   createTweetValidator,
   wrapAsync(createTweetController),
+);
+
+/*
+ * Description, create a new tweet
+ * Path: /tweets/create-tweet
+ * Method: POST
+ * Header: {Authorization: Bearer <access_token>}
+ * Body: {content: string, type: string, parent_id: string (tweet_id gốc), quoted_tweet_id: string}
+ * Response: {message: string, result: {user: User}}
+ */
+tweetsRouter.delete(
+  "/delete-tweet/:tweet_id",
+  accessTokenValidator,
+  tweetValidator,
+  wrapAsync(deleteTweetController),
 );
 
 /*
