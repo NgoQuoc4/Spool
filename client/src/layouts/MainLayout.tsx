@@ -1,5 +1,4 @@
 import { CreateThreadModal } from "@/components/CreateThreadModal";
-import { PlusIcon } from "@/components/Icons";
 import { Navbar } from "@/components/Navbar";
 import { Toast } from "@/components/Toast";
 import { useState } from "react";
@@ -40,14 +39,14 @@ const MainLayout = () => {
       </main>
 
       {/* Button add new post ở góc phải dưới */}
-      <button
+      {/* <button
         className="floating-create-btn"
         onClick={() => setIsModalOpen(true)}
         title="New spool (+)"
         aria-label="New spool"
       >
         <PlusIcon size={22} />
-      </button>
+      </button> */}
 
       {/* Modal để thêm bài post */}
       <CreateThreadModal />

@@ -39,31 +39,53 @@ const io = new Server(httpServer, {
   },
 });
 
-interface Message {
-  to: string;
-  message: string;
+interface MessagePayload {
+  to: string; // id người nhận
+  from: string; // id người gửi
+  message: string; // nội dung tin nhắn
+  username?: string;
 }
-const users: {
-  [key: string]: {
-    socket_id: string;
-  };
-} = {};
-io.on("connection", (socket: any) => {
-  console.log("connect", socket.id); // x8WIv7-mJelg7on_ALbx
-  const user_id = socket.handshake.auth.id;
-  users[user_id] = socket.id;
+// Lưu ý: Type của users là Record<string, string> vì bạn gán users[user_id] = socket.id
+const users: Record<string, string> = {};
 
-  socket.on("chat-message", (data: Message) => {
-    // socket.emit("send-chat-message", data);
-    const user_socket_id = users[data.to];
-    if (user_socket_id) {
-      socket.to(user_socket_id).emit("send-chat-message", data);
+io.on("connection", (socket: any) => {
+  console.log("connect", socket.id);
+  const user_id = socket.handshake.auth.id;
+  if (user_id) {
+    users[user_id] = socket.id;
+  }
+
+  //  nhận tin nhắn từ client qua "chat-message"
+  socket.on("send-chat-message", async (data: MessagePayload) => {
+    try {
+      const savedMessage = await prisma.message.create({
+        data: {
+          sender_id: data.from,
+          receiver_id: data.to,
+          content: data.message,
+        },
+      });
+      // 2. Gửi realtime cho người nhận (nếu người nhận đang online)
+      const receiver_socket_id = users[data.to];
+      // gửi tin nhắn tới user khác qua event "send-chat-message"
+      if (receiver_socket_id) {
+        socket.to(receiver_socket_id).emit("receive-chat-message", {
+          id: savedMessage.id,
+          from: savedMessage.sender_id,
+          to: savedMessage.receiver_id,
+          message: savedMessage.content,
+          created_at: savedMessage.created_at,
+          username: data.username,
+        });
+      }
+    } catch (error) {
+      console.error("Lỗi khi lưu tin nhắn:", error);
     }
   });
 
   socket.on("disconnect", () => {
     delete users[user_id];
-    console.log("disconnect", socket.id); // x8WIv7-mJelg7on_ALbx
+    console.log("disconnect", socket.id);
   });
 });
 

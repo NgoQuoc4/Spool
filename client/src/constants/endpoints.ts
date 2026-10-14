@@ -14,6 +14,11 @@ export const ENDPOINTS = {
   RESET_PASSWORD: "/user/reset-password",
   CHANGE_PASSWORD: "/user/change-password",
   OAUTH_GOOGLE: "/user/oauth/google",
+  FOLLOWING: (userid: string) => `/user/${userid}/following`,
+  FOLLOWERS: (userid: string) => `/user/${userid}/followers`,
+  CONVERSATIONS_MESSAGES: (receiver_id: string) =>
+    `/user/conversations/${receiver_id}/messages`,
+  CONVERSATIONS: "/user/conversations",
   // User
   ME: "/user/me",
   PROFILE: (username: string) => `/user/${username}`,

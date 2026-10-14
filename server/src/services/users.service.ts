@@ -443,6 +443,108 @@ class UsersService {
     });
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
+
+  async following(userid: string) {
+    const result = await prisma.follow.findMany({
+      where: { user_id: userid },
+      select: {
+        followed_user_id: true,
+        followed_user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    const formattedResult = result.map((item) => ({
+      followed_user_id: item.followed_user_id,
+      id: item.followed_user.id,
+      name: item.followed_user.name,
+      username: item.followed_user.username,
+      avatar: item.followed_user.avatar,
+    }));
+
+    return formattedResult;
+  }
+
+  async getMessages(
+    sender_id: string,
+    receiver_id: string,
+    limit = 50,
+    cursor?: string,
+  ) {
+    const messages = await prisma.message.findMany({
+      take: -limit,
+      ...(cursor && {
+        skip: 1, // Bỏ qua chính cái tin nhắn cursor
+        cursor: {
+          id: cursor,
+        },
+      }),
+      where: {
+        OR: [
+          { sender_id: sender_id, receiver_id: receiver_id },
+          { sender_id: receiver_id, receiver_id: sender_id },
+        ],
+      },
+      orderBy: {
+        created_at: "asc", // Tin nhắn cũ ở trên, mới ở dưới
+      },
+    });
+    return messages;
+  }
+
+  // Lấy danh sách các cuộc hội thoại (những người đã từng nhắn tin)
+  // Query từ bảng Message, trả về thông tin user kèm tin nhắn gần nhất
+  async getConversations(user_id: string) {
+    // Lấy tất cả tin nhắn liên quan đến user, nhóm theo cặp (sender, receiver)
+    // rồi lấy tin nhắn mới nhất của mỗi cặp
+    const messages = await prisma.message.findMany({
+      where: {
+        OR: [{ sender_id: user_id }, { receiver_id: user_id }],
+      },
+      orderBy: { created_at: "desc" },
+      select: {
+        id: true,
+        sender_id: true,
+        receiver_id: true,
+        content: true,
+        created_at: true,
+        sender: { select: { id: true, name: true, username: true, avatar: true } },
+        receiver: { select: { id: true, name: true, username: true, avatar: true } },
+      },
+    });
+
+    // Deduplicate: mỗi cặp người dùng chỉ giữ tin nhắn mới nhất
+    const seen = new Set<string>();
+    const conversations: typeof messages = [];
+
+    for (const msg of messages) {
+      // Tạo key không phụ thuộc thứ tự (A-B == B-A)
+      const pair = [msg.sender_id, msg.receiver_id].sort().join("-");
+      if (seen.has(pair)) continue;
+      seen.add(pair);
+      conversations.push(msg);
+    }
+
+    // Map thành dạng frontend cần: contact user + last message
+    return conversations.map((msg) => {
+      const isISender = msg.sender_id === user_id;
+      const contact = isISender ? msg.receiver : msg.sender;
+      return {
+        user_id: contact.id,
+        name: contact.name,
+        username: contact.username,
+        avatar: contact.avatar,
+        lastMessage: msg.content,
+        lastMessageAt: msg.created_at,
+      };
+    });
+  }
 }
 
 const usersService = new UsersService();

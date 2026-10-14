@@ -17,7 +17,10 @@ import {
   changePasswordController,
   followUserController,
   forgotPasswordController,
+  getConversationsController,
+  getFollowingController,
   getMeController,
+  getMessagesController,
   getUserByUsernameController,
   googleOauthController,
   loginController,
@@ -162,26 +165,6 @@ userRouter.patch(
   ]),
   wrapAsync(patchMeController),
 );
-/*
- * Description, patch user me
- * Path: /user/me
- * Method: PATCH
- * Body: {email: string, forgot_password_token: string}
- * Response: {message: string}
- */
-
-userRouter.get(
-  "/:username",
-  filterMiddleware<GetProfileReqParams>(["username"]),
-  wrapAsync(getUserByUsernameController),
-);
-/*
- * Description, get user by username
- * Path: /user/:username
- * Method: GET
- * Body: {username: string}
- * Response: {message: string, result: {user: User}}
- */
 
 userRouter.post(
   "/follow",
@@ -250,5 +233,66 @@ userRouter.post(
   refreshTokenValidator,
   wrapAsync(refreshTokenController),
 );
+
+/*
+ * Description, get conversations list (people I've chatted with)
+ * Path: /user/conversations
+ * Method: GET
+ * Header: {Authorization: Bearer <access_token>}
+ * Response: {message: string, result: Conversation[]}
+ */
+userRouter.get(
+  "/conversations",
+  accessTokenValidator,
+  wrapAsync(getConversationsController),
+);
+
+/*
+ * Description, get messages
+ * Path: /user/conversations/:receiver_id/messages
+ * Method: GET
+ * Header: {Authorization: Bearer <access_token>}
+ * Response: {message: string, result: {messages: Message[]}}
+ */
+userRouter.get(
+  "/conversations/:receiver_id/messages",
+  accessTokenValidator,
+  wrapAsync(getMessagesController),
+);
+
+/*
+ * Description, followed user
+ * Path: /user/following
+ * Method: GET
+ * Header: {Authorization: Bearer <access_token>}
+ * Response: {message: string, result: {user: User}}
+ */
+
+userRouter.get(
+  "/:userid/following",
+  accessTokenValidator,
+  wrapAsync(getFollowingController),
+);
+
+/*
+ * Description, patch user me
+ * Path: /user/me
+ * Method: PATCH
+ * Body: {email: string, forgot_password_token: string}
+ * Response: {message: string}
+ */
+
+userRouter.get(
+  "/:username",
+  filterMiddleware<GetProfileReqParams>(["username"]),
+  wrapAsync(getUserByUsernameController),
+);
+/*
+ * Description, get user by username
+ * Path: /user/:username
+ * Method: GET
+ * Body: {username: string}
+ * Response: {message: string, result: {user: User}}
+ */
 
 export default userRouter;

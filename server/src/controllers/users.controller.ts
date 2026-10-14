@@ -213,3 +213,29 @@ export const refreshTokenController = async (
   const result = await usersService.refreshToken(user_id, refresh_token, exp);
   return res.status(200).json({ message: "Refresh token success", result });
 };
+
+export const getFollowingController = async (req: Request, res: Response) => {
+  const { userid } = req.params;
+  const result = await usersService.following(userid as string);
+  return res.status(200).json({ message: "Get following success", result });
+};
+
+export const getMessagesController = async (req: Request, res: Response) => {
+  const { user_id } = req.decoded_authorization as TokenPayload;
+  const { receiver_id } = req.params;
+  const { cursor, limit } = req.query;
+  const result = await usersService.getMessages(
+    user_id as string,
+    receiver_id as string,
+    limit ? Number(limit) : 50,
+    cursor ? (cursor as string) : undefined,
+  );
+  return res.status(200).json({ message: "Get messages success", result });
+};
+
+// Lấy danh sách các cuộc hội thoại của user đang đăng nhập
+export const getConversationsController = async (req: Request, res: Response) => {
+  const { user_id } = req.decoded_authorization as TokenPayload;
+  const result = await usersService.getConversations(user_id);
+  return res.status(200).json({ message: "Get conversations success", result });
+};

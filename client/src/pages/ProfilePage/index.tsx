@@ -4,6 +4,8 @@ import TopBar from "@/components/TopBar";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ThreadPost } from "@/types";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { PATH } from "@/constants/path";
 import { useTweets } from "@/hooks/useTweets";
 import { formatTweets } from "@/utils/tweet.helper";
 import { useTweetActions } from "@/hooks/useTweetActions";
@@ -24,6 +26,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   username: propUsername,
   columnId,
 }) => {
+  const navigate = useNavigate();
   const { setIsModalOpen, openEditProfileModal } = useAppStore();
   const {
     user: profile,
@@ -275,7 +278,18 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                       {localIsFollowing ? "Following" : "Follow"}
                     </button>
                     <button
-                      onClick={() => setIsModalOpen(true)}
+                      onClick={() => {
+                        if (profile?._id) {
+                          // Truyền thêm name, username để MessagesPage không phải gọi thêm API
+                          const params = new URLSearchParams({
+                            userId: profile._id,
+                            name: profile.name ?? "",
+                            username: profile.username ?? "",
+                            avatar: profile.avatar ?? "",
+                          });
+                          navigate(`/messages?${params.toString()}`);
+                        }
+                      }}
                       style={{
                         backgroundColor: "var(--bg-pill)",
                         color: "var(--text-main)",
@@ -285,6 +299,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                         fontSize: "13px",
                         border: "1px solid var(--border-color)",
                         width: "50%",
+                        cursor: "pointer",
                       }}
                     >
                       Message

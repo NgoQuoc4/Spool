@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" role="img" aria-label="Spool Introduction Banner">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#111c2e" stop-opacity="0.9" />
+      <stop offset="50%" stop-color="#0b0e14" stop-opacity="1" />
+      <stop offset="100%" stop-color="#05070a" stop-opacity="1" />
+    </radialGradient>
+
+    <!-- Cyan Ambient Orb -->
+    <radialGradient id="cyanOrb" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#38bdf8" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Indigo Ambient Orb -->
+    <radialGradient id="indigoOrb" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.16" />
+      <stop offset="100%" stop-color="#6366f1" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Spool Brand Gradient -->
+    <linearGradient id="spoolGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7dd3fc" />
+      <stop offset="45%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+
+    <!-- Glassmorphism Card Fill -->
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.06" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02" />
+    </linearGradient>
+
+    <linearGradient id="cardBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="35" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1920" height="1080" fill="url(#bgGlow)" />
+
+  <!-- Ambient Light Orbs -->
+  <circle cx="960" cy="460" r="480" fill="url(#cyanOrb)" />
+  <circle cx="1500" cy="300" r="400" fill="url(#indigoOrb)" />
+  <circle cx="360" cy="720" r="400" fill="url(#indigoOrb)" />
+
+  <!-- Decorative Minimal Grid Pattern -->
+  <g opacity="0.04" stroke="#ffffff" stroke-width="1">
+    <line x1="240" y1="0" x2="240" y2="1080" />
+    <line x1="480" y1="0" x2="480" y2="1080" />
+    <line x1="720" y1="0" x2="720" y2="1080" />
+    <line x1="960" y1="0" x2="960" y2="1080" />
+    <line x1="1200" y1="0" x2="1200" y2="1080" />
+    <line x1="1440" y1="0" x2="1440" y2="1080" />
+    <line x1="1680" y1="0" x2="1680" y2="1080" />
+    <line x1="0" y1="270" x2="1920" y2="270" />
+    <line x1="0" y1="540" x2="1920" y2="540" />
+    <line x1="0" y1="810" x2="1920" y2="810" />
+  </g>
+
+  <!-- Background Thread Conversation Bubble Cards (Atmospheric Depth) -->
+  <g opacity="0.5" transform="translate(1320, 180)">
+    <rect width="360" height="96" rx="20" fill="url(#cardGrad)" stroke="url(#cardBorder)" stroke-width="1" />
+    <circle cx="48" cy="48" r="18" fill="#38bdf8" fill-opacity="0.25" />
+    <rect x="80" y="36" width="160" height="10" rx="5" fill="#f8fafc" fill-opacity="0.6" />
+    <rect x="80" y="54" width="220" height="8" rx="4" fill="#94a3b8" fill-opacity="0.4" />
+  </g>
+
+  <g opacity="0.45" transform="translate(240, 720)">
+    <rect width="400" height="104" rx="20" fill="url(#cardGrad)" stroke="url(#cardBorder)" stroke-width="1" />
+    <circle cx="50" cy="52" r="18" fill="#6366f1" fill-opacity="0.25" />
+    <rect x="84" y="38" width="180" height="10" rx="5" fill="#f8fafc" fill-opacity="0.6" />
+    <rect x="84" y="58" width="260" height="8" rx="4" fill="#94a3b8" fill-opacity="0.4" />
+  </g>
+
+  <!-- Center Hero Brand Unit -->
+  <!-- Official Spool Vortex Symbol (Scale: 1.25) -->
+  <g transform="translate(680, 360)">
+    <!-- Symbol with Soft Glow -->
+    <g transform="translate(-150, -40) scale(1.1)" filter="url(#softGlow)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="128" cy="128" r="22" fill="#7dd3fc" stroke="none" />
+      <path stroke="url(#spoolGrad)" stroke-width="26" d="M 56,128 A 72,72 0 0,1 200,128 C 200,168 168,198 128,198 C 98,198 74,178 74,152" />
+      <path stroke="url(#spoolGrad)" stroke-width="26" d="M 200,128 A 72,72 0 0,1 56,128 C 56,88 88,58 128,58 C 158,58 182,78 182,104" />
+    </g>
+
+    <!-- Typography: "spool" -->
+    <text x="145" y="135" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', Inter, Roboto, sans-serif" font-size="140" font-weight="800" letter-spacing="-3">Spool</text>
+  </g>
+
+  <!-- Tagline -->
+  <text x="960" y="600" text-anchor="middle" fill="#cbd5e1" font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', Inter, sans-serif" font-size="34" font-weight="400" letter-spacing="0.5">
+    The next-generation social thread platform.
+  </text>
+
+  <!-- Feature Badge Pills Row -->
+  <g transform="translate(960, 680)" font-family="-apple-system, BlinkMacSystemFont, 'Plus Jakarta Sans', Inter, sans-serif" font-size="16" font-weight="500">
+    <!-- Pill 1: Dynamic Feeds -->
+    <g transform="translate(-330, 0)">
+      <rect x="-85" y="-18" width="170" height="38" rx="19" fill="#1e293b" fill-opacity="0.7" stroke="#334155" stroke-width="1" />
+      <text x="0" y="6" text-anchor="middle" fill="#94a3b8">⚡ Real-time Feeds</text>
+    </g>
+
+    <!-- Pill 2: Thread Discussions -->
+    <g transform="translate(-110, 0)">
+      <rect x="-95" y="-18" width="190" height="38" rx="19" fill="#1e293b" fill-opacity="0.7" stroke="#334155" stroke-width="1" />
+      <text x="0" y="6" text-anchor="middle" fill="#94a3b8">🧵 Thread Discussions</text>
+    </g>
+
+    <!-- Pill 3: Instant Search -->
+    <g transform="translate(120, 0)">
+      <rect x="-85" y="-18" width="170" height="38" rx="19" fill="#1e293b" fill-opacity="0.7" stroke="#334155" stroke-width="1" />
+      <text x="0" y="6" text-anchor="middle" fill="#94a3b8">🔍 Smart Search</text>
+    </g>
+
+    <!-- Pill 4: Open & Fast -->
+    <g transform="translate(325, 0)">
+      <rect x="-70" y="-18" width="140" height="38" rx="19" fill="#1e293b" fill-opacity="0.7" stroke="#334155" stroke-width="1" />
+      <text x="0" y="6" text-anchor="middle" fill="#94a3b8">✨ Fast &amp; Clean</text>
+    </g>
+  </g>
+</svg>

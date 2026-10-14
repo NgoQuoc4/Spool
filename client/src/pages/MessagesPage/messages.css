@@ -69,9 +69,10 @@
   align-items: center;
   gap: 10px;
   background-color: var(--bg-input);
-  padding: 8px 14px;
+  padding: 10px 16px;
   border-radius: 9999px;
   border: 1px solid var(--border-subtle);
+  min-height: 42px;
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
@@ -85,7 +86,7 @@
   border: none;
   outline: none;
   color: var(--text-main);
-  font-size: 14px;
+  font-size: 14.5px;
   width: 100%;
   font-family: inherit;
 }
@@ -363,7 +364,7 @@
 
 /* Chat Input Bar */
 .messages-input-bar {
-  padding: 14px 20px;
+  padding: 16px 20px;
   border-top: 1px solid var(--border-color);
   background-color: var(--bg-main);
   flex-shrink: 0;
@@ -372,16 +373,19 @@
 .messages-input-form {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background-color: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: 9999px;
-  padding: 6px 12px 6px 18px;
-  transition: border-color 0.2s ease;
+  padding: 10px 14px 10px 20px;
+  min-height: 48px;
+  cursor: text;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .messages-input-form:focus-within {
   border-color: var(--border-color);
+  background-color: var(--bg-card);
 }
 
 .messages-input-field {
@@ -390,7 +394,10 @@
   border: none;
   outline: none;
   color: var(--text-main);
-  font-size: 14.5px;
+  font-size: 15px;
+  line-height: 1.5;
+  height: 100%;
+  padding: 4px 0;
   font-family: inherit;
 }
 
@@ -403,12 +410,16 @@
   border: none;
   color: var(--accent-blue);
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 9999px;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
   font-family: inherit;
+}
+
+.messages-send-btn:hover:not(:disabled) {
+  background-color: rgba(29, 155, 240, 0.1);
 }
 
 .messages-send-btn:disabled {
