@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AddColumnIcon, MoreHorizontalIcon, RemoveColumnIcon } from "./Icons";
-import { useApp } from "@/contexts/AppContext";
+import { useAppStore } from "@/stores/useAppStore";
 import { COLUMN_LABELS, type ColumnKey } from "@/types/column.types";
 
 interface TopBarProps {
   type?: ColumnKey;
+  columnId?: string;
+  title?: string;
 }
 const pageTitles: Record<string, string> = {
   "/": "For you",
@@ -19,15 +21,16 @@ const pageTitles: Record<string, string> = {
   "/saved": "Saved",
 };
 
-const TopBar = ({ type }: TopBarProps) => {
+const TopBar = ({ type, columnId, title }: TopBarProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { showToast, removeColumn, addColumn, columns } = useApp();
+  const { showToast, removeColumn, addColumn, columns } = useAppStore();
 
-  // Hiển thị tiêu đề chính xác theo type của cột (khi nhúng trong đa cột), fallback theo pathname
+  // Hiển thị tiêu đề chính xác theo title / type của cột (khi nhúng trong đa cột), fallback theo pathname
   const activeTitle =
+    title ||
     (type && type !== "home" && COLUMN_LABELS[type]) ||
     pageTitles[location.pathname] ||
     "For you";
@@ -69,8 +72,9 @@ const TopBar = ({ type }: TopBarProps) => {
   };
 
   const handleRemoveColumn = () => {
-    if (!type) return;
-    removeColumn(type);
+    const target = columnId || type;
+    if (!target) return;
+    removeColumn(target);
     showToast("Đã gỡ cột");
     setIsOpen(false);
   };

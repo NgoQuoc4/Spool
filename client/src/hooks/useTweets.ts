@@ -6,8 +6,18 @@ export const useTweets = (param: {
   queryKey: string;
   author_id?: string;
   enabled?: boolean;
+  following_only?: string;
+  liked_only?: string;
+  bookmark_only?: string;
 }) => {
-  const { queryKey, author_id, enabled = true } = param;
+  const {
+    queryKey,
+    author_id,
+    enabled = true,
+    following_only,
+    liked_only,
+    bookmark_only,
+  } = param;
   const query = useInfiniteQuery({
     queryKey: [queryKey, author_id || "all"],
     queryFn: async ({ pageParam = 1 }) => {
@@ -16,6 +26,9 @@ export const useTweets = (param: {
           page: pageParam,
           limit: 10,
           author_id,
+          following_only,
+          liked_only,
+          bookmark_only,
         });
       } catch (error) {
         console.error("Lỗi khi fetch tweets:", error);

@@ -1,12 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import {
-  SpoolLogo,
-  GoogleIcon,
-  InstagramIcon,
-  EyeIcon,
-  EyeOffIcon,
-} from "@/components/Icons";
+import { SpoolLogo, GoogleIcon, EyeIcon, EyeOffIcon } from "@/components/Icons";
 import { getGoogleAuthUrl } from "@/utils/auth";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -225,8 +219,8 @@ const Login: React.FC = () => {
 
           {/* Forgot Password link */}
           <div style={{ textAlign: "right", marginTop: "-4px" }}>
-            <a
-              href="#forgot"
+            <Link
+              to="/forgot-password"
               style={{
                 fontSize: "13px",
                 color: "var(--text-secondary)",
@@ -240,7 +234,7 @@ const Login: React.FC = () => {
               }
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           {/* Primary Submit Button */}

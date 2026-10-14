@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { ObjectId } from "mongodb";
+import { User } from "@prisma/client";
 import { ErrorWithStatus } from "~/models/errors";
 import {
   ChangePasswordRequestBody,
@@ -13,8 +13,7 @@ import {
   TokenPayload,
   UpdateMeRequestBody,
 } from "~/models/requests/User.requests";
-import User from "~/models/schemas/User.schema";
-import dataservice from "~/services/database.service";
+import prisma from "~/services/prisma.service";
 import usersService from "~/services/users.service";
 
 export const loginController = async (
@@ -48,8 +47,8 @@ export const logOutController = async (
 export const verifyEmailController = async (req: Request, res: Response) => {
   const { user_id } = (req as Request)
     .decoded_verify_email_token as TokenPayload;
-  const user = await dataservice.users.findOne({
-    _id: new ObjectId(user_id),
+  const user = await prisma.user.findUnique({
+    where: { id: user_id },
   });
   if (!user) {
     throw new ErrorWithStatus({ message: "User id not found", status: 404 });
@@ -68,17 +67,37 @@ export const resendVerifyEmailController = async (
   req: Request,
   res: Response,
 ) => {
-  const { _id } = req.user as User;
-  const result = await usersService.resendVerifyEmail(_id.toString());
+  const { id } = req.user as User;
+  const result = await usersService.resendVerifyEmail(id);
   return res
     .status(200)
     .json({ message: "Resend verify email success", result });
 };
 
-export const forgotPasswordController = async (req: Request, res: Response) => {
-  const user = req.user as User;
-  const result = await usersService.forgotPassword(user._id.toString());
-  return res.status(200).json({ message: "Forget password success", result });
+export const forgotPasswordController = async (
+  req: Request<{}, any, { email: string }>,
+  res: Response,
+) => {
+  const user = req?.user as User;
+  const { email } = req.body;
+  let data: {
+    id?: string;
+    email: string;
+  } = {
+    id: "",
+    email: "",
+  };
+  if (user) {
+    data = {
+      id: user.id,
+      email: user.email,
+    };
+  } else {
+    data = { email };
+  }
+  const result = await usersService.forgotPassword(data);
+
+  return res.status(200).json({ message: "Forget password success" });
 };
 
 export const verifyForgotPasswordTokenController = async (
@@ -99,7 +118,7 @@ export const resetPasswordController = async (
 ) => {
   const user = req.user as User;
   const result = await usersService.resetPassword(
-    user._id.toString(),
+    user.id,
     req.body.password,
     req.body.confirm_password,
     req.body.forgot_password_token,

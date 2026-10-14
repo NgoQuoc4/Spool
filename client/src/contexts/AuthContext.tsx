@@ -17,6 +17,9 @@ interface AuthContextType {
   login: (body: LoginBody) => Promise<void>;
   register: (body: RegisterBody) => Promise<void>;
   logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<string>;
+  setAuthTokens: (accessToken: string, refreshToken: string) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -54,14 +57,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setProfile(meData.result);
   };
 
+  const forgotPassword = async (email: string) => {
+    const { data } = await authApi.forgotPassword(email);
+    return data.result;
+  };
+
   const logout = async () => {
     try {
       await authApi.logout();
-    } catch {
-      /* ignore */
+    } catch (error) {
+      console.error(error);
     }
     tokenStore.clear();
     setProfile(null);
+  };
+
+  const setAuthTokens = async (accessToken: string, refreshToken: string) => {
+    tokenStore.setTokens(accessToken, refreshToken);
+    const { data: meData } = await authApi.getMe();
+    setProfile(meData.result);
+  };
+
+  const refreshProfile = async () => {
+    const { data: meData } = await authApi.getMe();
+    setProfile(meData.result);
   };
 
   return (
@@ -73,6 +92,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
+        setAuthTokens,
+        refreshProfile,
+        forgotPassword,
       }}
     >
       {children}

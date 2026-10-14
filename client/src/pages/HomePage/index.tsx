@@ -1,34 +1,26 @@
 import "@/App.css";
 import { useState, useEffect } from "react";
 import { ThreadCard } from "@/components/ThreadCard";
-import type { ThreadPost, Author } from "@/types";
+import type { ThreadPost } from "@/types";
 import TopBar from "@/components/TopBar";
 import { ColumnMenu } from "@/components/ColumnMenu";
 import { ColumnPanel } from "@/components/ColumnPanel";
 import SpoolsFound from "@/components/SpoolCard/SpoolsFound";
-import { useApp } from "@/contexts/AppContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAppStore } from "@/stores/useAppStore";
 import { useTweets } from "@/hooks/useTweets";
 import { formatTweets } from "@/utils/tweet.helper";
 import { useTweetActions } from "@/hooks/useTweetActions";
+import PostBar from "@/components/PostBar";
+import useProfile from "@/hooks/useProfile";
+import { ThreadListSkeleton, ThreadCardSkeleton } from "@/components/Skeleton";
 
 const HomePage = () => {
-  const { profile } = useAuth();
-  const { setIsModalOpen, columns } = useApp();
+  const { currentUser } = useProfile();
+  const { columns } = useAppStore();
   const [threads, setThreads] = useState<ThreadPost[]>([]);
 
-  const currentUser: Author = {
-    id: profile._id,
-    name: profile.name,
-    username: profile.username?.trim() || "user",
-    avatar:
-      profile.avatar?.trim() ||
-      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-    verified: true,
-  };
-
   const { data, isFetchingNextPage, isLoading, isError, refetch, sentinelRef } =
-    useTweets({ queryKey: "feeds" });
+    useTweets({ queryKey: "feeds_post" });
 
   // Đồng bộ tweets từ React Query vào state threads (giữ lại trạng thái Like/Repost nếu đã bấm)
   useEffect(() => {
@@ -64,69 +56,11 @@ const HomePage = () => {
         <TopBar type="home" />
         <section className="feed-section">
           {/* Quick Add Post */}
-          <div
-            onClick={() => setIsModalOpen(true)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "14px 18px",
-              borderBottom: "1px solid var(--border-color)",
-              cursor: "pointer",
-              backgroundColor: "var(--bg-main)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "14px",
-                flex: 1,
-              }}
-            >
-              <img
-                src={currentUser.avatar}
-                alt={currentUser.name}
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                }}
-              />
-              <span
-                style={{ fontSize: "15px", color: "var(--text-secondary)" }}
-              >
-                What's new?
-              </span>
-            </div>
-            <button
-              style={{
-                backgroundColor: "var(--bg-card)",
-                color: "var(--text-main)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "10px",
-                padding: "6px 16px",
-                fontSize: "14px",
-                fontWeight: "600",
-              }}
-            >
-              Post
-            </button>
-          </div>
-
+          <PostBar />
           {/* Feeds view */}
           <div className="feed-scrollable">
             {isLoading ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "30px",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                Đang tải tin...
-              </div>
+              <ThreadListSkeleton count={4} />
             ) : isError ? (
               <div
                 style={{
@@ -149,9 +83,9 @@ const HomePage = () => {
                 </button>
               </div>
             ) : threads.length > 0 ? (
-              threads.map((post) => (
+              threads.map((post, index) => (
                 <ThreadCard
-                  key={post.id}
+                  key={post.id || `thread-${index}`}
                   post={post}
                   currentUser={currentUser}
                   onLikeToggle={handleLikeToggle}
@@ -167,25 +101,22 @@ const HomePage = () => {
             )}
 
             {/* Điểm neo để kích hoạt tải trang tiếp theo */}
-            <div ref={sentinelRef} style={{ height: "20px", margin: "10px 0" }}>
-              {isFetchingNextPage && (
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  Đang tải thêm...
-                </p>
-              )}
+            <div ref={sentinelRef} style={{ margin: "10px 0" }}>
+              {isFetchingNextPage && <ThreadCardSkeleton />}
             </div>
           </div>
         </section>
       </div>
 
       {/* Column panels */}
-      {columns.map((col) => (
-        <ColumnPanel key={col.type} type={col.type} label={col.label} />
+      {columns.map((col, index) => (
+        <ColumnPanel
+          key={col.id || `${col.type}-${col.username || ""}-${index}`}
+          id={col.id}
+          type={col.type}
+          label={col.label}
+          username={col.username}
+        />
       ))}
 
       <ColumnMenu />

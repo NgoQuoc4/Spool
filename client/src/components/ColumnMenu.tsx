@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { AddColumnIcon, ChevronRightIcon, ChevronLeftIcon } from "./Icons";
-import { useApp, type ColumnType } from "@/contexts/AppContext";
+import { useAppStore, type ColumnType } from "@/stores/useAppStore";
 
 interface ColumnMenuProps {
   onToggleTwoColumns?: (enabled: boolean) => void;
@@ -17,6 +17,7 @@ const MENUS: MenuItemType[] = [
   { key: "search", label: "Tìm kiếm", type: "search" },
   { key: "activity", label: "Hoạt động", type: "activity" },
   { key: "insights", label: "Insights", type: "insights" },
+  { key: "profile", label: "Profile", type: "profile" },
   { key: "other_feeds", label: "Feeds khác", type: "other_feeds" },
 ];
 
@@ -36,8 +37,7 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onSelectOption }) => {
     "main",
   );
   const menuRef = useRef<HTMLDivElement>(null);
-  const { showToast } = useApp();
-  const { columns, addColumn, setIsModalOpen } = useApp();
+  const { showToast, columns, addColumn, setIsModalOpen } = useAppStore();
   // Click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -62,6 +62,11 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onSelectOption }) => {
   ) => {
     if (onSelectOption) {
       onSelectOption(key);
+    }
+    if (!type) {
+      setIsOpen(false);
+      setCurrentView("main");
+      return;
     }
     if (columns.some((column) => column.type === type)) {
       showToast(`Đã chọn: ${label}`);
@@ -303,7 +308,6 @@ export const ColumnMenu: React.FC<ColumnMenuProps> = ({ onSelectOption }) => {
                 style={{ display: "flex", flexDirection: "column", gap: "2px" }}
               >
                 {OTHER_FEEDS.map((menu) => {
-                  console.log("menu", menu);
                   return (
                     <button
                       key={menu.key}

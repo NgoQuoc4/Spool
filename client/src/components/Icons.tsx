@@ -74,10 +74,22 @@ export const SpoolFullLogo: React.FC<{
     style={{ display: "inline-block", verticalAlign: "middle" }}
   >
     {/* Spool Vortex Mark on Left */}
-    <g transform="translate(36, 16)" fill="none" stroke={color} strokeLinecap="round" strokeLinejoin="round">
+    <g
+      transform="translate(36, 16)"
+      fill="none"
+      stroke={color}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <circle cx="134" cy="134" r="23" fill={color} stroke="none" />
-      <path strokeWidth="29" d="M 52,134 A 82,82 0 0,1 216,134 C 216,178 180,212 134,212 C 100,212 73,189 73,159" />
-      <path strokeWidth="29" d="M 216,134 A 82,82 0 0,1 52,134 C 52,90 88,56 134,56 C 168,56 195,79 195,109" />
+      <path
+        strokeWidth="29"
+        d="M 52,134 A 82,82 0 0,1 216,134 C 216,178 180,212 134,212 C 100,212 73,189 73,159"
+      />
+      <path
+        strokeWidth="29"
+        d="M 216,134 A 82,82 0 0,1 52,134 C 52,90 88,56 134,56 C 168,56 195,79 195,109"
+      />
     </g>
     {/* Dynamic Italic Wordmark matching Threads style */}
     <text
@@ -286,6 +298,26 @@ export const RepostIcon: React.FC<IconProps & { active?: boolean }> = ({
   </svg>
 );
 
+export const QuoteIcon: React.FC<IconProps> = ({
+  size = 20,
+  className = "",
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
+  </svg>
+);
+
 export const ShareIcon: React.FC<IconProps> = ({
   size = 20,
   className = "",
@@ -326,12 +358,13 @@ export const MoreDotsIcon: React.FC<IconProps> = ({
 export const VerifiedBadge: React.FC<IconProps> = ({
   size = 15,
   className = "",
+  color = "#0095f6",
 }) => (
   <svg
     width={size}
     height={size}
     viewBox="0 0 24 24"
-    fill="#0095f6"
+    fill={color}
     className={className}
   >
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
@@ -1098,5 +1131,274 @@ export const ClockIcon: React.FC<IconProps> = ({
   >
     <circle cx="12" cy="12" r="10" />
     <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+// --- SVG Icons matching screenshot ---
+export const AccountsCenterIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <circle cx="12" cy="10" r="3" />
+    <path d="M7 18.5c0-2.5 2.5-4 5-4s5 1.5 5 4" />
+  </svg>
+);
+
+export const SupervisionIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 2L3 7v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7l-9-5z" />
+    <path d="M12 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+    <path d="M9 16c0-2 1.5-3 3-3s3 1 3 3" />
+  </svg>
+);
+
+export const PrivacyLockIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="4" y="11" width="16" height="11" rx="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+export const ContentPreferencesIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="4" y1="7" x2="20" y2="7" />
+    <circle cx="9" cy="7" r="2.5" fill="var(--bg-card)" />
+    <line x1="4" y1="17" x2="20" y2="17" />
+    <circle cx="15" cy="17" r="2.5" fill="var(--bg-card)" />
+  </svg>
+);
+
+export const AccountStatusIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+export const MoreSettingsIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="4" y="3" width="16" height="18" rx="3" />
+    <path d="M9 8v8M9 8l-2 2M9 8l2 2" />
+    <path d="M15 16V8M15 16l-2-2M15 16l2-2" />
+  </svg>
+);
+
+export const HelpIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <circle cx="12" cy="17" r="0.5" fill="currentColor" />
+  </svg>
+);
+
+export const TagsMentionsIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <circle cx="19" cy="11" r="2" />
+    <path d="M21 11v1a1.5 1.5 0 0 1-3 0v-1a2.5 2.5 0 0 1 5 0" />
+  </svg>
+);
+
+export const OnlineStatusIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M18 20a6 6 0 0 0-12 0" />
+    <circle cx="12" cy="10" r="4" />
+    <circle cx="19" cy="7" r="2.5" fill="#10b981" stroke="#10b981" />
+  </svg>
+);
+
+export const MessagesIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 2L11 13" />
+    <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+  </svg>
+);
+
+export const RestrictedProfilesIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="8" cy="9" r="4" />
+    <path d="M3 20a5 5 0 0 1 10 0" />
+    <circle cx="17" cy="14" r="3.5" />
+    <circle cx="19" cy="18" r="2.5" />
+  </svg>
+);
+
+export const BlockedProfilesIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <path d="M15 9l-6 6M9 9l6 6" />
+  </svg>
+);
+
+export const PrivateLikesIcon = () => (
+  <svg
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    <line x1="3" y1="3" x2="21" y2="21" />
+  </svg>
+);
+
+export const ChevronRight = () => (
+  <svg
+    width={16}
+    height={16}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="9 18 15 12 9 6" />
+  </svg>
+);
+
+// Compose / Pencil Icon matching Threads UI
+export const ComposeIcon = ({ size = 20 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z" />
+  </svg>
+);
+
+// Paper airplane icon for empty state & send
+export const DirectMessageIcon = ({ size = 38 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.75"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="m22 2-7 20-4-9-9-4Z" />
+    <path d="M22 2 11 13" />
   </svg>
 );

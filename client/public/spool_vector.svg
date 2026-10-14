@@ -1,31 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="spool-title">
-  <title id="spool-title">Spool</title>
-  <style>
-    .spool-glyph { stroke: #0f172a; }
-    .spool-core { fill: #0f172a; }
-    @media (prefers-color-scheme: dark) {
-      .spool-glyph { stroke: #f8fafc; }
-      .spool-core { fill: #f8fafc; }
-    }
-  </style>
-  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Center spindle core dot -->
-    <circle cx="128" cy="128" r="20" class="spool-core" stroke="none" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Spool">
+  <defs>
+    <linearGradient id="spoolBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+  </defs>
 
+  <!-- Premium squircle container (sharp & visible on both light and dark browser tabs) -->
+  <rect width="512" height="512" rx="120" fill="url(#spoolBg)" />
+  <rect width="508" height="508" x="2" y="2" rx="118" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4" />
+
+  <!-- Center spindle core dot with cyan brand pop -->
+  <circle cx="256" cy="256" r="42" fill="#38bdf8" />
+
+  <!-- High-contrast Spool thread curves -->
+  <g fill="none" stroke="#ffffff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round">
     <!-- Upper winding thread arm -->
-    <path class="spool-glyph" stroke-width="26" d="
-      M 56,128
-      A 72,72 0 0,1 200,128
-      C 200,168 168,198 128,198
-      C 98,198 74,178 74,152
-    " />
-
-    <!-- Lower winding thread arm (180° rotated complement) -->
-    <path class="spool-glyph" stroke-width="26" d="
-      M 200,128
-      A 72,72 0 0,1 56,128
-      C 56,88 88,58 128,58
-      C 158,58 182,78 182,104
-    " />
+    <path d="M 112,256 A 144,144 0 0,1 400,256 C 400,336 336,396 256,396 C 196,396 148,356 148,304" />
+    <!-- Lower winding thread arm -->
+    <path d="M 400,256 A 144,144 0 0,1 112,256 C 112,176 176,116 256,116 C 316,116 364,156 364,208" />
   </g>
 </svg>

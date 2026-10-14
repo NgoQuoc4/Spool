@@ -1,8 +1,9 @@
 import { interactionsApi } from "@/apis/interactions.api";
 import { tweetsApi } from "@/apis/tweets.api";
-import { useApp } from "@/contexts/AppContext";
+import { useAppStore } from "@/stores/useAppStore";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Author, ThreadPost, ThreadReply } from "@/types";
+import { TweetAudienceType, TweetType } from "@/types/tweet.types";
 
 interface UseTweetActionsProps {
   threads: ThreadPost[];
@@ -13,15 +14,15 @@ export const useTweetActions = ({
   threads,
   setThreads,
 }: UseTweetActionsProps) => {
-  const { showToast } = useApp();
+  const { showToast } = useAppStore();
   const { profile } = useAuth();
 
   const currentUser: Author = {
-    id: profile._id,
-    name: profile.name,
-    username: profile.username?.trim() || "user",
+    id: profile?._id || "",
+    name: profile?.name || "",
+    username: profile?.username?.trim() || "user",
     avatar:
-      profile.avatar?.trim() ||
+      profile?.avatar?.trim() ||
       "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
     verified: true,
   };
@@ -48,7 +49,6 @@ export const useTweetActions = ({
 
     // Đồng bộ lên server
     try {
-      console.log("willLike", willLike);
       if (willLike) {
         await interactionsApi.like(postId);
       } else {
@@ -74,27 +74,120 @@ export const useTweetActions = ({
   };
 
   // Repost Toggle
-  const handleRepostToggle = (postId: string) => {
+  const handleRepostToggle = async (postId: string) => {
+    // kiểm tra đã đăng lại chưa
+    const targetPost = threads.find((p) => p.id === postId);
+    if (!targetPost) return;
+    const willRepost = !targetPost.isReposted;
+
     setThreads((prev) =>
       prev.map((p) => {
         if (p.id === postId) {
-          const isReposted = !p.isReposted;
-          showToast(isReposted ? "Reposted to your profile" : "Removed repost");
           return {
             ...p,
-            isReposted,
-            repostsCount: isReposted ? p.repostsCount + 1 : p.repostsCount - 1,
+            isReposted: willRepost,
+            repostsCount: willRepost
+              ? p.repostsCount + 1
+              : Math.max(0, p.repostsCount - 1),
           };
         }
         return p;
       }),
     );
+
+    try {
+      if (willRepost) {
+        await tweetsApi.createTweet({
+          type: TweetType.RETWEET,
+          audience: TweetAudienceType.EVERYONE,
+          content: "",
+          parent_id: postId,
+          hashtags: [],
+          mentions: [],
+          medias: [],
+        });
+        showToast("Đã đăng lại lên trang cá nhân của bạn");
+      } else {
+        await tweetsApi.unretweet(postId);
+        showToast("Đã gỡ lượt đăng lại");
+      }
+    } catch (error) {
+      console.error("Lỗi khi đăng lại / gỡ đăng lại:", error);
+      setThreads((prev) =>
+        prev.map((p) => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              isReposted: !willRepost,
+              repostsCount: !willRepost
+                ? p.repostsCount + 1
+                : Math.max(0, p.repostsCount - 1),
+            };
+          }
+          return p;
+        }),
+      );
+      showToast("Không thể thực hiện thao tác. Vui lòng thử lại!");
+    }
+  };
+
+  // Quote
+  const handleQuote = async (postId: string) => {
+    const targetPost = threads.find((p) => p.id === postId);
+    if (!targetPost) return;
+    const willQuote = !targetPost.isQuote;
+
+    setThreads((prev) =>
+      prev.map((p) => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            isQuote: willQuote,
+            quotesCount: willQuote
+              ? (p.quotesCount ?? 0) + 1
+              : Math.max(0, (p.quotesCount ?? 0) - 1),
+          };
+        }
+        return p;
+      }),
+    );
+
+    try {
+      await tweetsApi.createTweet({
+        type: TweetType.QUOTETWEET,
+        audience: TweetAudienceType.EVERYONE,
+        content: "",
+        parent_id: postId,
+        hashtags: [],
+        mentions: [],
+        medias: [],
+      });
+      showToast("Đã trích dẫn lên trang cá nhân của bạn");
+    } catch (error) {
+      console.error("Lỗi khi trích dẫn:", error);
+      setThreads((prev) =>
+        prev.map((p) => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              isQuote: !willQuote,
+              quotesCount: !willQuote
+                ? (p.quotesCount ?? 0) + 1
+                : Math.max(0, (p.quotesCount ?? 0) - 1),
+            };
+          }
+          return p;
+        }),
+      );
+      showToast("Không thể thực hiện thao tác. Vui lòng thử lại!");
+    }
   };
 
   // Reply Added
-  const handleReplyAdded = (postId: string, text: string) => {
+  const handleReplyAdded = async (postId: string, text: string) => {
+    const tempReplyId = `reply-${Date.now()}`;
     const newReply: ThreadReply = {
-      id: `reply-${Date.now()}`,
+      id: tempReplyId,
       author: currentUser,
       content: text,
       createdAt: "Just now",
@@ -102,6 +195,7 @@ export const useTweetActions = ({
       isLiked: false,
     };
 
+    // Optimistic update
     setThreads((prev) =>
       prev.map((p) => {
         if (p.id === postId) {
@@ -114,7 +208,53 @@ export const useTweetActions = ({
         return p;
       }),
     );
-    showToast("Reply posted");
+
+    try {
+      const response = await tweetsApi.createTweet({
+        parent_id: postId,
+        type: TweetType.COMMENT,
+        content: text,
+        audience: TweetAudienceType.EVERYONE,
+        hashtags: [],
+        mentions: [],
+        medias: [],
+      });
+
+      // Update real id from server if needed
+      if (response?.data?.result) {
+        const createdTweet = response.data.result;
+        setThreads((prev) =>
+          prev.map((p) => {
+            if (p.id === postId) {
+              return {
+                ...p,
+                replies: (p.replies || []).map((r) =>
+                  r.id === tempReplyId ? { ...r, id: createdTweet._id } : r,
+                ),
+              };
+            }
+            return p;
+          }),
+        );
+      }
+      showToast("Đã gửi bình luận!");
+    } catch (error) {
+      console.error("Lỗi khi gửi bình luận:", error);
+      // Rollback nếu có lỗi
+      setThreads((prev) =>
+        prev.map((p) => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              repliesCount: Math.max(0, p.repliesCount - 1),
+              replies: (p.replies || []).filter((r) => r.id !== tempReplyId),
+            };
+          }
+          return p;
+        }),
+      );
+      showToast("Không thể gửi bình luận. Vui lòng thử lại!");
+    }
   };
 
   // Delete Post
@@ -180,5 +320,6 @@ export const useTweetActions = ({
     handleDeletePost,
     handleBookmark,
     handleShare,
+    handleQuote,
   };
 };

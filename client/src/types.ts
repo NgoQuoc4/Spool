@@ -1,13 +1,15 @@
-export interface Author {
-  id?: string;
-  name: string;
-  username: string;
-  avatar: string;
+import type { User } from "@/types/user.types";
+
+// Lightweight view-model dùng trong tweet cards, sidebar, follow modal…
+// Pick những field chung với User để không lặp lại định nghĩa.
+export type Author = Pick<User, "name" | "username" | "avatar" | "isFollowing"> & {
+  id?: string;       // = User._id (API trả về _id, ta normalize ở helper)
   verified?: boolean;
   bio?: string;
-  followers?: string;
-  isFollowing?: boolean;
-}
+  followers_count?: number;
+  following_count?: number;
+  followers?: string; // legacy display string (e.g. "1.2K")
+};
 
 export interface PollOption {
   id: string;
@@ -61,9 +63,15 @@ export interface ThreadPost {
   isLiked?: boolean;
   isReposted?: boolean;
   isBookmarked?: boolean;
+  isQuote?: boolean;
+  quotesCount?: number;
   replies?: ThreadReply[];
   tags?: string[];
   replyAvatars?: string[];
+  quotedPost?: ThreadPost;
+
+  //Thông tin khi repost
+  repostedBy?: Author;
 }
 export interface LayoutContextType {
   showToast: (msg: string) => void;

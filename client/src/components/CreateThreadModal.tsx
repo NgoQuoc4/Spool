@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import type { Author, ThreadPost } from "@/types";
+import type { Author } from "@/types";
 import { ChevronRightIcon, ImageIcon } from "./Icons";
 import { tweetsApi } from "@/apis/tweets.api";
 import { TweetAudienceType, TweetType, MediaType } from "@/types/tweet.types";
-import { useApp } from "@/contexts/AppContext";
+import { useAppStore } from "@/stores/useAppStore";
 import {
   createTweetSchema,
   type CreateTweetFormValues,
@@ -14,24 +14,34 @@ import { usersApi } from "@/apis/users.api";
 import { useAuth } from "@/contexts/AuthContext";
 import { mediasApi } from "@/apis/medias.api";
 import SpoolsSlider from "./SpoolCard/SpoolsSlider";
+import { useQueryClient } from "@tanstack/react-query";
 
-interface CreateThreadModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onPostCreated: (post: ThreadPost) => void;
-}
+export const CreateThreadModal = () => {
+  const {
+    showToast,
+    isModalOpen,
+    quoteTarget,
+    setQuoteTarget,
+    setIsModalOpen,
+  } = useAppStore();
 
-export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
-  isOpen,
-  onClose,
-  onPostCreated,
-}) => {
-  const { showToast } = useApp();
+  const queryClient = useQueryClient();
   const { profile } = useAuth();
   const [searchUser, setSearchUser] = useState<Author[]>([]); // @mention suggestions
   const [mentionQuery, setMentionQuery] = useState<string | null>(null); // query @mention
   const [topicTag, setTopicTag] = useState(""); // query #hashtag
   const [cursorPosition, setCursorPosition] = useState<number>(0); // cursor position
+
+  // Apply theme to document
+  const handlePostCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ["tweets"] });
+    showToast("Đã đăng bài!");
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setQuoteTarget(null); // Reset bài viết quote khi đóng
+  };
 
   // ---- upload image
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -58,6 +68,8 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
                 user.avatar ||
                 "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
               isFollowing: false,
+              followers_count: user.followers_count,
+              following_count: user.following_count,
             },
           ]);
         }
@@ -86,11 +98,10 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
   const content = watch("content") || "";
   const imageUrl = watch("imageUrl") || [];
 
-  if (!isOpen) return null;
+  if (!isModalOpen) return null;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from((e.target.files as FileList) || []);
-    console.log("file", files);
     if (files.length === 0) return;
 
     if (imageUrls.length + files.length > 6) {
@@ -113,7 +124,6 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
 
     try {
       setIsUploading(true);
-
       const res = await mediasApi.uploadImage(formData);
       console.log("🚀 ~ handleImageUpload ~ res:", res);
       if (res?.data?.url && res.data.url.length > 0) {
@@ -190,36 +200,27 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
         url,
         type: MediaType.IMAGE,
       }));
+
+      const isQuoting = Boolean(quoteTarget);
       const response = await tweetsApi.createTweet({
         content: data.content.trim(),
-        type: TweetType.TWEET,
+        type: isQuoting ? TweetType.QUOTETWEET : TweetType.TWEET,
         audience: TweetAudienceType.EVERYONE,
-        parent_id: null,
+        parent_id: isQuoting ? quoteTarget!.id : null,
         hashtags: hashtag ? [hashtag] : [],
         mentions: [],
         medias,
       });
 
       if (response.status === 200 || response.status === 201) {
-        showToast("Post created successfully");
-        const createdPost: ThreadPost = {
-          id: response.data?.result?._id || `thread-${Date.now()}`,
-          author: profile,
-          content: data.content.trim(),
-          createdAt: "Just now",
-          media:
-            imageUrls.length > 0
-              ? { type: "image", urls: imageUrls }
-              : undefined,
-          likes: 0,
-          repliesCount: 0,
-          repostsCount: 0,
-          isLiked: false,
-        };
-        onPostCreated?.(createdPost);
+        showToast(
+          isQuoting ? "Đã trích dẫn bài viết!" : "Post created successfully",
+        );
+
+        handlePostCreated();
         reset();
         setImageUrls([]);
-        onClose();
+        handleCloseModal();
       }
     } catch (error) {
       console.error(error);
@@ -242,7 +243,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
         padding: "16px",
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) handleCloseModal();
       }}
     >
       <div
@@ -271,7 +272,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
         >
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleCloseModal}
             style={{
               color: "var(--text-secondary)",
               fontSize: "15px",
@@ -306,8 +307,11 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
               }}
             >
               <img
-                src={profile.avatar}
-                alt={profile.name}
+                src={
+                  profile?.avatar ||
+                  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"
+                }
+                alt={profile?.name || "avatar"}
                 style={{
                   width: "42px",
                   height: "42px",
@@ -356,7 +360,7 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
                     color: "var(--text-main)",
                   }}
                 >
-                  {profile.username}
+                  {profile?.username}
                 </span>
 
                 <ChevronRightIcon />
@@ -622,7 +626,64 @@ export const CreateThreadModal: React.FC<CreateThreadModalProps> = ({
                   <TagIcon size={20} />
                 </button> */}
               </div>
-
+              {quoteTarget && (
+                <div
+                  style={{
+                    marginTop: "12px",
+                    padding: "12px",
+                    borderRadius: "12px",
+                    border: "1px solid var(--border-color)",
+                    backgroundColor: "var(--bg-card)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    <img
+                      src={quoteTarget.author.avatar}
+                      alt=""
+                      style={{
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        color: "var(--text-main)",
+                      }}
+                    >
+                      {quoteTarget.author.name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      @{quoteTarget.author.username}
+                    </span>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--text-main)",
+                      margin: 0,
+                      lineClamp: 2,
+                    }}
+                  >
+                    {quoteTarget.content}
+                  </p>
+                </div>
+              )}
               {/* Add to spool prompt */}
               {/* <div
                 style={{

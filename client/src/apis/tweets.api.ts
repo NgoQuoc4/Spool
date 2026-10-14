@@ -6,6 +6,9 @@ interface TweetsQuery {
   limit?: number;
   page?: number;
   author_id?: string;
+  following_only?: string;
+  liked_only?: string;
+  bookmark_only?: string;
 }
 
 export interface TweetsResponse {
@@ -28,8 +31,16 @@ export const tweetsApi = {
   createTweet: (body: CreateTweetBody) =>
     http.post<{ message: string; result: Tweet }>(ENDPOINTS.CREATE_TWEET, body),
 
+  getTweetChildren: (
+    tweet_id: string,
+    params?: { limit?: number; page?: number },
+  ) => http.get<TweetsResponse>(ENDPOINTS.TWEET_CHILDREN(tweet_id), { params }),
+
   deleteTweet: (tweet_id: string) =>
     http.delete<{ message: string; result: Tweet }>(
       ENDPOINTS.DELETE_TWEET(tweet_id),
     ),
+
+  unretweet: (tweet_id: string) =>
+    http.delete<{ message: string; data: any }>(ENDPOINTS.UNRETWEET(tweet_id)),
 };

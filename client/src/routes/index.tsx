@@ -1,24 +1,29 @@
-import { createBrowserRouter } from 'react-router-dom';
-import { PATH } from '@/constants/path';
-import HomePage from '@/pages/HomePage';
-import LoginPage from '@/pages/LoginPage';
-import RegisterPage from '@/pages/RegisterPage';
-import MainLayout from '@/layouts/MainLayout';
-import LikePage from '@/pages/LikePage';
-import FollowPage from '@/pages/FollowPage';
-import GhostPage from '@/pages/GhostPage';
-import ArchivePage from '@/pages/ArchivePage';
-import InsightsPage from '@/pages/InsightsPage';
-import ProfilePage from '@/pages/ProfilePage';
-import ActivityPage from '@/pages/ActivityPage';
-import MessagesPage from '@/pages/MessagesPage';
-import SearchPage from '@/pages/SearchPage';
-import SavePage from '@/pages/SavePage';
-import SettingPage from '@/pages/SettingPage';
-import ReportPage from '@/pages/ReportPage';
-import NotFoundPage from '@/pages/NotFoundPage';
-import ProtectedRoute from './ProtectedRoute';
-import RejectedRoute from './RejectedRoute';
+import { createBrowserRouter } from "react-router-dom";
+import { PATH } from "@/constants/path";
+import HomePage from "@/pages/HomePage";
+import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
+import MainLayout from "@/layouts/MainLayout";
+import LikePage from "@/pages/LikePage";
+import FollowPage from "@/pages/FollowPage";
+import GhostPage from "@/pages/GhostPage";
+import ArchivePage from "@/pages/ArchivePage";
+import InsightsPage from "@/pages/InsightsPage";
+import ProfilePage from "@/pages/ProfilePage";
+import ActivityPage from "@/pages/ActivityPage";
+import MessagesPage from "@/pages/MessagesPage";
+import SearchPage from "@/pages/SearchPage";
+import SavePage from "@/pages/SavePage";
+import SettingPage from "@/pages/SettingPage";
+import ReportPage from "@/pages/ReportPage";
+import NotFoundPage from "@/pages/NotFoundPage";
+import VerifyEmailPage from "@/pages/VerifyEmailPage";
+import ProtectedRoute from "./ProtectedRoute";
+import RejectedRoute from "./RejectedRoute";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import VerifyForgotPasswordPage from "@/pages/VerifyForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import TweetDetailPage from "@/pages/TweetDetailPage";
 
 export const router = createBrowserRouter([
   {
@@ -34,7 +39,8 @@ export const router = createBrowserRouter([
           { path: PATH.GHOST, element: <GhostPage /> },
           { path: PATH.ARCHIVE, element: <ArchivePage /> },
           { path: PATH.INSIGHTS, element: <InsightsPage /> },
-          { path: PATH.PROFILE, element: <ProfilePage /> },
+          { path: PATH.TWEET_DETAIL, element: <TweetDetailPage /> },
+          { path: PATH.PROFILE_USER, element: <ProfilePage /> },
           { path: PATH.ACTIVITY, element: <ActivityPage /> },
           { path: PATH.MESSAGES, element: <MessagesPage /> },
           { path: PATH.SAVED, element: <SavePage /> },
@@ -53,4 +59,11 @@ export const router = createBrowserRouter([
       { path: PATH.REGISTER, element: <RegisterPage /> },
     ],
   },
+  {
+    path: PATH.VERIFY_EMAIL,
+    element: <VerifyEmailPage />,
+  },
+  { path: PATH.FORGOT_PASSWORD, element: <ForgotPasswordPage /> },
+  { path: PATH.VERIFY_FORGOT_PASSWORD, element: <VerifyForgotPasswordPage /> },
+  { path: PATH.RESET_PASSWORD, element: <ResetPasswordPage /> },
 ]);

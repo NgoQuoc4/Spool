@@ -37,12 +37,22 @@ export const getTweetController = async (req: Request, res: Response) => {
 
 export const getAllTweetController = async (req: Request, res: Response) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
-  const { limit = 10, page = 1, author_id } = req.query;
+  const {
+    limit = 10,
+    page = 1,
+    author_id,
+    following_only,
+    liked_only,
+    bookmark_only,
+  } = req.query;
   const { tweets, total, ...pagination } = await tweetsService.getAllTweet(
     Number(limit),
     Number(page),
     user_id,
     author_id as string,
+    following_only as string,
+    liked_only as string,
+    bookmark_only as string,
   );
   const total_pages = Math.ceil(total / Number(limit));
   return res.json({
@@ -62,5 +72,35 @@ export const getAllTweetController = async (req: Request, res: Response) => {
       page: Number(page),
       limit: Number(limit),
     },
+  });
+};
+
+export const getTweetChildrenController = async (
+  req: Request,
+  res: Response,
+) => {
+  const { tweet_id } = req.params;
+  const limit = Number(req.query.limit) || 10;
+  const page = Number(req.query.page) || 1;
+  const currentUserId = req.decoded_authorization?.user_id as string;
+  const result = await tweetsService.getTweetChildren(
+    tweet_id as string,
+    limit,
+    page,
+    currentUserId as string,
+  );
+  return res.json({
+    message: "Get tweet children success",
+    result,
+  });
+};
+
+export const unretweetController = async (req: Request, res: Response) => {
+  const { tweet_id } = req.params;
+  const { user_id } = req.decoded_authorization as TokenPayload;
+  const result = await tweetsService.unretweet(tweet_id as string, user_id);
+  return res.json({
+    message: "Retweet removed successfully",
+    data: result,
   });
 };

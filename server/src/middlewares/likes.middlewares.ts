@@ -1,18 +1,20 @@
 import { checkSchema } from "express-validator";
-import { ObjectId } from "mongodb";
-import dataservice from "~/services/database.service";
+import prisma from "~/services/prisma.service";
 import { validate } from "~/utils/validation";
 
 export const tweetValidator = validate(
   checkSchema({
     tweet_id: {
-      isMongoId: {
+      isString: {
         errorMessage: "Invalid tweet id",
+      },
+      notEmpty: {
+        errorMessage: "Tweet id is required",
       },
       custom: {
         options: async (value) => {
-          const tweet = await dataservice.tweets.findOne({
-            _id: new ObjectId(value),
+          const tweet = await prisma.tweet.findUnique({
+            where: { id: value },
           });
           if (!tweet) {
             throw new Error("Tweet not found");

@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserVerifyStatus {
+  Unverified
+  Verified
+  Banned
+}
+
+enum TweetType {
+  tweet
+  retweet
+  quote
+  comment
+  comment_retweet
+  comment_quotetweet
+}
+
+enum TweetAudience {
+  everyone
+  following
+  following_and_media
+  mentioned_users
+  tweet_circle
+}
+
+enum MediaType {
+  image
+  video
+  hls
+  file
+}
+
+enum EncodeStatus {
+  pending
+  processing
+  success
+  failed
+}
+
+model User {
+  id                    String           @id @default(cuid())
+  name                  String           @default("")
+  email                 String           @unique
+  password              String
+  date_of_birth         DateTime         @default(now())
+  email_verify_token    String           @default("")
+  forgot_password_token String           @default("")
+  verify                UserVerifyStatus @default(Unverified)
+  bio                   String           @default("")
+  location              String           @default("")
+  website               String           @default("")
+  username              String           @unique @default("")
+  avatar                String           @default("")
+  cover_photo           String           @default("")
+  created_at            DateTime         @default(now())
+  updated_at            DateTime         @updatedAt
+
+  tweets         Tweet[]        @relation("UserTweets")
+  refresh_tokens RefreshToken[]
+  followers      Follow[]       @relation("Followers")
+  following      Follow[]       @relation("Following")
+  bookmarks      Bookmark[]
+  likes          Like[]
+  mentions       TweetMention[]
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  user_id    String
+  iat        DateTime
+  exp        DateTime
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id               String   @id @default(cuid())
+  user_id          String
+  followed_user_id String
+  created_at       DateTime @default(now())
+
+  user          User @relation("Following", fields: [user_id], references: [id], onDelete: Cascade)
+  followed_user User @relation("Followers", fields: [followed_user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, followed_user_id])
+}
+
+model Tweet {
+  id          String        @id @default(cuid())
+  user_id     String
+  type        TweetType     @default(tweet)
+  audience    TweetAudience @default(everyone)
+  content     String        @default("")
+  parent_id   String?
+  user_views  Int           @default(0)
+  guest_views Int           @default(0)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+
+  user      User           @relation("UserTweets", fields: [user_id], references: [id], onDelete: Cascade)
+  parent    Tweet?         @relation("TweetReplies", fields: [parent_id], references: [id])
+  replies   Tweet[]        @relation("TweetReplies")
+  medias    TweetMedia[]
+  hashtags  TweetHashtag[]
+  mentions  TweetMention[]
+  bookmarks Bookmark[]
+  likes     Like[]
+}
+
+model TweetMedia {
+  id       String    @id @default(cuid())
+  tweet_id String
+  url      String
+  type     MediaType
+  name     String?
+  size     String?
+
+  tweet Tweet @relation(fields: [tweet_id], references: [id], onDelete: Cascade)
+}
+
+model Hashtag {
+  id         String         @id @default(cuid())
+  name       String         @unique
+  created_at DateTime       @default(now())
+  tweets     TweetHashtag[]
+}
+
+model TweetHashtag {
+  tweet_id   String
+  hashtag_id String
+
+  tweet   Tweet   @relation(fields: [tweet_id], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtag_id], references: [id], onDelete: Cascade)
+
+  @@id([tweet_id, hashtag_id])
+}
+
+model TweetMention {
+  tweet_id String
+  user_id  String
+
+  tweet Tweet @relation(fields: [tweet_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([tweet_id, user_id])
+}
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  user_id    String
+  tweet_id   String
+  created_at DateTime @default(now())
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tweet Tweet @relation(fields: [tweet_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, tweet_id])
+}
+
+model Like {
+  id         String   @id @default(cuid())
+  user_id    String
+  tweet_id   String
+  created_at DateTime @default(now())
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tweet Tweet @relation(fields: [tweet_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, tweet_id])
+}
+
+model VideoStatus {
+  id         String       @id @default(cuid())
+  name       String       @unique
+  status     EncodeStatus @default(pending)
+  message    String       @default("")
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+}

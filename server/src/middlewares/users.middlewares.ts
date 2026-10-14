@@ -1,12 +1,11 @@
 import { NextFunction, Request, Response } from "express";
 import { checkSchema } from "express-validator";
-import { ObjectId } from "mongodb";
-import { UserVerifyStatus } from "~/constants/enums";
+import { UserVerifyStatus } from "@prisma/client";
 import { HTTP_STATUS } from "~/constants/httpStatus";
 import { userMessage } from "~/constants/messages";
 import { ErrorWithStatus } from "~/models/errors";
 import { TokenPayload } from "~/models/requests/User.requests";
-import dataservice from "~/services/database.service";
+import prisma from "~/services/prisma.service";
 import usersService from "~/services/users.service";
 import { comparePassword } from "~/utils/crypto";
 
@@ -30,7 +29,9 @@ export const loginValidator = validate(
             if (!emailExists) {
               throw new Error(userMessage.EMAIL_NOT_FOUND);
             }
-            const user = await dataservice.users.findOne({ email: value });
+            const user = await prisma.user.findUnique({
+              where: { email: value },
+            });
             if (user?.verify === UserVerifyStatus.Unverified) {
               throw new Error(userMessage.EMAIL_NOT_VERIFIED);
             }
@@ -219,7 +220,9 @@ export const refreshTokenValidator = validate(
                     token: refresh_token,
                     secretKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
                   }),
-                  dataservice.refreshTokens.findOne({ token: refresh_token }),
+                  prisma.refreshToken.findUnique({
+                    where: { token: refresh_token },
+                  }),
                 ]);
 
               if (!refresh_token_in_database) {
@@ -293,7 +296,9 @@ export const resendVerifyEmailValidator = validate(
         custom: {
           options: async (value: string, { req }) => {
             // Check if email exists
-            const user = await dataservice.users.findOne({ email: value });
+            const user = await prisma.user.findUnique({
+              where: { email: value },
+            });
             if (!user) {
               throw new ErrorWithStatus({
                 message: userMessage.EMAIL_NOT_FOUND,
@@ -316,7 +321,6 @@ export const resendVerifyEmailValidator = validate(
             }
             // Lưu thông tin user vào req để controller đỡ phải query lại
             (req as Request).user = user;
-            console.log("req.user", req.user);
             return true;
           },
         },
@@ -340,7 +344,9 @@ export const forgotPasswordValidator = validate(
         custom: {
           options: async (value: string, { req }) => {
             // Check if email exists
-            const user = await dataservice.users.findOne({ email: value });
+            const user = await prisma.user.findUnique({
+              where: { email: value },
+            });
             if (!user) {
               throw new ErrorWithStatus({
                 message: userMessage.EMAIL_NOT_FOUND,
@@ -397,8 +403,8 @@ export const verifyForgotPasswordTokenValidator = validate(
                 decoded_forgot_password_token;
               // 2. Tìm user trong DB theo user_id giải mã được
               const { user_id } = decoded_forgot_password_token;
-              const user = await dataservice.users.findOne({
-                _id: new ObjectId(user_id),
+              const user = await prisma.user.findUnique({
+                where: { id: user_id },
               });
 
               if (!user) {
@@ -575,8 +581,8 @@ export const updateMeValidator = validate(
                 userMessage.USERNAME_MUST_BE_ALPHANUMERIC_AND_UNDERSCORE,
               );
             }
-            const user = await dataservice.users.findOne({
-              username: value,
+            const user = await prisma.user.findUnique({
+              where: { username: value },
             });
             if (user) {
               throw new Error(userMessage.USERNAME_ALREADY_EXISTS);
@@ -633,8 +639,8 @@ export const followUserValidator = validate(
                 status: HTTP_STATUS.BAD_REQUEST,
               });
             }
-            const user = await dataservice.users.findOne({
-              _id: new ObjectId(value),
+            const user = await prisma.user.findUnique({
+              where: { id: value },
             });
             if (!user) {
               throw new ErrorWithStatus({
@@ -642,7 +648,12 @@ export const followUserValidator = validate(
                 status: HTTP_STATUS.NOT_FOUND,
               });
             }
-            if (user._id.toString() === (req as Request).user?._id.toString()) {
+            const currentUserId = (req as Request).decoded_authorization
+              ?.user_id;
+            if (
+              user.id === currentUserId ||
+              user.id === (req as Request).user?.id
+            ) {
               throw new ErrorWithStatus({
                 message: userMessage.FOLLOWED_USER_ID_IS_INVALID,
                 status: HTTP_STATUS.BAD_REQUEST,
@@ -733,8 +744,8 @@ export const changePasswordValidator = validate(
           options: async (value, { req }) => {
             const { user_id } = (req as Request)
               .decoded_authorization as TokenPayload;
-            const user = await dataservice.users.findOne({
-              _id: new ObjectId(user_id),
+            const user = await prisma.user.findUnique({
+              where: { id: user_id },
             });
             if (!user) {
               throw new ErrorWithStatus({

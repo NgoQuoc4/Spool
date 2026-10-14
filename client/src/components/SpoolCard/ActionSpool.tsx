@@ -3,10 +3,12 @@ import {
   BookmarkIcon,
   CommentIcon,
   HeartIcon,
+  QuoteIcon,
   RepostIcon,
   ShareIcon,
 } from "../Icons";
 import type { ThreadPost } from "@/types";
+import { useAppStore } from "@/stores/useAppStore";
 
 const ActionSpool = ({
   onLikeToggle,
@@ -14,16 +16,22 @@ const ActionSpool = ({
   onRepostToggle,
   onShare,
   onBookmark,
+  onCommentClick,
+  isReposted,
 }: {
   rIdx?: number;
   post: ThreadPost;
-  onLikeToggle: (id: string) => void;
-  onRepostToggle: (id: string) => void;
+  onLikeToggle?: (id: string) => void;
+  onRepostToggle?: (id: string) => void;
   onShare: (post: ThreadPost) => void;
   onBookmark: (post: ThreadPost) => void;
+  onCommentClick?: () => void;
+  isReposted?: boolean;
 }) => {
-  const [showReplyBox, setShowReplyBox] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
+  // Trong component ActionSpool:
+  const { openQuoteModal } = useAppStore();
   return (
     <>
       {/* Action Buttons Row */}
@@ -38,7 +46,7 @@ const ActionSpool = ({
       >
         {/* Like button with pop animation */}
         <button
-          onClick={() => onLikeToggle(post.id)}
+          onClick={() => onLikeToggle?.(post.id)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -52,9 +60,12 @@ const ActionSpool = ({
           <HeartIcon size={20} active={post.isLiked} />
         </button>
 
-        {/* Comment button */}
+        {/* Comment button: Toggle reply box inline thay vì chuyển link */}
         <button
-          onClick={() => setShowReplyBox(!showReplyBox)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onCommentClick?.();
+          }}
           style={{
             display: "flex",
             alignItems: "center",
@@ -64,21 +75,109 @@ const ActionSpool = ({
           title="Reply"
         >
           <CommentIcon size={20} />
+          {post.repliesCount > 0 && (
+            <span style={{ fontSize: "13px" }}>{post.repliesCount}</span>
+          )}
         </button>
 
         {/* Repost button */}
-        <button
-          onClick={() => onRepostToggle(post.id)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            padding: "4px",
-          }}
-          title="Repost"
-        >
-          <RepostIcon size={20} active={post.isReposted} />
-        </button>
+        <div style={{ position: "relative" }}>
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "4px",
+            }}
+            title="Repost"
+          >
+            <RepostIcon size={20} active={post.isReposted} />
+          </button>
+          {showMenu && (
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                bottom: "32px",
+                backgroundColor: "var(--bg-modal)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "14px",
+                boxShadow: "var(--shadow-popup)",
+                padding: "6px",
+                zIndex: 20,
+                minWidth: "160px",
+              }}
+            >
+              <button
+                onClick={() => {
+                  onRepostToggle?.(post.id);
+                  setShowMenu(false);
+                }}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  borderRadius: "8px",
+                  color: isReposted ? "red" : "var(--text-main)",
+                  display: "block",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "var(--bg-pill)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  {isReposted ? <span>Remove</span> : <span>Repost</span>}
+                  <RepostIcon size={18} />
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  openQuoteModal(post);
+                  setShowMenu(false);
+                }}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  borderRadius: "8px",
+                  color: "var(--text-secondary)",
+                  display: "block",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "var(--bg-pill)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <span>Quote</span>
+                  <QuoteIcon size={18} />
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Bookmark button */}
         <button
           onClick={() => onBookmark(post)}

@@ -5,6 +5,7 @@ import type {
   RegisterBody,
   AuthResponse,
   RefreshTokenResponse,
+  AuthTokens,
 } from "@/types/auth.types";
 import type { User } from "@/types/user.types";
 
@@ -25,7 +26,10 @@ export const authApi = {
     http.post<RefreshTokenResponse>(ENDPOINTS.REFRESH_TOKEN, { refresh_token }),
 
   verifyEmail: (email_verify_token: string) =>
-    http.post(ENDPOINTS.VERIFY_EMAIL, { email_verify_token }),
+    http.post<{ message: string; result?: AuthTokens }>(
+      ENDPOINTS.VERIFY_EMAIL,
+      { email_verify_token },
+    ),
 
   resendVerifyEmail: () => http.post(ENDPOINTS.RESEND_VERIFY_EMAIL),
 

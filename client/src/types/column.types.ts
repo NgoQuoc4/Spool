@@ -11,11 +11,14 @@ export type ColumnKey =
   | "like"
   | "message"
   | "archive"
+  | "setting"
   | "other_feeds";
 
 export interface ColumnItem {
+  id?: string;
   type: ColumnKey;
   label: string;
+  username?: string;
 }
 
 export const COLUMN_LABELS: Record<ColumnKey, string> = {
@@ -31,5 +34,6 @@ export const COLUMN_LABELS: Record<ColumnKey, string> = {
   archive: "Kho lưu trữ",
   message: "Tin nhắn",
   ghost: "Ghost",
+  setting: "Setting",
   other_feeds: "Bảng feed khác",
 };

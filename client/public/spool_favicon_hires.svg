@@ -1,29 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Modern Dark Squircle App Container (radius 112px = 22%) -->
-  <rect width="512" height="512" rx="112" fill="#10141e" />
-  
-  <!-- Subtle border definition -->
-  <rect width="512" height="512" rx="112" fill="none" stroke="#253147" stroke-width="4" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Spool">
+  <defs>
+    <linearGradient id="spoolBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+  </defs>
 
-  <!-- Centered Spool Vortex Mark (Scaled 2x on 512 grid) -->
-  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Spindle core dot -->
-    <circle cx="256" cy="256" r="40" fill="#38bdf8" />
+  <!-- Premium squircle container (sharp & visible on both light and dark browser tabs) -->
+  <rect width="512" height="512" rx="120" fill="url(#spoolBg)" />
+  <rect width="508" height="508" x="2" y="2" rx="118" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4" />
 
+  <!-- Center spindle core dot with cyan brand pop -->
+  <circle cx="256" cy="256" r="42" fill="#38bdf8" />
+
+  <!-- High-contrast Spool thread curves -->
+  <g fill="none" stroke="#ffffff" stroke-width="54" stroke-linecap="round" stroke-linejoin="round">
     <!-- Upper winding thread arm -->
-    <path stroke="#f8fafc" stroke-width="52" d="
-      M 112,256
-      A 144,144 0 0,1 400,256
-      C 400,336 336,396 256,396
-      C 196,396 148,356 148,304
-    " />
-
+    <path d="M 112,256 A 144,144 0 0,1 400,256 C 400,336 336,396 256,396 C 196,396 148,356 148,304" />
     <!-- Lower winding thread arm -->
-    <path stroke="#f8fafc" stroke-width="52" d="
-      M 400,256
-      A 144,144 0 0,1 112,256
-      C 112,176 176,116 256,116
-      C 316,116 364,156 364,208
-    " />
+    <path d="M 400,256 A 144,144 0 0,1 112,256 C 112,176 176,116 256,116 C 316,116 364,156 364,208" />
   </g>
 </svg>

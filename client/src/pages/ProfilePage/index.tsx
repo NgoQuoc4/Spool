@@ -1,40 +1,83 @@
 import SpoolsFound from "@/components/SpoolCard/SpoolsFound";
 import { ThreadCard } from "@/components/ThreadCard";
 import TopBar from "@/components/TopBar";
-import { useApp } from "@/contexts/AppContext";
-import { useAuth } from "@/contexts/AuthContext";
-import type { Author, ThreadPost } from "@/types";
+import { useAppStore } from "@/stores/useAppStore";
+import type { ThreadPost } from "@/types";
 import { useEffect, useState } from "react";
 import { useTweets } from "@/hooks/useTweets";
 import { formatTweets } from "@/utils/tweet.helper";
 import { useTweetActions } from "@/hooks/useTweetActions";
+import useProfile from "@/hooks/useProfile";
+import {
+  ProfileSkeleton,
+  ThreadListSkeleton,
+  ThreadCardSkeleton,
+} from "@/components/Skeleton";
+import { usersApi } from "@/apis/users.api";
 
-const ProfilePage = () => {
-  const { profile } = useAuth();
-  const { setIsModalOpen } = useApp();
+interface ProfilePageProps {
+  username?: string;
+  columnId?: string;
+}
+
+const ProfilePage: React.FC<ProfilePageProps> = ({
+  username: propUsername,
+  columnId,
+}) => {
+  const { setIsModalOpen, openEditProfileModal } = useAppStore();
+  const {
+    user: profile,
+    currentUser,
+    isMyProfile,
+    isLoading: isProfileLoading,
+  } = useProfile(propUsername);
   const [threads, setThreads] = useState<ThreadPost[]>([]);
+  const [localIsFollowing, setLocalIsFollowing] = useState<boolean | undefined>(
+    undefined,
+  );
+  const [localFollowersCount, setLocalFollowersCount] = useState<
+    number | undefined
+  >(undefined);
 
-  const currentUser: Author = {
-    id: profile._id,
-    name: profile.name,
-    username: profile.username?.trim() || "user",
-    avatar:
-      profile.avatar?.trim() ||
-      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-    verified: true,
-  };
-
-  const { data, isFetchingNextPage, isLoading, isError, refetch, sentinelRef } =
+  // Sync local follow state when profile loads
+  useEffect(() => {
+    if (profile) {
+      setLocalIsFollowing(profile.isFollowing ?? false);
+      setLocalFollowersCount(profile.followers_count ?? 0);
+    }
+  }, [profile?._id]);
+  const { data, isFetchingNextPage, isLoading, sentinelRef, isError, refetch } =
     useTweets({
-      queryKey: "tweets",
+      queryKey: `profile_posts_${profile?._id}`,
       author_id: profile?._id,
-      enabled: Boolean(profile?._id),
+      enabled: !!profile?._id,
     });
 
   useEffect(() => {
     if (!data) return;
     setThreads((prev) => formatTweets(data, prev));
   }, [data]);
+
+  const handleFollow = async (type: "follow" | "unfollow") => {
+    if (!profile?._id) return;
+    // Optimistic update
+    const following = type === "follow";
+    setLocalIsFollowing(following);
+    setLocalFollowersCount((prev) => (prev ?? 0) + (following ? 1 : -1));
+    try {
+      if (following) {
+        await usersApi.follow(profile._id);
+      } else {
+        await usersApi.unfollow(profile._id);
+      }
+    } catch (error) {
+      // Rollback
+      setLocalIsFollowing(!following);
+      setLocalFollowersCount((prev) => (prev ?? 0) + (following ? -1 : 1));
+      console.error(error);
+    }
+  };
+
   //------------- Action post -------------------
   const {
     handleLikeToggle,
@@ -48,90 +91,92 @@ const ProfilePage = () => {
   return (
     <>
       <div className="feed-column">
-        <TopBar type="profile" />
+        <TopBar
+          type="profile"
+          columnId={columnId}
+          title={profile?.name ? profile.name : undefined}
+        />
         <section className="feed-section">
           <div style={{ padding: "24px 20px" }}>
-            <div
-              style={{
-                backgroundColor: "var(--bg-card)",
-                borderRadius: "18px",
-                padding: "24px",
-                border: "1px solid var(--border-color)",
-                marginBottom: "16px",
-              }}
-            >
+            {isProfileLoading ? (
+              <ProfileSkeleton />
+            ) : (
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                }}
-              >
-                <div>
-                  <h2
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "800",
-                      color: "var(--text-main)",
-                      margin: "0 0 4px",
-                    }}
-                  >
-                    {profile.name}
-                  </h2>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      {profile.username}
-                    </span>
-                  </div>
-                </div>
-                <img
-                  src={profile.avatar}
-                  alt={profile.name}
-                  style={{
-                    width: "74px",
-                    height: "74px",
-                    borderRadius: "50%",
-                    objectFit: "cover",
-                    border: "2px solid var(--border-color)",
-                  }}
-                />
-              </div>
-
-              <p
-                style={{
-                  marginTop: "16px",
-                  fontSize: "14px",
-                  lineHeight: "1.5",
-                  color: "var(--text-main)",
-                }}
-              >
-                {profile.bio}
-              </p>
-
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginTop: "18px",
+                  backgroundColor: "var(--bg-card)",
+                  borderRadius: "18px",
+                  padding: "24px",
+                  border: "1px solid var(--border-color)",
+                  marginBottom: "16px",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <div>
+                    <h2
+                      style={{
+                        fontSize: "24px",
+                        fontWeight: "800",
+                        color: "var(--text-main)",
+                        margin: "0 0 4px",
+                      }}
+                    >
+                      {profile?.name}
+                    </h2>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "14px",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        @{profile?.username}
+                      </span>
+                    </div>
+                  </div>
+                  {profile?.avatar && (
+                    <img
+                      src={profile.avatar}
+                      alt={profile?.name}
+                      style={{
+                        width: "74px",
+                        height: "74px",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        border: "2px solid var(--border-color)",
+                      }}
+                    />
+                  )}
+                </div>
+
+                {profile?.bio && (
+                  <p
+                    style={{
+                      marginTop: "16px",
+                      fontSize: "14px",
+                      lineHeight: "1.5",
+                      color: "var(--text-main)",
+                    }}
+                  >
+                    {profile.bio}
+                  </p>
+                )}
+                <div
+                  style={{
+                    display: "flex",
                     alignItems: "center",
-                    gap: "6px",
+                    gap: "12px",
                   }}
                 >
                   <span
@@ -140,7 +185,8 @@ const ProfilePage = () => {
                       color: "var(--text-secondary)",
                     }}
                   >
-                    {profile.followers_count} followers
+                    {localFollowersCount ?? profile?.followers_count ?? 0}{" "}
+                    followers
                   </span>
                   <span
                     style={{
@@ -148,26 +194,105 @@ const ProfilePage = () => {
                       color: "var(--text-secondary)",
                     }}
                   >
-                    {profile.following_count} following
+                    {profile?.following_count ?? 0} following
                   </span>
                 </div>
 
-                <button
-                  onClick={() => setIsModalOpen(true)}
-                  style={{
-                    backgroundColor: "var(--bg-pill)",
-                    color: "var(--text-main)",
-                    padding: "6px 18px",
-                    borderRadius: "10px",
-                    fontWeight: "600",
-                    fontSize: "13px",
-                    border: "1px solid var(--border-color)",
-                  }}
-                >
-                  New spool +
-                </button>
+                {isMyProfile ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      marginTop: "12px",
+                      justifyContent: "space-between",
+                      width: "100%",
+                    }}
+                  >
+                    <button
+                      onClick={() => openEditProfileModal()}
+                      style={{
+                        backgroundColor: "var(--bg-pill)",
+                        color: "var(--text-main)",
+                        padding: "6px 18px",
+                        borderRadius: "10px",
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        border: "1px solid var(--border-color)",
+                        width: "50%",
+                      }}
+                    >
+                      Edit Profile
+                    </button>
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      style={{
+                        backgroundColor: "var(--bg-pill)",
+                        color: "var(--text-main)",
+                        padding: "6px 18px",
+                        borderRadius: "10px",
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        border: "1px solid var(--border-color)",
+                        width: "50%",
+                      }}
+                    >
+                      New spool +
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      marginTop: "12px",
+                      justifyContent: "space-between",
+                      width: "100%",
+                    }}
+                  >
+                    <button
+                      onClick={() =>
+                        handleFollow(localIsFollowing ? "unfollow" : "follow")
+                      }
+                      style={{
+                        backgroundColor: localIsFollowing
+                          ? "var(--bg-pill)"
+                          : "var(--text-main)",
+                        color: localIsFollowing
+                          ? "var(--text-main)"
+                          : "var(--bg-main, #fff)",
+                        padding: "6px 18px",
+                        borderRadius: "10px",
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        border: "1px solid var(--border-color)",
+                        width: "50%",
+                        cursor: "pointer",
+                        transition: "background 0.2s, color 0.2s",
+                      }}
+                    >
+                      {localIsFollowing ? "Following" : "Follow"}
+                    </button>
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      style={{
+                        backgroundColor: "var(--bg-pill)",
+                        color: "var(--text-main)",
+                        padding: "6px 18px",
+                        borderRadius: "10px",
+                        fontWeight: "600",
+                        fontSize: "13px",
+                        border: "1px solid var(--border-color)",
+                        width: "50%",
+                      }}
+                    >
+                      Message
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             <h4
               style={{
@@ -183,15 +308,7 @@ const ProfilePage = () => {
 
             <div className="feed-scrollable">
               {isLoading ? (
-                <div
-                  style={{
-                    textAlign: "center",
-                    padding: "30px",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  Đang tải tin...
-                </div>
+                <ThreadListSkeleton count={3} />
               ) : isError ? (
                 <div
                   style={{
@@ -214,9 +331,9 @@ const ProfilePage = () => {
                   </button>
                 </div>
               ) : threads.length > 0 ? (
-                threads.map((post) => (
+                threads.map((post, index) => (
                   <ThreadCard
-                    key={post.id}
+                    key={post.id || `thread-${index}`}
                     post={post}
                     currentUser={currentUser}
                     onLikeToggle={handleLikeToggle}
@@ -232,20 +349,8 @@ const ProfilePage = () => {
               )}
 
               {/* Điểm neo để kích hoạt tải trang tiếp theo */}
-              <div
-                ref={sentinelRef}
-                style={{ height: "20px", margin: "10px 0" }}
-              >
-                {isFetchingNextPage && (
-                  <p
-                    style={{
-                      textAlign: "center",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    Đang tải thêm...
-                  </p>
-                )}
+              <div ref={sentinelRef} style={{ margin: "10px 0" }}>
+                {isFetchingNextPage && <ThreadCardSkeleton />}
               </div>
             </div>
           </div>

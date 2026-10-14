@@ -1,8 +1,4 @@
-import { ObjectId } from "mongodb";
-import User from "~/models/schemas/User.schema";
-import { Follow } from "~/models/schemas/Follow.schema";
-import dataservice from "./database.service";
-
+import { UserVerifyStatus } from "@prisma/client";
 import {
   ChangePasswordRequestBody,
   LoginRequestBody,
@@ -13,12 +9,17 @@ import {
 } from "~/models/requests/User.requests";
 import { comparePassword, hashPassword } from "~/utils/crypto";
 import { signToken, verifyToken } from "~/utils/jwt";
-import { TokenType, UserVerifyStatus } from "~/constants/enums";
+import { TokenType } from "~/constants/enums";
 import "dotenv/config";
 import { SignOptions } from "jsonwebtoken";
-import { RefreshToken } from "~/models/schemas/RefreshToken.schema";
 import { userMessage } from "~/constants/messages";
 import axios from "axios";
+import {
+  sendForgotPasswordEmail,
+  sendVerifyRegisterEmail,
+} from "~/utils/email";
+import prisma from "./prisma.service";
+
 class UsersService {
   constructor() {}
 
@@ -56,11 +57,10 @@ class UsersService {
   }
 
   private async decodeRefreshToken(token: string) {
-    const decoded = await verifyToken({
+    return verifyToken({
       token,
       secretKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
     });
-    return decoded;
   }
 
   private signEmailVerificationToken(user_id: string) {
@@ -97,135 +97,130 @@ class UsersService {
   }
 
   async signIn(payload: LoginRequestBody) {
-    const result = await dataservice.users.findOne({ email: payload.email });
-    if (!result) {
-      throw new Error(userMessage.EMAIL_NOT_FOUND);
-    }
+    const user = await prisma.user.findUnique({
+      where: { email: payload.email },
+    });
+    if (!user) throw new Error(userMessage.EMAIL_NOT_FOUND);
 
-    const isPasswordValid = comparePassword(payload.password, result.password);
-    if (!isPasswordValid) {
-      throw new Error(userMessage.INVALID_PASSWORD);
-    }
+    const isPasswordValid = comparePassword(payload.password, user.password);
+    if (!isPasswordValid) throw new Error(userMessage.INVALID_PASSWORD);
 
-    const user_id = result._id.toString();
-    const [accessToken, refreshToken] =
-      await this.signAccessAndRefreshToken(user_id);
-    const { iat, exp } = await this.decodeRefreshToken(refreshToken);
-    await dataservice.refreshTokens.insertOne(
-      new RefreshToken({
-        token: refreshToken,
-        user_id: new ObjectId(user_id),
-        iat: iat,
-        exp: exp,
-      }),
+    const [accessToken, refreshToken] = await this.signAccessAndRefreshToken(
+      user.id,
     );
+    const { iat, exp } = await this.decodeRefreshToken(refreshToken);
+
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        user_id: user.id,
+        iat: new Date(iat * 1000),
+        exp: new Date(exp * 1000),
+      },
+    });
     return { accessToken, refreshToken };
   }
 
   async signUp(payload: RegisterRequestBody) {
-    const dateOfBirth = new Date(payload.date_of_birth);
     const hashedPassword = hashPassword(payload.password);
-    const user_id = new ObjectId();
-    const emailVerificationToken = await this.signEmailVerificationToken(
-      user_id.toString(),
-    );
-    const result = await dataservice.users.insertOne(
-      new User({
-        ...payload,
-        _id: user_id,
-        username: payload.email.toLowerCase().split("@")[0],
-        email_verify_token: emailVerificationToken,
-        date_of_birth: dateOfBirth,
+    const emailVerificationToken =
+      await this.signEmailVerificationToken("placeholder");
+
+    const user = await prisma.user.create({
+      data: {
+        name: payload.name,
+        email: payload.email,
         password: hashedPassword,
-      }),
-    );
-    return { emailVerificationToken };
+        username: payload.email.toLowerCase().split("@")[0],
+        date_of_birth: new Date(payload.date_of_birth),
+        email_verify_token: emailVerificationToken,
+      },
+    });
+
+    // Re-sign with actual user.id
+    const realToken = await this.signEmailVerificationToken(user.id);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { email_verify_token: realToken },
+    });
+
+    sendVerifyRegisterEmail(payload.email, realToken).catch(console.error);
+    return { emailVerificationToken: realToken };
   }
 
   async logOut(payload: LogoutRequestBody) {
-    const result = await dataservice.refreshTokens.deleteOne({
-      token: payload.refresh_token,
+    const deleted = await prisma.refreshToken.deleteMany({
+      where: { token: payload.refresh_token },
     });
-    if (result.deletedCount === 0) {
-      throw new Error("Token not found");
-    }
+    if (deleted.count === 0) throw new Error("Token not found");
     return true;
   }
 
   async checkEmailExists(email: string) {
-    const user = await dataservice.users.findOne({ email });
-    if (user) {
-      return true;
-    }
-    return false;
+    const user = await prisma.user.findUnique({ where: { email } });
+    return !!user;
   }
 
   async verifyEmail(user_id: string) {
-    const [token] = await Promise.all([
+    const [[accessToken, refreshToken]] = await Promise.all([
       this.signAccessAndRefreshToken(user_id),
-      dataservice.users.updateOne(
-        {
-          _id: new ObjectId(user_id),
+      prisma.user.update({
+        where: { id: user_id },
+        data: {
+          verify: UserVerifyStatus.Verified,
+          email_verify_token: "",
         },
-        {
-          $set: {
-            verify: UserVerifyStatus.Verified,
-            updated_at: new Date(),
-            email_verify_token: "",
-          },
-        },
-      ),
-    ]);
-    const [accessToken, refreshToken] = token;
-    const { iat, exp } = await this.decodeRefreshToken(refreshToken);
-
-    await dataservice.refreshTokens.insertOne(
-      new RefreshToken({
-        token: refreshToken,
-        user_id: new ObjectId(user_id),
-        iat: iat,
-        exp: exp,
       }),
-    );
+    ]);
+
+    const { iat, exp } = await this.decodeRefreshToken(refreshToken);
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        user_id,
+        iat: new Date(iat * 1000),
+        exp: new Date(exp * 1000),
+      },
+    });
     return { accessToken, refreshToken };
   }
 
   async resendVerifyEmail(user_id: string) {
-    const emailVerificationToken = await this.signEmailVerificationToken(
-      user_id.toString(),
-    );
-
-    const result = await dataservice.users.updateOne(
-      {
-        _id: new ObjectId(user_id),
-      },
-      {
-        $set: {
-          updated_at: new Date(),
-          email_verify_token: emailVerificationToken,
-        },
-      },
-    );
+    const emailVerificationToken =
+      await this.signEmailVerificationToken(user_id);
+    const user = await prisma.user.update({
+      where: { id: user_id },
+      data: { email_verify_token: emailVerificationToken },
+    });
+    if (user?.email) {
+      sendVerifyRegisterEmail(user.email, emailVerificationToken).catch(
+        console.error,
+      );
+    }
     return true;
   }
 
-  async forgotPassword(user_id: string) {
-    const forgotPasswordToken = await this.forgotPasswordToken(user_id);
-    const result = await dataservice.users.updateOne(
-      {
-        _id: new ObjectId(user_id),
-      },
-      {
-        $set: {
-          updated_at: new Date(),
-          forgot_password_token: forgotPasswordToken,
-        },
-      },
-    );
-
-    //gửi email
-    //https://localhost:3000/verify-forgot-password-token?token=${forgotPasswordToken}&user_id=${user_id}
-    return { forgotPasswordToken };
+  async forgotPassword(data: { id?: string; email: string }) {
+    const { id, email } = data;
+    if (id) {
+      const forgotPasswordToken = await this.forgotPasswordToken(id);
+      await prisma.user.update({
+        where: { id },
+        data: { forgot_password_token: forgotPasswordToken },
+      });
+      sendForgotPasswordEmail(email, forgotPasswordToken).catch(console.error);
+      return { forgotPasswordToken };
+    } else {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) throw new Error("User not found");
+      const forgotPasswordToken = await this.forgotPasswordToken(user.id);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { forgot_password_token: forgotPasswordToken },
+      });
+      sendForgotPasswordEmail(email, forgotPasswordToken).catch(console.error);
+      return { forgotPasswordToken };
+    }
   }
 
   async resetPassword(
@@ -234,164 +229,138 @@ class UsersService {
     confirm_password: string,
     forgot_password_token: string,
   ) {
-    if (password !== confirm_password) {
+    if (password !== confirm_password)
       throw new Error("Password and confirm password do not match");
-    }
-    const hashedPassword = hashPassword(password);
-    const result = await dataservice.users.updateOne(
-      {
-        _id: new ObjectId(user_id),
-        forgot_password_token: forgot_password_token,
+
+    const user = await prisma.user.findFirst({
+      where: { id: user_id, forgot_password_token },
+    });
+    if (!user) throw new Error("Invalid token");
+
+    await prisma.user.update({
+      where: { id: user_id },
+      data: {
+        password: hashPassword(password),
+        forgot_password_token: "",
       },
-      {
-        $set: {
-          updated_at: new Date(),
-          password: hashedPassword,
-          forgot_password_token: "",
-        },
-      },
-    );
+    });
     return true;
   }
 
   async getMe(user_id: string) {
-    const objectUserId = new ObjectId(user_id);
     const [user, followersCount, followingCount] = await Promise.all([
-      dataservice.users.findOne(
-        {
-          _id: objectUserId,
+      prisma.user.findUnique({
+        where: { id: user_id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          username: true,
+          avatar: true,
+          cover_photo: true,
+          bio: true,
+          location: true,
+          website: true,
+          date_of_birth: true,
+          verify: true,
+          created_at: true,
+          updated_at: true,
         },
-        {
-          projection: {
-            password: 0,
-            email_verify_token: 0,
-            forgot_password_token: 0,
-          },
-        },
-      ),
-      dataservice.follows.countDocuments({
-        followed_user_id: objectUserId,
       }),
-      dataservice.follows.countDocuments({
-        user_id: objectUserId,
-      }),
+      prisma.follow.count({ where: { followed_user_id: user_id } }),
+      prisma.follow.count({ where: { user_id } }),
     ]);
 
-    if (!user) {
-      throw new Error("User not found");
-    }
+    if (!user) throw new Error("User not found");
     return {
       ...user,
+      _id: user.id,
       followers_count: followersCount,
       following_count: followingCount,
     };
   }
 
   async patchMe(user_id: string, payload: UpdateMeRequestBody) {
-    const _payload = payload.date_of_birth
-      ? { ...payload, date_of_birth: new Date(payload.date_of_birth) }
-      : payload;
-    const result = await dataservice.users.findOneAndUpdate(
-      {
-        _id: new ObjectId(user_id),
+    const data: any = { ...payload };
+    if (payload.date_of_birth)
+      data.date_of_birth = new Date(payload.date_of_birth);
+
+    const user = await prisma.user.update({
+      where: { id: user_id },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        avatar: true,
+        cover_photo: true,
+        bio: true,
+        location: true,
+        website: true,
+        date_of_birth: true,
+        verify: true,
+        created_at: true,
+        updated_at: true,
       },
-      {
-        $set: {
-          ...(_payload as UpdateMeRequestBody as { date_of_birth?: Date }),
-          updated_at: new Date(),
-        },
-      },
-      {
-        projection: {
-          _id: 0,
-          password: 0,
-          email_verify_token: 0,
-          forgot_password_token: 0,
-        },
-        returnDocument: "after",
-      },
-    );
-    return result;
-  }
-  async getUserByUsername(username: string) {
-    const user = await dataservice.users.findOne(
-      {
-        username: username,
-      },
-      {
-        projection: {
-          password: 0,
-          email_verify_token: 0,
-          forgot_password_token: 0,
-        },
-      },
-    );
-    if (!user) {
-      throw new Error("User not found");
-    }
+    });
     return user;
   }
 
-  async followUser(user_id: string, followed_user_id: string) {
-    //Check follow myself
-    if (user_id === followed_user_id) {
-      throw new Error("User cannot follow himself");
-    }
-
-    // Check if already following
-    const existingFollow = await dataservice.follows.findOne({
-      user_id: new ObjectId(user_id),
-      followed_user_id: new ObjectId(followed_user_id),
+  async getUserByUsername(username: string) {
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        avatar: true,
+        cover_photo: true,
+        bio: true,
+        location: true,
+        website: true,
+        date_of_birth: true,
+        verify: true,
+        created_at: true,
+        updated_at: true,
+      },
     });
-    if (existingFollow) {
-      return { message: "Already followed" };
-    }
+    if (!user) throw new Error("User not found");
+    return { ...user, _id: user.id };
+  }
 
-    await dataservice.follows.insertOne(
-      new Follow(
-        new ObjectId(user_id),
-        new ObjectId(followed_user_id),
-        new Date(),
-      ),
-    );
+  async followUser(user_id: string, followed_user_id: string) {
+    if (user_id === followed_user_id)
+      throw new Error("User cannot follow himself");
+
+    await prisma.follow.upsert({
+      where: { user_id_followed_user_id: { user_id, followed_user_id } },
+      update: {},
+      create: { user_id, followed_user_id },
+    });
     return { message: "Follow user success" };
   }
 
   async unfollowUser(user_id: string, followed_user_id: string) {
-    // Check if already following
-    const existingFollow = await dataservice.follows.findOne({
-      user_id: new ObjectId(user_id),
-      followed_user_id: new ObjectId(followed_user_id),
+    const deleted = await prisma.follow.deleteMany({
+      where: { user_id, followed_user_id },
     });
-    if (!existingFollow) {
-      return { message: "Not follow" };
-    }
-
-    const result = await dataservice.follows.deleteOne({
-      user_id: new ObjectId(user_id),
-      followed_user_id: new ObjectId(followed_user_id),
-    });
-    if (result.deletedCount === 0) {
-      throw new Error("User not found");
-    }
+    if (deleted.count === 0) return { message: "Not follow" };
     return { message: "Unfollow user success" };
   }
 
   async changePassword(user_id: string, payload: ChangePasswordRequestBody) {
-    const hashedPassword = hashPassword(payload.password);
-    await dataservice.users.findOneAndUpdate(
-      { _id: new ObjectId(user_id) },
-      { $set: { password: hashedPassword, updated_at: new Date() } },
-    );
-    // Xoá tất cả refresh token → buộc đăng nhập lại trên mọi thiết bị
-    await dataservice.refreshTokens.deleteMany({
-      user_id: new ObjectId(user_id),
+    await prisma.user.update({
+      where: { id: user_id },
+      data: { password: hashPassword(payload.password) },
     });
+    // Xoá tất cả refresh token → buộc đăng nhập lại trên mọi thiết bị
+    await prisma.refreshToken.deleteMany({ where: { user_id } });
     return { message: "Change password success. Please login again." };
   }
 
   private async getOAuthGoogleAccessToken(code: string) {
-    const tokenUrl = "https://oauth2.googleapis.com/token";
     const body = {
       code,
       grant_type: "authorization_code",
@@ -399,98 +368,79 @@ class UsersService {
       client_secret: process.env.GOOGLE_CLIENT_SECRET,
       redirect_uri: process.env.GOOGLE_REDIRECT_URIS,
     };
-    const { data } = await axios.post(tokenUrl, body, {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
+    const { data } = await axios.post(
+      "https://oauth2.googleapis.com/token",
+      body,
+      {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      },
+    );
     return data;
   }
 
   private async getGoogleUserProfile(access_token: string) {
-    const url = "https://www.googleapis.com/oauth2/v1/userinfo";
-    const config = {
-      headers: {
-        Authorization: `Bearer ${access_token}`,
+    const { data } = await axios.get(
+      "https://www.googleapis.com/oauth2/v1/userinfo",
+      {
+        headers: { Authorization: `Bearer ${access_token}` },
       },
-    };
-    const data = await axios.get(url, config);
+    );
     return data;
   }
 
   async googleOauth(code: string) {
     const data = await this.getOAuthGoogleAccessToken(code);
-    const accessToken = data.access_token;
-    const { data: profile } = await this.getGoogleUserProfile(accessToken);
+    const profile = await this.getGoogleUserProfile(data.access_token);
 
-    // Check user exist
-    const user = await dataservice.users.findOne({
-      email: profile.email,
+    let user = await prisma.user.findUnique({
+      where: { email: profile.email },
     });
 
-    if (user === null) {
-      const randomPassword = Math.random().toString(36).substring(2, 15);
-      const user_id = new ObjectId();
-      const result = await dataservice.users.insertOne(
-        new User({
-          _id: user_id,
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
           name: profile.name,
           email: profile.email,
           avatar: profile.picture,
-          email_verify_token: "",
-          password: hashPassword(randomPassword),
+          password: hashPassword(Math.random().toString(36).substring(2, 15)),
           verify: UserVerifyStatus.Verified,
-          date_of_birth: new Date(),
-        }),
-      );
-      const [accessToken, refreshToken] = await this.signAccessAndRefreshToken(
-        user_id.toString(),
-      );
-      const { iat, exp } = await this.decodeRefreshToken(refreshToken);
-      await dataservice.refreshTokens.insertOne(
-        new RefreshToken({
-          token: refreshToken,
-          user_id: new ObjectId(user_id),
-          iat: iat,
-          exp: exp,
-        }),
-      );
-      return { accessToken, refreshToken, newUser: !user };
-    } else {
-      if (user.verify === UserVerifyStatus.Unverified) {
-        throw new Error("User is not verified");
-      }
-      const [accessToken, refreshToken] = await this.signAccessAndRefreshToken(
-        user._id.toString(),
-      );
-      const { iat, exp } = await this.decodeRefreshToken(refreshToken);
-      await dataservice.refreshTokens.insertOne(
-        new RefreshToken({
-          token: refreshToken,
-          user_id: new ObjectId(user._id),
-          iat: iat,
-          exp: exp,
-        }),
-      );
-      return { accessToken, refreshToken, newUser: !user };
+          username: profile.email.toLowerCase().split("@")[0],
+        },
+      });
+    } else if (user.verify === UserVerifyStatus.Unverified) {
+      throw new Error("User is not verified");
     }
+
+    const [accessToken, refreshToken] = await this.signAccessAndRefreshToken(
+      user.id,
+    );
+    const { iat, exp } = await this.decodeRefreshToken(refreshToken);
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        user_id: user.id,
+        iat: new Date(iat * 1000),
+        exp: new Date(exp * 1000),
+      },
+    });
+    return { accessToken, refreshToken, newUser: !user };
   }
 
   async refreshToken(user_id: string, refresh_token: string, exp: number) {
-    // Xóa refresh token cũ (chính token client vừa gửi lên)
-    await dataservice.refreshTokens.deleteOne({ token: refresh_token });
+    await prisma.refreshToken.deleteMany({ where: { token: refresh_token } });
 
     const { iat } = await this.decodeRefreshToken(refresh_token);
     const [newAccessToken, newRefreshToken] =
-      // Tạo cặp token mới (giữ nguyên hạn exp của refresh token cũ)
       await this.signAccessAndRefreshToken(user_id, exp);
-    // Lưu refresh token mới vào DB
-    await dataservice.refreshTokens.insertOne(
-      new RefreshToken({
+
+    await prisma.refreshToken.create({
+      data: {
         token: newRefreshToken,
-        user_id: new ObjectId(user_id),
-        iat: iat,
-        exp: exp,
-      }),
-    );
+        user_id,
+        iat: new Date(iat * 1000),
+        exp: new Date(exp * 1000),
+      },
+    });
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
 }

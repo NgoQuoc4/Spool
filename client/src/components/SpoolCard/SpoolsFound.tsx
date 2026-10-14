@@ -1,4 +1,7 @@
-const SpoolsFound = () => {
+const SpoolsFound = ({
+  title = "No spools found",
+  content = " Try switching feeds or posting a New spool!",
+}) => {
   return (
     <>
       <div
@@ -16,11 +19,9 @@ const SpoolsFound = () => {
             color: "var(--text-main)",
           }}
         >
-          No spools found
+          {title}
         </p>
-        <p style={{ fontSize: "14px" }}>
-          Try switching feeds or posting a new thread!
-        </p>
+        <p style={{ fontSize: "14px" }}>{content}</p>
       </div>
     </>
   );

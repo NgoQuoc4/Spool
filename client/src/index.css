@@ -146,3 +146,20 @@ input, textarea {
 .animate-modal {
   animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@keyframes skeletonPulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.38;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.skeleton-shimmer {
+  background-color: var(--bg-pill);
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+}

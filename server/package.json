@@ -6,7 +6,14 @@
   "scripts": {
     "dev": "nodemon development",
     "build": "tsc && tsc-alias",
-    "start": "node dist/index.js production"
+    "start": "node dist/index.js production",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio",
+    "seed": "tsx src/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx src/seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -28,11 +35,14 @@
     "mime": "^3.0.0",
     "minimist": "^1.2.8",
     "mongodb": "^7.6.0",
+    "nodemailer": "^10.1.0",
     "sharp": "^0.35.5",
     "slash": "^3.0.0",
+    "socket.io": "^4.8.4",
     "zx": "^7.2.4"
   },
   "devDependencies": {
+    "@prisma/client": "^5.22.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/ffmpeg-static": "^3.0.3",
@@ -40,11 +50,17 @@
     "@types/lodash": "^4.17.25",
     "@types/minimist": "^1.2.5",
     "@types/node": "^26.6.2",
+    "@types/nodemailer": "^8.0.2",
     "nodemon": "^3.1.14",
+    "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.9.5",
     "tsconfig-paths": "^4.2.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.1.0",
+    "utf-8-validate": "^6.0.6"
   }
 }

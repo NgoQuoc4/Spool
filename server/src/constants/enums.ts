@@ -1,7 +1,7 @@
 export enum UserVerifyStatus {
-  Unverified,
-  Verified,
-  Banned,
+  Unverified = "Unverified",
+  Verified = "Verified",
+  Banned = "Banned",
 }
 export enum TokenType {
   AccessToken,

@@ -15,7 +15,6 @@ const Register: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-
   const googleAuthUrl = getGoogleAuthUrl();
 
   const handleSubmit = async (e: React.FormEvent) => {

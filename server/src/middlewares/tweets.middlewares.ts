@@ -1,10 +1,9 @@
 import { checkSchema } from "express-validator";
 import { values } from "lodash";
-import { ObjectId } from "mongodb";
 import { HTTP_STATUS } from "~/constants/httpStatus";
 import { ErrorWithStatus } from "~/models/errors";
 import { TweetAudienceType, TweetType } from "~/models/schemas/Tweet.schema";
-import dataservice from "~/services/database.service";
+import prisma from "~/services/prisma.service";
 import { validate } from "~/utils/validation";
 
 export const createTweetValidator = validate(
@@ -18,18 +17,6 @@ export const createTweetValidator = validate(
           const hashtags = req.body.hashtags as string[];
           const mentions = req.body.mentions as string[];
           const medias = req.body.medias as string[];
-          // Nếu không có content, hashtag, mention và media thì throw error
-          if (
-            !value &&
-            hashtags.length === 0 &&
-            mentions.length === 0 &&
-            medias.length === 0
-          ) {
-            throw new ErrorWithStatus({
-              message: "content must be a string and not empty",
-              status: HTTP_STATUS.BAD_REQUEST,
-            });
-          }
           // Retweet: content phải rỗng (không có nội dung riêng)
           if (type === TweetType.RETWEET && value) {
             throw new ErrorWithStatus({
@@ -109,8 +96,7 @@ export const createTweetValidator = validate(
       custom: {
         options: async (value: string[], { req }) => {
           for (const item of value) {
-            // 1. Kiểm tra ObjectId hợp lệ tránh crash server BSONError
-            if (!ObjectId.isValid(item)) {
+            if (!item || typeof item !== "string") {
               throw new ErrorWithStatus({
                 message: "Invalid user id",
                 status: HTTP_STATUS.BAD_REQUEST,
@@ -124,8 +110,8 @@ export const createTweetValidator = validate(
               });
             }
             // 3. Kiểm tra user có tồn tại trong DB không
-            const user = await dataservice.users.findOne({
-              _id: new ObjectId(item),
+            const user = await prisma.user.findUnique({
+              where: { id: item },
             });
             if (!user) {
               throw new ErrorWithStatus({
@@ -148,15 +134,15 @@ export const createTweetValidator = validate(
           const type = req.body.type as TweetType;
           // RETWEET và QUOTETWEET đều cần parent_id
           if (type === TweetType.RETWEET || type === TweetType.QUOTETWEET) {
-            if (!value || !ObjectId.isValid(value)) {
+            if (!value || typeof value !== "string") {
               throw new ErrorWithStatus({
                 message: "parent_id must be a valid tweet id",
                 status: HTTP_STATUS.BAD_REQUEST,
               });
             }
             // Kiểm tra xem tweet có tồn tại không
-            const tweet = await dataservice.tweets.findOne({
-              _id: new ObjectId(value),
+            const tweet = await prisma.tweet.findUnique({
+              where: { id: value },
             });
             if (!tweet) {
               throw new ErrorWithStatus({

@@ -10,7 +10,7 @@ import GhostPage from "@/pages/GhostPage";
 import LikePage from "@/pages/LikePage";
 import MessagesPage from "@/pages/MessagesPage";
 
-const COLUMN_CONTENT: Record<string, React.ComponentType> = {
+const COLUMN_CONTENT: Record<string, React.ComponentType<any>> = {
   search: SearchPage,
   activity: ActivityPage,
   profile: ProfilePage,
@@ -28,15 +28,17 @@ const COLUMN_CONTENT: Record<string, React.ComponentType> = {
 interface ColumnPanelProps {
   label: string;
   type: string;
+  id?: string;
+  username?: string;
 }
 
-export const ColumnPanel = ({ label, type }: ColumnPanelProps) => {
+export const ColumnPanel = ({ label, type, id, username }: ColumnPanelProps) => {
   const Content = COLUMN_CONTENT[type];
 
   return (
     <>
       {Content ? (
-        <Content />
+        <Content username={username} columnId={id} />
       ) : (
         <div
           style={{

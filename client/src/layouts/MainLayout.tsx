@@ -4,9 +4,10 @@ import { Navbar } from "@/components/Navbar";
 import { Toast } from "@/components/Toast";
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
-import { useApp } from "@/contexts/AppContext";
-import { useQueryClient } from "@tanstack/react-query";
+import { useAppStore } from "@/stores/useAppStore";
 import { useAuth } from "@/contexts/AuthContext";
+import EditProfileModal from "@/components/EditProfileModal";
+import FollowModal from "@/components/FollowModal";
 
 export interface LayoutContextType {
   showToast: (msg: string) => void;
@@ -15,22 +16,10 @@ export interface LayoutContextType {
 
 const MainLayout = () => {
   const { profile } = useAuth();
-  const queryClient = useQueryClient();
-  const {
-    isModalOpen,
-    setIsModalOpen,
-    showToast,
-    toastMessage,
-    theme,
-    toggleTheme,
-  } = useApp();
+  const { setIsModalOpen, showToast, toastMessage, theme, toggleTheme } =
+    useAppStore();
   const [activeNavTab, setActiveNavTab] = useState<string>("forYou");
 
-  // Apply theme to document
-  const handlePostCreated = () => {
-    queryClient.invalidateQueries({ queryKey: ["tweets"] });
-    showToast("Đã đăng bài!");
-  };
   return (
     <div className="app-container">
       {/* Authentic Threads Left Navigation Rail (Desktop) & Dock (Mobile) */}
@@ -40,7 +29,7 @@ const MainLayout = () => {
         openCreateModal={() => setIsModalOpen(true)}
         theme={theme}
         toggleTheme={toggleTheme}
-        currentUser={profile}
+        currentUser={profile || undefined}
       />
 
       <main className="main-content">
@@ -54,18 +43,21 @@ const MainLayout = () => {
       <button
         className="floating-create-btn"
         onClick={() => setIsModalOpen(true)}
-        title="New thread (+)"
-        aria-label="New thread"
+        title="New spool (+)"
+        aria-label="New spool"
       >
         <PlusIcon size={22} />
       </button>
 
       {/* Modal để thêm bài post */}
-      <CreateThreadModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onPostCreated={handlePostCreated}
-      />
+      <CreateThreadModal />
+
+      {/* Modal để edit profile */}
+      <EditProfileModal />
+
+      {/* Modal để follow */}
+      <FollowModal />
+
       {/* Toast Notification */}
       <Toast message={toastMessage} onClose={() => showToast("")} />
     </div>

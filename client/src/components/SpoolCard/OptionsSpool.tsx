@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MoreDotsIcon } from "../Icons";
 import type { ThreadPost } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 const OptionsSpool = ({
   post,
@@ -12,6 +13,8 @@ const OptionsSpool = ({
   onDelete: (id: string) => void;
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const { profile } = useAuth();
+  const isAuthor = Boolean(profile?._id && profile._id === post.author.id);
 
   return (
     <>
@@ -74,51 +77,55 @@ const OptionsSpool = ({
               Copy link
             </button>
 
-            <button
-              onClick={() => setShowMenu(false)}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "8px 12px",
-                fontSize: "14px",
-                borderRadius: "8px",
-                color: "var(--text-secondary)",
-                display: "block",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = "var(--bg-pill)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              Unfollow @{post.author.username}
-            </button>
+            {!isAuthor && (
+              <button
+                onClick={() => setShowMenu(false)}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  borderRadius: "8px",
+                  color: "var(--text-secondary)",
+                  display: "block",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "var(--bg-pill)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                Unfollow @{post.author.username}
+              </button>
+            )}
 
-            <button
-              onClick={() => {
-                onDelete(post.id);
-                setShowMenu(false);
-              }}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "8px 12px",
-                fontSize: "14px",
-                borderRadius: "8px",
-                color: "var(--error-color)",
-                display: "block",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor =
-                  "var(--bg-error-hover)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = "transparent")
-              }
-            >
-              Delete
-            </button>
+            {isAuthor && (
+              <button
+                onClick={() => {
+                  onDelete(post.id);
+                  setShowMenu(false);
+                }}
+                style={{
+                  width: "100%",
+                  textAlign: "left",
+                  padding: "8px 12px",
+                  fontSize: "14px",
+                  borderRadius: "8px",
+                  color: "var(--error-color)",
+                  display: "block",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor =
+                    "var(--bg-error-hover)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "transparent")
+                }
+              >
+                Delete
+              </button>
+            )}
           </div>
         )}
       </div>

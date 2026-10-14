@@ -166,7 +166,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
               </div>
 
               <button
-                onClick={() => onFollowToggle(user.id)}
+                onClick={() => user.id && onFollowToggle(user.id)}
                 style={{
                   backgroundColor: user.isFollowing
                     ? "transparent"

@@ -1,3 +1,5 @@
+import type { Author } from "@/types";
+
 export const TweetType = {
   TWEET: "tweet",
   RETWEET: "retweet",
@@ -49,13 +51,11 @@ export interface Tweet {
   bookmark: number;
   created_at: string;
   updated_at: string;
-  // populated fields (joined from user)
-  user?: {
-    _id: string;
-    name: string;
-    username: string;
-    avatar: string;
-  };
+  parent_tweet?: Tweet | null;
+  // populated fields
+  user?: Author & { _id?: string }; // _id từ server, id được normalize ở helper
+  isFollowing?: boolean;            // shorthand = user.isFollowing
+  is_following?: boolean;           // snake_case alias từ server
 }
 
 export interface CreateTweetBody {

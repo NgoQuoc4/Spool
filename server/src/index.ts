@@ -1,24 +1,10 @@
 import "dotenv/config";
 import express, { Request, Response } from "express";
 import userRouter from "./routers/user.router";
-import dataservice from "./services/database.service";
+import prisma from "./services/prisma.service";
 import { defaultErrorHanlde } from "./middlewares/error.middlewares";
 import mediasRouter from "./routers/medias.router";
 import fs from "fs";
-dataservice
-  .connect()
-  .then(() => {
-    console.log("Connected to MongoDB");
-    dataservice.indexUser();
-    dataservice.indexRefreshToken();
-  })
-  .catch((error) => {
-    console.error("Error connecting to MongoDB:", error);
-  });
-const app = express();
-const router = express.Router();
-const PORT = process.env.PORT || 4000;
-
 import {
   IMAGE_DIR,
   VIDEO_DIR,
@@ -28,6 +14,58 @@ import {
   FILE_TEMP_DIR,
 } from "./constants/dir";
 import staticRouter from "./routers/static.router";
+import cors from "cors";
+import tweetsRouter from "./routers/tweets.router";
+import likeRouter from "./routers/likes.router";
+import bookmarkRouter from "./routers/bookmarks.router";
+import searchsRouter from "./routers/searchs.router";
+import { createServer } from "http";
+import { Server } from "socket.io";
+prisma
+  .$connect()
+  .then(() => console.log("Connected to PostgreSQL via Prisma ✅"))
+  .catch((error: any) => {
+    console.error("Error connecting to PostgreSQL:", error);
+    process.exit(1);
+  });
+const app = express();
+const router = express.Router();
+const PORT = process.env.PORT || 4000;
+const httpServer = createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: "http://localhost:3000",
+  },
+});
+
+interface Message {
+  to: string;
+  message: string;
+}
+const users: {
+  [key: string]: {
+    socket_id: string;
+  };
+} = {};
+io.on("connection", (socket: any) => {
+  console.log("connect", socket.id); // x8WIv7-mJelg7on_ALbx
+  const user_id = socket.handshake.auth.id;
+  users[user_id] = socket.id;
+
+  socket.on("chat-message", (data: Message) => {
+    // socket.emit("send-chat-message", data);
+    const user_socket_id = users[data.to];
+    if (user_socket_id) {
+      socket.to(user_socket_id).emit("send-chat-message", data);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    delete users[user_id];
+    console.log("disconnect", socket.id); // x8WIv7-mJelg7on_ALbx
+  });
+});
 
 // Tạo tất cả thư mục upload khi khởi động (recursive tự bỏ qua nếu đã tồn tại)
 for (const dir of [
@@ -40,11 +78,6 @@ for (const dir of [
 ]) {
   fs.mkdirSync(dir, { recursive: true });
 }
-
-import cors from "cors";
-import tweetsRouter from "./routers/tweets.router";
-import likeRouter from "./routers/likes.router";
-import bookmarkRouter from "./routers/bookmarks.router";
 
 // Middlewares
 app.use(cors());
@@ -60,7 +93,7 @@ app.use("/medias", mediasRouter);
 app.use("/tweets", tweetsRouter);
 app.use("/likes", likeRouter);
 app.use("/bookmarks", bookmarkRouter);
-
+app.use("/search", searchsRouter);
 // để public file trên mạng
 // Cách 1
 // app.use("/static/images", express.static(IMAGE_DIR));
@@ -73,8 +106,8 @@ app.use("/static", staticRouter);
 app.use(defaultErrorHanlde);
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server đang chạy tại http://localhost :${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`Server đang chạy tại http://localhost:${PORT}`);
 });
 
 export default app;

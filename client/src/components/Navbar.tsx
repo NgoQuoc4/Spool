@@ -38,6 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   toggleTheme,
   unreadCount = 3,
 }) => {
+  const { profile } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
@@ -397,7 +398,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             }
           >
             <PlusIcon size={22} />
-            <span>New thread</span>
+            <span>New spool</span>
           </button>
 
           <NavLink
@@ -471,7 +472,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </NavLink>
 
           <NavLink
-            to="/profile"
+            to={`/@${profile?.username}`}
             onClick={() => {
               setActiveTab("profile");
             }}

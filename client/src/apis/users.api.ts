@@ -22,4 +22,10 @@ export const usersApi = {
     password: string;
     confirm_password: string;
   }) => http.put(ENDPOINTS.CHANGE_PASSWORD, body),
+
+  verifyEmail: (email_verify_token: string) =>
+    http.post(ENDPOINTS.VERIFY_EMAIL, { email_verify_token }),
+
+  resendVerifyEmail: (email: string) =>
+    http.post(ENDPOINTS.RESEND_VERIFY_EMAIL, { email }),
 };

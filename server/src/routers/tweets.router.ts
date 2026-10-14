@@ -3,7 +3,9 @@ import {
   createTweetController,
   deleteTweetController,
   getAllTweetController,
+  getTweetChildrenController,
   getTweetController,
+  unretweetController,
 } from "~/controllers/tweets.controller";
 import { filterMiddleware } from "~/middlewares/common.midlewares";
 import {
@@ -46,6 +48,19 @@ tweetsRouter.delete(
 );
 
 /*
+ * Description: Unretweet a tweet
+ * Path: /tweets/unretweet/:tweet_id
+ * Method: DELETE
+ * Header: {Authorization: Bearer <access_token>}
+ */
+tweetsRouter.delete(
+  "/unretweet/:tweet_id",
+  accessTokenValidator,
+  tweetValidator,
+  wrapAsync(unretweetController),
+);
+
+/*
  * Description, get all tweets
  * Path: /tweets/:tweet_id
  * Method: GET
@@ -72,6 +87,21 @@ tweetsRouter.get(
   accessTokenValidator,
   tweetsValidator,
   wrapAsync(getAllTweetController),
+);
+
+/*
+ * Description, get all tweets
+ * Path: /tweets
+ * Method: GET
+ * Header: {Authorization: Bearer <access_token>}
+ * Query: {limit: number, page: number}
+ * Response: {message: string, result: {tweets: Tweet[]}}
+ */
+tweetsRouter.get(
+  "/:tweet_id/children",
+  accessTokenValidator,
+  tweetValidator,
+  wrapAsync(getTweetChildrenController),
 );
 
 export default tweetsRouter;

@@ -1,28 +1,17 @@
 import { TweetRequestBody } from "~/models/requests/Tweet.requests";
-import dataservice from "./database.service";
-import { Tweet } from "~/models/schemas/Tweet.schema";
-import { ObjectId } from "mongodb";
-import { Hashtag } from "~/models/schemas/Hashtags.schema";
-import { set } from "lodash";
+import prisma from "./prisma.service";
+import { TweetType, TweetAudience, MediaType, Prisma } from "@prisma/client";
 
 class TweetsService {
-  async checkAndCreateHashtags(hashtags: string[]) {
-    const hashtagDocuments = await Promise.all(
-      hashtags.map((hashtag) => {
-        return dataservice.hashtags.findOneAndUpdate(
-          { name: hashtag },
-          {
-            $setOnInsert: new Hashtag(hashtag),
-          },
-          {
-            upsert: true,
-            returnDocument: "after",
-          },
-        );
-      }),
-    );
-    return hashtagDocuments.map(
-      (hashtag) => (hashtag as Hashtag)._id as ObjectId,
+  private async checkAndCreateHashtags(hashtags: string[]) {
+    return Promise.all(
+      hashtags.map((name) =>
+        prisma.hashtag.upsert({
+          where: { name },
+          update: {},
+          create: { name },
+        }),
+      ),
     );
   }
 
@@ -30,330 +19,268 @@ class TweetsService {
     const hashtags = await this.checkAndCreateHashtags(
       body.hashtags as string[],
     );
-    const result = await dataservice.tweets.insertOne(
-      new Tweet({
-        user_id: new ObjectId(userId),
-        audience: body.audience,
-        type: body.type,
+
+    const tweet = await prisma.tweet.create({
+      data: {
+        user_id: userId,
+        type: body.type as TweetType,
+        audience: body.audience as TweetAudience,
         content: body.content,
-        hashtags,
-        mentions: body.mentions.map((mention) => new ObjectId(mention)),
-        medias: body.medias,
-        parent_id: body.parent_id ? new ObjectId(body.parent_id) : null,
-      }),
-    );
-    const tweet = await dataservice.tweets.findOne({
-      _id: result.insertedId,
+        parent_id: body.parent_id ?? null,
+        medias: {
+          create: (body.medias ?? []).map((m) => ({
+            url: m.url,
+            type: m.type as MediaType,
+            name: m.name,
+            size: m.size,
+          })),
+        },
+        hashtags: {
+          create: hashtags.map((h) => ({ hashtag_id: h.id })),
+        },
+        mentions: {
+          create: (body.mentions ?? []).map((uid) => ({ user_id: uid })),
+        },
+      },
+      include: tweetInclude(userId),
     });
-    return tweet;
+
+    return formatTweet(tweet, userId);
   }
 
   async deleteTweet(tweet_id: string, user_id: string) {
-    const [_, __, ___] = await Promise.all([
-      dataservice.tweets.deleteOne({
-        _id: new ObjectId(tweet_id),
-        user_id: new ObjectId(user_id),
-      }),
-      dataservice.likes.deleteMany({
-        tweet_id: new ObjectId(tweet_id),
-      }),
-      dataservice.bookmarks.deleteMany({
-        tweet_id: new ObjectId(tweet_id),
-      }),
-    ]);
+    // Cascade deletes likes/bookmarks/medias/hashtags/mentions via schema onDelete
+    await prisma.tweet.deleteMany({ where: { id: tweet_id, user_id } });
     return true;
   }
 
+  async unretweet(parent_id: string, user_id: string) {
+    const result = await prisma.tweet.findFirst({
+      where: { parent_id, user_id, type: TweetType.retweet },
+    });
+    if (!result) return null;
+    await prisma.tweet.delete({ where: { id: result.id } });
+    return result;
+  }
+
   async getTweet(tweet_id: string, user_id?: string) {
-    const tweets = await dataservice.tweets
-      .aggregate([
-        // 1. Lọc đúng tweet vừa tạo (tương đương findOne filter)
-        {
-          $match: {
-            _id: new ObjectId(tweet_id),
-          },
-        },
-        // 2. Nối bảng users để lấy thông tin tác giả
-        {
-          $lookup: {
-            from: "users",
-            localField: "user_id",
-            foreignField: "_id",
-            as: "user",
-            pipeline: [
-              {
-                $project: {
-                  _id: 1,
-                  name: 1,
-                  username: 1,
-                  email: 1,
-                  avatar: 1,
-                  cover_photo: 1,
-                },
-              },
-            ],
-          },
-        },
+    const tweet = await prisma.tweet.findUnique({
+      where: { id: tweet_id },
+      include: tweetInclude(user_id),
+    });
+    if (!tweet) return null;
 
-        // 3. Biến mảng user thành 1 object (vì mỗi tweet chỉ có 1 tác giả)
-        {
-          $unwind: {
-            path: "$user",
-            preserveNullAndEmptyArrays: true, // Nếu user bị xóa, tweet vẫn trả về
-          },
-        },
-        // 4. Nối bảng hashtags (giữ nguyên dạng mảng)
-        {
-          $lookup: {
-            from: "hashtags",
-            localField: "hashtags",
-            foreignField: "_id",
-            as: "hashtags",
-          },
-        },
-        // 5. Lookup mentions
-        {
-          $lookup: {
-            from: "users",
-            localField: "mentions",
-            foreignField: "_id",
-            as: "mentions",
-          },
-        },
-        // 6. Lookup bookmarks
-        {
-          $lookup: {
-            from: "bookmarks",
-            localField: "_id",
-            foreignField: "tweet_id",
-            as: "bookmarks",
-          },
-        },
-        // 7. Lookup likes để đếm số lượt like
-        {
-          $lookup: {
-            from: "likes",
-            localField: "_id",
-            foreignField: "tweet_id",
-            as: "likes",
-          },
-        },
-        {
-          $lookup: {
-            from: "tweets",
-            let: { pid: "$parent_id" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ["$_id", { $toObjectId: "$$pid" }],
-                  },
-                },
-              },
-              {
-                $lookup: {
-                  from: "users",
-                  localField: "user_id",
-                  foreignField: "_id",
-                  as: "user",
-                  pipeline: [
-                    { $project: { _id: 1, name: 1, username: 1, avatar: 1 } },
-                  ],
-                },
-              },
-              { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-              {
-                $project: {
-                  user_id: 0,
-                  likes: 0,
-                  bookmarks: 0,
-                },
-              },
-            ],
-            as: "parent_tweet",
-          },
-        },
+    // Increment view
+    await prisma.tweet.update({
+      where: { id: tweet_id },
+      data: user_id
+        ? { user_views: { increment: 1 } }
+        : { guest_views: { increment: 1 } },
+    });
 
-        // 8. Thêm các trường đếm likes_count, bookmarks_count và format mentions
-        {
-          $addFields: {
-            likes_count: { $size: "$likes" },
-            is_liked: {
-              $in: [user_id, "$likes.user_id"],
-            },
-            bookmarks_count: { $size: "$bookmarks" },
-            is_bookmarked: {
-              $in: [user_id, "$bookmarks.user_id"],
-            },
-            mentions: {
-              $map: {
-                input: "$mentions",
-                as: "mention",
-                in: {
-                  _id: "$$mention._id",
-                  name: "$$mention.name",
-                  username: "$$mention.username",
-                  email: "$$mention.email",
-                },
-              },
-            },
-          },
-        }, // 9. Xoá bỏ mảng raw likes và bookmarks (chỉ giữ lại số đếm)
-      ])
-      .toArray();
-
-    const inc = user_id
-      ? {
-          user_views: 1,
-        }
-      : {
-          guest_views: 1,
-        };
-
-    await dataservice.tweets.updateMany(
-      {
-        _id: new ObjectId(tweet_id),
-      },
-      {
-        $inc: inc,
-        $set: {
-          updated_at: new Date(),
-        },
-      },
-    );
-
-    // Lấy ra phần tử đầu tiên tương tự như kết quả findOne
-    return tweets[0] || null;
+    return formatTweet(tweet, user_id);
   }
 
   async getAllTweet(
     limit: number,
     page: number,
-    currentUserIdStr: string,
+    currentUserId: string,
     author_id?: string,
+    following_only?: string,
+    liked_only?: string,
+    bookmark_only?: string,
   ) {
-    const currentUserId = new ObjectId(currentUserIdStr);
-    // 1. Lấy danh sách ID những người mà user này đang follow
-    let filterQuery: any;
+    let where: Prisma.TweetWhereInput = {};
+
     if (author_id) {
-      // Lấy bài đăng của một user cụ thể
-      filterQuery = { user_id: new ObjectId(author_id) };
-    } else {
-      // Mặc định -> Lấy News Feed (bản thân + người đang follow)
-      const followedUsers = await dataservice.follows
-        .find(
-          { user_id: currentUserId },
-          { projection: { followed_user_id: 1, _id: 0 } },
-        )
-        .toArray();
-      const followedUserIds = followedUsers.map((u) => u.followed_user_id);
-      filterQuery = { user_id: { $in: [...followedUserIds, currentUserId] } };
+      where = { user_id: author_id };
+    } else if (bookmark_only) {
+      where = { bookmarks: { some: { user_id: currentUserId } } };
+    } else if (liked_only) {
+      where = { likes: { some: { user_id: currentUserId } } };
+    } else if (following_only) {
+      const followedIds = await prisma.follow
+        .findMany({
+          where: { user_id: currentUserId },
+          select: { followed_user_id: true },
+        })
+        .then((rows) => rows.map((r) => r.followed_user_id));
+      where = { user_id: { in: [...followedIds, currentUserId] } };
     }
 
-    const followedUsers = await dataservice.follows
-      .find(
-        { user_id: currentUserId },
-        { projection: { followed_user_id: 1, _id: 0 } },
-      )
-      .toArray();
-    const followedUserIds = followedUsers.map((user) => user.followed_user_id);
-    // Thêm chính user_id vào danh sách nếu muốn hiển thị cả bài đăng của bản thân trên feed
-    const targetUserIds = [...followedUserIds, currentUserId];
-
     const [tweets, total] = await Promise.all([
-      dataservice.tweets
-        .aggregate([
-          { $match: filterQuery },
-          { $sort: { created_at: -1 } },
-          { $skip: (page - 1) * limit },
-          { $limit: limit },
-          {
-            $lookup: {
-              from: "users",
-              localField: "user_id",
-              foreignField: "_id",
-              as: "user",
-              pipeline: [
-                {
-                  $project: {
-                    _id: 1,
-                    name: 1,
-                    username: 1,
-                    email: 1,
-                    avatar: 1,
-                    cover_photo: 1,
-                  },
-                },
-              ],
-            },
-          },
-          { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-          {
-            $lookup: {
-              from: "hashtags",
-              localField: "hashtags",
-              foreignField: "_id",
-              as: "hashtags",
-            },
-          },
-          {
-            $lookup: {
-              from: "users",
-              localField: "mentions",
-              foreignField: "_id",
-              as: "mentions",
-            },
-          },
-          {
-            $lookup: {
-              from: "bookmarks",
-              localField: "_id",
-              foreignField: "tweet_id",
-              as: "bookmarks",
-            },
-          },
-          {
-            $lookup: {
-              from: "likes",
-              localField: "_id",
-              foreignField: "tweet_id",
-              as: "likes",
-            },
-          },
-          {
-            $addFields: {
-              likes_count: { $size: "$likes" },
-              is_liked: {
-                $in: [currentUserId, "$likes.user_id"],
-              },
-              bookmarks_count: { $size: "$bookmarks" },
-              is_bookmarked: {
-                $in: [currentUserId, "$bookmarks.user_id"],
-              },
-              mentions: {
-                $map: {
-                  input: "$mentions",
-                  as: "mention",
-                  in: {
-                    _id: "$$mention._id",
-                    name: "$$mention.name",
-                    username: "$$mention.username",
-                    email: "$$mention.email",
-                  },
-                },
-              },
-            },
-          },
-          { $project: { likes: 0, bookmarks: 0 } },
-        ])
-        .toArray(),
-      dataservice.tweets.countDocuments({}),
+      prisma.tweet.findMany({
+        where,
+        orderBy: { created_at: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: tweetInclude(currentUserId),
+      }),
+      prisma.tweet.count({ where }),
     ]);
 
-    return { tweets, total, page, limit };
+    return {
+      tweets: tweets.map((t) => formatTweet(t, currentUserId)),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getTweetChildren(
+    tweet_id: string,
+    limit: number,
+    page: number,
+    currentUserId: string,
+  ) {
+    const where: Prisma.TweetWhereInput = {
+      parent_id: tweet_id,
+      type: "comment",
+    };
+
+    const [tweets, total] = await Promise.all([
+      prisma.tweet.findMany({
+        where,
+        orderBy: { created_at: "asc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: tweetInclude(currentUserId),
+      }),
+      prisma.tweet.count({ where }),
+    ]);
+
+    return {
+      tweets: tweets.map((t) => formatTweet(t, currentUserId)),
+      total,
+      page,
+      limit,
+      total_page: Math.ceil(total / limit),
+    };
   }
 }
 
-export const tweetsService = new TweetsService();
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
+function tweetInclude(userId?: string) {
+  return {
+    user: {
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        email: true,
+        avatar: true,
+        cover_photo: true,
+        ...(userId
+          ? {
+              followers: {
+                where: { user_id: userId },
+                select: { id: true },
+              },
+            }
+          : {}),
+      },
+    },
+    medias: true,
+    hashtags: { include: { hashtag: true } },
+    mentions: {
+      include: {
+        user: { select: { id: true, name: true, username: true, email: true } },
+      },
+    },
+    bookmarks: true,
+    likes: true,
+    parent: {
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+            ...(userId
+              ? {
+                  followers: {
+                    where: { user_id: userId },
+                    select: { id: true },
+                  },
+                }
+              : {}),
+          },
+        },
+        medias: true,
+      },
+    },
+    replies: {
+      select: { id: true, user_id: true, type: true },
+    },
+  } satisfies Prisma.TweetInclude;
+}
+
+function formatTweet(tweet: any, userId?: string) {
+  const likes_count = tweet.likes?.length ?? 0;
+  const bookmarks_count = tweet.bookmarks?.length ?? 0;
+  const reposts_count =
+    tweet.replies?.filter((r: any) => r.type === TweetType.retweet).length ?? 0;
+  const replies_count =
+    tweet.replies?.filter((r: any) => r.type === TweetType.comment).length ?? 0;
+
+  const isFollowing = Boolean(
+    userId && tweet.user?.followers && tweet.user.followers.length > 0,
+  );
+  const parentIsFollowing = Boolean(
+    userId &&
+    tweet.parent?.user?.followers &&
+    tweet.parent.user.followers.length > 0,
+  );
+
+  return {
+    ...tweet,
+    _id: tweet.id,
+    hashtags: tweet.hashtags?.map((th: any) => th.hashtag),
+    mentions: tweet.mentions?.map((tm: any) => tm.user),
+    likes_count,
+    bookmarks_count,
+    reposts_count,
+    replies_count,
+    is_liked: userId
+      ? tweet.likes?.some((l: any) => l.user_id === userId)
+      : false,
+    is_bookmarked: userId
+      ? tweet.bookmarks?.some((b: any) => b.user_id === userId)
+      : false,
+    is_reposted: userId
+      ? tweet.replies?.some((r: any) => r.user_id === userId)
+      : false,
+    is_following: isFollowing,
+    isFollowing,
+    user: tweet.user
+      ? {
+          ...tweet.user,
+          is_following: isFollowing,
+          isFollowing,
+          followers: undefined,
+        }
+      : undefined,
+    parent: tweet.parent
+      ? {
+          ...tweet.parent,
+          is_following: parentIsFollowing,
+          isFollowing: parentIsFollowing,
+          user: tweet.parent.user
+            ? {
+                ...tweet.parent.user,
+                is_following: parentIsFollowing,
+                isFollowing: parentIsFollowing,
+                followers: undefined,
+              }
+            : undefined,
+        }
+      : undefined,
+    likes: undefined,
+    bookmarks: undefined,
+  };
+}
+
+export const tweetsService = new TweetsService();
 export default tweetsService;

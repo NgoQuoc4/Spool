@@ -22,6 +22,7 @@ export interface User {
   cover_photo: string;
   followers_count?: number;
   following_count?: number;
+  isFollowing?: boolean;
 }
 
 export interface UpdateMeBody {

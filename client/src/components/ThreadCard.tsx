@@ -1,6 +1,18 @@
-import React, { useState } from "react";
-import type { ThreadPost, Author } from "@/types";
-import { SortIcon, ExpandIcon, ImageIcon, GifIcon } from "./Icons";
+import React, { useState, useEffect, useRef } from "react";
+import type { ThreadPost, Author, ThreadReply } from "@/types";
+import {
+  SortIcon,
+  ExpandIcon,
+  ImageIcon,
+  GifIcon,
+  RepostIcon,
+  HeartIcon,
+  CommentIcon,
+  ShareIcon,
+  MoreDotsIcon,
+} from "./Icons";
+import { tweetsApi } from "@/apis/tweets.api";
+import { useFormatRelativeTime } from "@/hooks/useFormatRelativeTime";
 import SpoolsSlider from "./SpoolCard/SpoolsSlider";
 import ActionSpool from "./SpoolCard/ActionSpool";
 import VideoSpool from "./SpoolCard/VideoSpool";
@@ -9,6 +21,7 @@ import OptionsSpool from "./SpoolCard/OptionsSpool";
 import AvatarSpool from "./SpoolCard/AvatarSpool";
 import InforSpool from "./SpoolCard/InforSpool";
 import FileSpool from "./SpoolCard/FileSpool";
+import QuoteSpool from "./SpoolCard/QuoteSpool";
 
 interface ThreadCardProps {
   post: ThreadPost;
@@ -34,7 +47,79 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [pollData, setPollData] = useState(post.poll);
-  // Initialize HLS if media type is HLS or Video
+  const [fetchedReplies, setFetchedReplies] = useState<ThreadReply[]>([]);
+  const [isLoadingReplies, setIsLoadingReplies] = useState(false);
+  const replyInputRef = useRef<HTMLInputElement>(null);
+  const [likedReplies, setLikedReplies] = useState<
+    Record<string, { isLiked: boolean; count: number }>
+  >({});
+  const [showAllReplies, setShowAllReplies] = useState(true);
+
+  const handleReplyToUser = (username: string) => {
+    setReplyText(`@${username} `);
+    replyInputRef.current?.focus();
+  };
+
+  const handleToggleReplyLike = (
+    replyId: string,
+    initialCount: number,
+    initialIsLiked: boolean,
+  ) => {
+    setLikedReplies((prev) => {
+      const current = prev[replyId] ?? {
+        isLiked: initialIsLiked,
+        count: initialCount,
+      };
+      const nextIsLiked = !current.isLiked;
+      return {
+        ...prev,
+        [replyId]: {
+          isLiked: nextIsLiked,
+          count: Math.max(0, current.count + (nextIsLiked ? 1 : -1)),
+        },
+      };
+    });
+  };
+
+  // Tự động tải bình luận con từ API khi mở khung bình luận
+  useEffect(() => {
+    if (showReplyBox && post.id && !post.id.startsWith("thread-")) {
+      setIsLoadingReplies(true);
+      tweetsApi
+        .getTweetChildren(post.id)
+        .then((res) => {
+          if (res?.data?.result?.tweets) {
+            const mapped: ThreadReply[] = res.data.result.tweets.map(
+              (t: any) => ({
+                id: t._id || t.id,
+                author: {
+                  id: t.user?._id || t.user?.id,
+                  name: t.user?.name || "Anonymous",
+                  username: t.user?.username || "user",
+                  avatar:
+                    t.user?.avatar ||
+                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
+                  verified: true,
+                },
+                content: t.content,
+                createdAt: t.created_at
+                  ? useFormatRelativeTime(t.created_at)
+                  : "Just now",
+                likes: t.likes_count ?? t.like ?? 0,
+                isLiked: t.is_liked ?? false,
+              }),
+            );
+            setFetchedReplies(mapped);
+          }
+        })
+        .catch((err) => {
+          console.error("Lỗi khi tải bình luận:", err);
+        })
+        .finally(() => {
+          setIsLoadingReplies(false);
+        });
+    }
+  }, [showReplyBox, post.id]);
 
   const handleVote = (index: number) => {
     if (!pollData || pollData.userVotedIndex !== undefined) return;
@@ -52,12 +137,18 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
   const handleReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyText.trim()) return;
-    onReplyAdded(post.id, replyText.trim());
+    onReplyAdded?.(post.id, replyText.trim());
     setReplyText("");
-    setShowReplyBox(false);
   };
 
-  const hasReplies = post.replies && post.replies.length > 0;
+  // Hợp nhất replies truyền từ props và replies fetch từ server
+  const allReplies: ThreadReply[] = [
+    ...(post.replies || []),
+    ...fetchedReplies.filter(
+      (f) => !(post.replies || []).some((r) => r.id === f.id),
+    ),
+  ];
+  const hasReplies = allReplies.length > 0;
 
   // Extract all media types (supporting both post.medias array and post.media object)
   const imageUrls: string[] = Array.from(
@@ -107,48 +198,65 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
       }}
       className="thread-card animate-fade-in"
     >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "48px minmax(0, 1fr)",
-        }}
-      >
+      {post.repostedBy && (
         <div
           style={{
-            gridRowEnd: "span 2",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "13px",
+            fontWeight: "500",
+            color: "var(--text-secondary)",
+            marginBottom: "8px",
+            paddingLeft: "54px",
           }}
+          className="repost-header"
         >
+          <RepostIcon size={14} active={true} />
+          <span>{post.repostedBy.name} đã đăng lại</span>
+        </div>
+      )}
+
+      {/* Main Tweet: Clean 2-column Flexbox layout */}
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          alignItems: "flex-start",
+        }}
+      >
+        {/* Left Column: Avatar */}
+        <div style={{ flexShrink: 0, width: "42px" }}>
           <AvatarSpool post={post} />
         </div>
 
+        {/* Right Column: Header, Content, Medias, Poll, Quotes, Actions */}
         <div
           style={{
-            gridRowEnd: "1/2",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "4px",
-          }}
-        >
-          <InforSpool post={post} />
-          <OptionsSpool
-            post={post}
-            onShare={onShare}
-            onDelete={(id) => {
-              onDelete(id);
-            }}
-          />
-        </div>
-
-        {/* Content, Media, Poll, Actions Column */}
-        <div
-          style={{
-            gridColumn: "2",
+            flex: 1,
+            minWidth: 0,
             display: "flex",
             flexDirection: "column",
-            minWidth: 0,
           }}
         >
+          {/* Header (Username, time & Options) */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "4px",
+            }}
+          >
+            <InforSpool post={post} />
+            <OptionsSpool
+              post={post}
+              onShare={onShare}
+              onDelete={(id) => {
+                onDelete(id);
+              }}
+            />
+          </div>
           <ContentSpool post={post} />
           {/* Attached Media: Image(s) / Carousel */}
           {imageUrls.length > 0 && (
@@ -277,6 +385,8 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
               </div>
             </div>
           )}
+          {/* Hiển thị bài viết được trích dẫn (Quote Post) */}
+          {post.quotedPost && <QuoteSpool post={post.quotedPost} />}
 
           <ActionSpool
             onLikeToggle={onLikeToggle}
@@ -284,6 +394,8 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
             onRepostToggle={onRepostToggle}
             onShare={onShare}
             onBookmark={onBookmark}
+            isReposted={post.isReposted}
+            onCommentClick={() => setShowReplyBox((prev) => !prev)}
           />
 
           {/* Counts & Activity footer */}
@@ -301,107 +413,92 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
               <span>{post.repliesCount} replies</span>
               <span>·</span>
               <span>{post.likes.toLocaleString()} likes</span>
+              {post.repostsCount > 0 && (
+                <>
+                  <span>·</span>
+                  <span>{post.repostsCount.toLocaleString()} reposts</span>
+                </>
+              )}
+              {/* Thêm số lượt quotes nếu có */}
+              {(post.quotesCount ?? 0) > 0 && (
+                <>
+                  <span>·</span>
+                  <span>{post.quotesCount?.toLocaleString()} quotes</span>
+                </>
+              )}
             </div>
           )}
+        </div>
+      </div>
 
-          {/* Dedicated Screenshot Sort Bar & Reply Composer */}
-          {post.id === "thread-0" && (
+      {/* Discussion / Comments Section (Direct child of article, spanning full card) */}
+      {showReplyBox && (
+        <div
+          style={{
+            marginTop: "14px",
+            marginLeft: "-20px",
+            marginRight: "-20px",
+            borderTop: "1px solid var(--border-color)",
+          }}
+          className="thread-discussion-section animate-fade-in"
+        >
+          {/* Sort row: ↓↑ Top ˇ & View activity > */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 20px 8px 20px",
+              fontSize: "13px",
+              color: "var(--text-secondary)",
+            }}
+          >
             <div
               style={{
-                margin: "14px -20px 0",
-                borderTop: "1px solid var(--border-color)",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: "pointer",
+                userSelect: "none",
               }}
             >
-              {/* Sort row: ↓↑ Top ˇ */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "12px 20px 8px",
-                  fontSize: "13px",
-                  color: "var(--text-secondary)",
-                  cursor: "pointer",
-                }}
-              >
-                <SortIcon size={14} />
-                <span style={{ fontWeight: "600", color: "var(--text-main)" }}>
-                  Top
-                </span>
-                <span style={{ fontSize: "10px" }}>▼</span>
-              </div>
-
-              {/* Reply bar container with Image, GIF, Expand icons */}
-              <div style={{ padding: "0 20px 14px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    backgroundColor: "var(--bg-input)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "9999px",
-                    padding: "8px 14px",
-                  }}
-                >
-                  <img
-                    src={currentUser.avatar}
-                    alt={currentUser.name}
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    placeholder={`Reply to ${post.author.username}...`}
-                    style={{
-                      flex: 1,
-                      fontSize: "14px",
-                      color: "var(--text-main)",
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleReplySubmit(e);
-                    }}
-                  />
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    <span style={{ cursor: "pointer" }} title="Image">
-                      <ImageIcon size={18} />
-                    </span>
-                    <span style={{ cursor: "pointer" }} title="GIF">
-                      <GifIcon size={18} />
-                    </span>
-                    <span style={{ cursor: "pointer" }} title="Expand">
-                      <ExpandIcon size={16} />
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ borderTop: "1px solid var(--border-color)" }} />
+              <SortIcon size={14} />
+              <span style={{ fontWeight: "600", color: "var(--text-main)" }}>
+                Top
+              </span>
+              <span style={{ fontSize: "10px", transform: "translateY(1px)" }}>
+                ▼
+              </span>
             </div>
-          )}
 
-          {/* Inline Reply input for standard posts */}
-          {post.id !== "thread-0" && showReplyBox && (
+            <div
+              style={{
+                fontSize: "12px",
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
+              <span>View activity</span>
+              <span>›</span>
+            </div>
+          </div>
+
+          {/* Pill Reply Composer */}
+          <div style={{ padding: "0 20px 14px 20px" }}>
             <form
               onSubmit={handleReplySubmit}
               style={{
-                marginTop: "14px",
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "12px",
+                backgroundColor: "var(--bg-input)",
+                border: "1px solid var(--border-color)",
+                borderRadius: "9999px",
+                padding: "8px 14px",
+                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
               }}
             >
               <img
@@ -412,9 +509,11 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
                   height: "28px",
                   borderRadius: "50%",
                   objectFit: "cover",
+                  flexShrink: 0,
                 }}
               />
               <input
+                ref={replyInputRef}
                 type="text"
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
@@ -422,205 +521,407 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
                 autoFocus
                 style={{
                   flex: 1,
-                  backgroundColor: "var(--bg-input)",
-                  padding: "8px 14px",
-                  borderRadius: "9999px",
+                  minWidth: 0,
+                  backgroundColor: "transparent",
+                  border: "none",
+                  outline: "none",
                   fontSize: "14px",
                   color: "var(--text-main)",
-                  border: "1px solid var(--border-color)",
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    handleReplySubmit(e);
+                  }
                 }}
               />
-              <button
-                type="submit"
-                disabled={!replyText.trim()}
+              <div
                 style={{
-                  backgroundColor: replyText.trim()
-                    ? "var(--accent-white)"
-                    : "var(--bg-pill)",
-                  color: replyText.trim()
-                    ? "var(--bg-main)"
-                    : "var(--text-secondary)",
-                  padding: "6px 16px",
-                  borderRadius: "9999px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  cursor: replyText.trim() ? "pointer" : "default",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  color: "var(--text-secondary)",
+                  flexShrink: 0,
                 }}
               >
-                Reply
-              </button>
-            </form>
-          )}
-        </div>
-
-        {/* Nested Replies Rendering (Connected by Thread line) */}
-        {hasReplies && (
-          <div
-            style={{
-              marginTop: "16px",
-              paddingLeft: "56px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-            }}
-          >
-            {post.replies!.map((reply, rIdx) => {
-              const isPostAuthor =
-                reply.author.username === post.author.username;
-              return (
-                <div
-                  key={reply.id}
-                  style={{
-                    display: "flex",
-                    gap: "12px",
-                    paddingTop: "8px",
-                    borderTop:
-                      rIdx === 0 && post.id !== "thread-0"
-                        ? "1px solid var(--border-subtle)"
-                        : "none",
-                  }}
+                <span
+                  style={{ cursor: "pointer", display: "flex" }}
+                  title="Image"
                 >
-                  <img
-                    src={reply.author.avatar}
-                    alt={reply.author.name}
+                  <ImageIcon size={18} />
+                </span>
+                <span
+                  style={{ cursor: "pointer", display: "flex" }}
+                  title="GIF"
+                >
+                  <GifIcon size={18} />
+                </span>
+                <span
+                  style={{ cursor: "pointer", display: "flex" }}
+                  title="Expand"
+                >
+                  <ExpandIcon size={16} />
+                </span>
+                {replyText.trim() && (
+                  <button
+                    type="submit"
                     style={{
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      flexShrink: 0,
+                      background: "none",
+                      border: "none",
+                      color: "var(--accent-blue, #1d9bf0)",
+                      fontWeight: "700",
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      padding: "0 4px",
                     }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span
+                  >
+                    Post
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Full-width Divider between composer and replies */}
+          <div style={{ borderTop: "1px solid var(--border-color)" }} />
+
+          {/* Loading replies */}
+          {isLoadingReplies && (
+            <div
+              style={{
+                padding: "16px 20px",
+                fontSize: "13px",
+                color: "var(--text-secondary)",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <span>Đang tải bình luận...</span>
+            </div>
+          )}
+
+          {/* Nested Replies Rendering (Connected by Threads Thread Line) */}
+          {hasReplies && (
+            <div
+              style={{
+                padding: "12px 20px 6px 20px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              {(showAllReplies ? allReplies : allReplies.slice(0, 1)).map(
+                (reply, rIdx, arr) => {
+                  const isPostAuthor =
+                    reply.author.username === post.author.username;
+                  const isNested = rIdx > 0;
+                  const likeState = likedReplies[reply.id] ?? {
+                    isLiked: reply.isLiked ?? false,
+                    count: reply.likes ?? 0,
+                  };
+                  const hasNextReply = rIdx < arr.length - 1;
+
+                return (
+                  <div
+                    key={reply.id}
+                    style={{
+                      display: "flex",
+                      gap: "12px",
+                      position: "relative",
+                      paddingLeft: isNested ? "24px" : "0",
+                    }}
+                  >
+                    {/* Thread connector line for nested replies */}
+                    {isNested && (
+                      <div
                         style={{
-                          fontWeight: "600",
-                          fontSize: "14px",
-                          color: "var(--text-main)",
+                          position: "absolute",
+                          left: "6px",
+                          top: "-8px",
+                          width: "16px",
+                          height: "22px",
+                          borderLeft: "2px solid var(--border-color)",
+                          borderBottom: "2px solid var(--border-color)",
+                          borderBottomLeftRadius: "10px",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
+
+                    {/* Vertical connector line running down from avatar */}
+                    {hasNextReply && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: isNested ? "22px" : "17px",
+                          top: isNested ? "32px" : "38px",
+                          bottom: "-14px",
+                          width: "2px",
+                          backgroundColor: "var(--border-color)",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
+
+                    {/* Avatar */}
+                    <img
+                      src={reply.author.avatar}
+                      alt={reply.author.name}
+                      style={{
+                        width: isNested ? "30px" : "36px",
+                        height: isNested ? "30px" : "36px",
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        flexShrink: 0,
+                        zIndex: 1,
+                      }}
+                    />
+
+                    {/* Content Column */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Header: Username, Time, Author tag & Options */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: "2px",
                         }}
                       >
-                        {reply.author.username}
-                      </span>
-                      {reply.topic && (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontWeight: "600",
+                              fontSize: "14px",
+                              color: "var(--text-main)",
+                            }}
+                          >
+                            {reply.author.username}
+                          </span>
+                          <span
+                            style={{
+                              color: "var(--text-secondary)",
+                              fontSize: "13px",
+                            }}
+                          >
+                            {reply.createdAt}
+                          </span>
+                          {isPostAuthor && (
+                            <span
+                              style={{
+                                fontSize: "11px",
+                                color: "var(--text-secondary)",
+                                backgroundColor: "var(--bg-pill)",
+                                padding: "1px 6px",
+                                borderRadius: "4px",
+                                fontWeight: "500",
+                              }}
+                            >
+                              Author
+                            </span>
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            color: "var(--text-secondary)",
+                            cursor: "pointer",
+                            padding: "2px",
+                          }}
+                          title="Options"
+                        >
+                          <MoreDotsIcon size={16} />
+                        </div>
+                      </div>
+
+                      {/* Comment text with link rendering & Translate */}
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          color: "var(--text-main)",
+                          lineHeight: "1.45",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {reply.content.split("\n").map((line, lIdx) => (
+                          <div key={lIdx}>
+                            {line.split(" ").map((word, wIdx) => {
+                              if (
+                                word.startsWith("http") ||
+                                word.includes(".com") ||
+                                word.includes(".vn")
+                              ) {
+                                return (
+                                  <span
+                                    key={wIdx}
+                                    style={{
+                                      color: "var(--accent-blue)",
+                                      textDecoration: "underline",
+                                    }}
+                                  >
+                                    {word}{" "}
+                                  </span>
+                                );
+                              }
+                              return word + " ";
+                            })}
+                          </div>
+                        ))}
                         <span
                           style={{
                             color: "var(--text-secondary)",
+                            fontSize: "12px",
+                            cursor: "pointer",
+                            display: "inline-block",
+                            marginTop: "2px",
+                          }}
+                        >
+                          Translate
+                        </span>
+                      </div>
+
+                      {/* Action buttons row (Heart, Comment, Repost, Share) */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "18px",
+                          marginTop: "8px",
+                          color: "var(--text-secondary)",
+                        }}
+                      >
+                        {/* Heart */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleToggleReplyLike(
+                              reply.id,
+                              reply.likes,
+                              reply.isLiked ?? false,
+                            )
+                          }
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            color: likeState.isLiked
+                              ? "var(--accent-red, #ff3040)"
+                              : "inherit",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 0,
+                            fontSize: "13px",
+                            transition: "transform 0.15s ease",
+                          }}
+                          className={likeState.isLiked ? "animate-pop" : ""}
+                        >
+                          <HeartIcon size={16} active={likeState.isLiked} />
+                          {likeState.count > 0 && (
+                            <span>{likeState.count}</span>
+                          )}
+                        </button>
+
+                        {/* Comment (reply shortcut) */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleReplyToUser(reply.author.username)
+                          }
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            color: "inherit",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 0,
                             fontSize: "13px",
                           }}
                         >
-                          &gt;{" "}
-                          <span
-                            style={{
-                              color: "var(--text-main)",
-                              fontWeight: "500",
-                            }}
-                          >
-                            {reply.topic}
-                          </span>
-                        </span>
-                      )}
-                      <span
-                        style={{
-                          color: "var(--text-secondary)",
-                          fontSize: "13px",
-                        }}
-                      >
-                        {reply.createdAt}
-                      </span>
-                      {isPostAuthor && (
-                        <span
+                          <CommentIcon size={16} />
+                          <span>1</span>
+                        </button>
+
+                        {/* Repost */}
+                        <button
+                          type="button"
                           style={{
-                            fontSize: "11px",
-                            color: "var(--text-secondary)",
-                            backgroundColor: "var(--bg-pill)",
-                            padding: "1px 6px",
-                            borderRadius: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            color: "inherit",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 0,
+                            fontSize: "13px",
                           }}
                         >
-                          Author
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "14px",
-                        color: "var(--text-main)",
-                        marginTop: "4px",
-                        lineHeight: "1.45",
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
-                      {reply.content.split("\n").map((line, lIdx) => (
-                        <div key={lIdx}>
-                          {line.split(" ").map((word, wIdx) => {
-                            if (
-                              word.startsWith("http") ||
-                              word.includes(".com") ||
-                              word.includes(".vn")
-                            ) {
-                              return (
-                                <span
-                                  key={wIdx}
-                                  style={{
-                                    color: "var(--accent-blue)",
-                                    textDecoration: "underline",
-                                  }}
-                                >
-                                  {word}{" "}
-                                </span>
-                              );
-                            }
-                            return word + " ";
-                          })}
-                        </div>
-                      ))}
-                    </div>
+                          <RepostIcon size={16} />
+                        </button>
 
-                    {/* Reply Media 3-image grid if present */}
-                    {/* {reply.media?.urls && reply.media.urls.length > 0 && (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: `repeat(${Math.min(reply.media.urls.length, 3)}, 1fr)`,
-                        gap: "6px",
-                        marginTop: "10px",
-                        borderRadius: "14px",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {reply.media.urls.map((url, uIdx) => (
-                        <img
-                          key={uIdx}
-                          src={url}
-                          alt="Reply attachment"
+                        {/* Share */}
+                        <button
+                          type="button"
                           style={{
-                            width: "100%",
-                            height: "240px",
-                            objectFit: "cover",
-                            borderRadius: "10px",
-                            border: "1px solid var(--border-color)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            color: "inherit",
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 0,
+                            fontSize: "13px",
                           }}
-                          loading="lazy"
-                        />
-                      ))}
+                        >
+                          <ShareIcon size={16} />
+                        </button>
+                      </div>
                     </div>
-                  )} */}
-                    {/* <ActionSpool /> */}
                   </div>
+                );
+              })}
+
+              {/* Show replies toggle at the bottom */}
+              {allReplies.length > 1 && (
+                <div
+                  onClick={() => setShowAllReplies((prev) => !prev)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    paddingLeft: "42px",
+                    paddingTop: "4px",
+                    cursor: "pointer",
+                    color: "var(--text-secondary)",
+                    fontSize: "13px",
+                    userSelect: "none",
+                  }}
+                >
+                  <span style={{ fontSize: "12px" }}>
+                    {showAllReplies ? "↑" : "↓"}
+                  </span>
+                  <span>
+                    {showAllReplies
+                      ? "Hide replies"
+                      : `Show ${allReplies.length - 1} replies`}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </article>
   );
 };

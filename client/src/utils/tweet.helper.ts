@@ -1,57 +1,94 @@
 import type { TweetsResponse } from "@/apis/tweets.api";
 import { useFormatRelativeTime } from "@/hooks/useFormatRelativeTime";
 import type { ThreadPost } from "@/types";
-import type { Tweet } from "@/types/tweet.types";
+import { TweetType, type Tweet } from "@/types/tweet.types";
 import type { InfiniteData } from "@tanstack/react-query";
 import type { AxiosResponse } from "axios";
 
 export const formatTweetToThreadPost = (tweet: Tweet): ThreadPost => {
-  // chuyển hashtags sang dạng string
-  const hashtags: string[] = Array.isArray(tweet.hashtags)
-    ? tweet.hashtags.map((hashtag: any) =>
+  // 1. Kiểm tra xem có phải là bài Retweet và có dữ liệu bài gốc không
+  const isRetweet = tweet.type === TweetType.RETWEET && !!tweet.parent_tweet;
+  // kiểm tra xem có phải là bài Quete và có dữ liệu bài gốc và bài mới không
+  const isQuote = tweet.type === TweetType.QUOTETWEET && !!tweet.parent_tweet;
+
+  // Nếu là retweet -> lấy thông tin bài gốc để hiển thị; nếu không -> lấy chính bài tweet
+  const displayTweet = isRetweet ? tweet.parent_tweet! : tweet;
+
+  // 2. Lấy thông tin người đã bấm Retweet (nếu có)
+  const repostedBy =
+    isRetweet && tweet.user
+      ? {
+          id: tweet.user._id,
+          name: tweet.user.name,
+          username: tweet.user.username?.trim() || "unknown",
+          avatar:
+            tweet.user.avatar ||
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
+          verified: true,
+        }
+      : undefined;
+  // 3. Chuyển hashtags sang dạng string (lấy từ bài hiển thị)
+  const hashtags: string[] = Array.isArray(displayTweet.hashtags)
+    ? displayTweet.hashtags.map((hashtag: any) =>
         typeof hashtag === "string" ? hashtag : hashtag?.name || "",
       )
     : [];
-  // chuyển medias sang dạng  {
-  //     type: "image",
-  //     urls: ["url"],
-  //   },
-  const medias = tweet.medias?.map((media) => ({
+
+  // 4. Chuyển medias sang dạng phù hợp (lấy từ bài hiển thị)
+  const medias = displayTweet.medias?.map((media) => ({
     type: media.type as any,
     urls: [media.url],
   }));
-  // lấy media đầu tiên để hiển thị ở tweet card
+
+  // Lấy media đầu tiên để hiển thị ở tweet card
   const media =
-    tweet.medias && tweet.medias.length > 0
+    displayTweet.medias && displayTweet.medias.length > 0
       ? {
-          type: tweet.medias[0].type as any,
-          urls: tweet.medias.map((m) => m.url),
+          type: displayTweet.medias[0].type as any,
+          urls: displayTweet.medias.map((m) => m.url),
         }
       : undefined;
 
+  const tweetId =
+    tweet._id || (tweet as any).id || `tweet-${Date.now()}-${Math.random()}`;
+
   return {
-    id: tweet._id,
+    id: tweetId,
     author: {
-      id: tweet.user?._id || tweet.user_id,
-      name: tweet.user?.name || "Anonymous",
-      username: tweet.user?.username?.trim() || "unknown",
+      id:
+        displayTweet.user?._id || displayTweet.user?.id || displayTweet.user_id,
+      name: displayTweet.user?.name || "Anonymous",
+      username: displayTweet.user?.username?.trim() || "unknown",
       avatar:
-        tweet.user?.avatar ||
+        displayTweet.user?.avatar ||
         "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
       verified: true,
+      isFollowing: Boolean(
+        displayTweet.user?.isFollowing ??
+        displayTweet.isFollowing ??
+        (displayTweet as any).is_following,
+      ),
     },
-    content: tweet.content,
-    createdAt: tweet.created_at
-      ? useFormatRelativeTime(tweet.created_at)
+    content: displayTweet.content,
+    createdAt: displayTweet.created_at
+      ? useFormatRelativeTime(displayTweet.created_at)
       : "Just now",
-    likes: (tweet as any).likes_count ?? tweet.like ?? 0,
-    repliesCount: 0,
-    repostsCount: 0,
-    isLiked: Boolean((tweet as any).is_liked),
-    isBookmarked: Boolean((tweet as any).is_bookmarked),
+    likes: (displayTweet as any).likes_count ?? displayTweet.like ?? 0,
+    repliesCount: (displayTweet as any).replies_count ?? 0,
+    repostsCount: (displayTweet as any).reposts_count ?? 0,
+    quotesCount: (displayTweet as any).quotes_count ?? 0,
+    isLiked: Boolean((displayTweet as any).is_liked),
+    isReposted: Boolean((displayTweet as any).is_reposted),
+    isBookmarked: Boolean((displayTweet as any).is_bookmarked),
+    isQuote: Boolean((displayTweet as any).is_quote),
+    quotedPost:
+      isQuote && tweet.parent_tweet
+        ? formatTweetToThreadPost(tweet.parent_tweet)
+        : undefined,
     tags: hashtags,
     media,
     medias,
+    repostedBy,
   };
 };
 
@@ -66,8 +103,19 @@ export const formatTweets = (
   const serverTweets = data.pages.flatMap(
     (page) => page.data?.result?.tweets || [],
   );
+
+  // Lọc trùng lặp bài viết (deduplication) để tránh warning React duplicate/missing key
+  const seenIds = new Set<string>();
+  const uniqueServerTweets = serverTweets.filter((t) => {
+    const id = t._id || (t as any).id;
+    if (!id || seenIds.has(id)) return false;
+    seenIds.add(id);
+    return true;
+  });
+
   // map các tweet sang thread post nếu chưa có trong prevMap, nếu có thì giữ nguyên
-  return serverTweets.map(
-    (t) => prevMap.get(t._id) || formatTweetToThreadPost(t),
-  );
+  return uniqueServerTweets.map((t) => {
+    const id = t._id || (t as any).id;
+    return prevMap.get(id) || formatTweetToThreadPost(t);
+  });
 };
