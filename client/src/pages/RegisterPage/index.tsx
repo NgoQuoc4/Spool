@@ -57,7 +57,10 @@ const Register: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Đăng ký thất bại.");
+        const firstErrorMsg = data.errors
+          ? (Object.values(data.errors)[0] as { msg?: string })?.msg
+          : null;
+        throw new Error(firstErrorMsg || data.message || "Đăng ký thất bại.");
       }
 
       setSuccessMessage("Đăng ký tài khoản thành công! Đang chuyển hướng...");

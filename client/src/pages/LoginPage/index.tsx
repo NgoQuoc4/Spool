@@ -64,11 +64,20 @@ const Login: React.FC = () => {
       setTimeout(() => navigate("/"), 500);
     } catch (err: unknown) {
       const errObj = err as {
-        response?: { data?: { message?: string } };
+        response?: {
+          data?: {
+            message?: string;
+            errors?: Record<string, { msg: string }>;
+          };
+        };
         message?: string;
       };
+      const firstError = errObj.response?.data?.errors
+        ? Object.values(errObj.response.data.errors)[0]?.msg
+        : null;
       setErrorMessage(
-        errObj.response?.data?.message ||
+        firstError ||
+          errObj.response?.data?.message ||
           errObj.message ||
           "Email hoặc mật khẩu không chính xác.",
       );

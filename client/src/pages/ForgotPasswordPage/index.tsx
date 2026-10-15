@@ -25,8 +25,16 @@ const index = () => {
       await forgotPassword(email);
       setErrorMessage("");
       setSuccessMessage("Password reset link sent successfully");
-    } catch (error) {
-      setErrorMessage("");
+    } catch (error: any) {
+      const errorMsg =
+        error?.response?.data?.message ||
+        (error?.response?.data?.errors
+          ? Object.values(error.response.data.errors)[0] &&
+            (Object.values(error.response.data.errors)[0] as any)?.msg
+          : null) ||
+        error?.message ||
+        "Có lỗi xảy ra khi gửi yêu cầu.";
+      setErrorMessage(errorMsg);
       setSuccessMessage("");
     } finally {
       setIsLoading(false);
