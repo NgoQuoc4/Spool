@@ -207,6 +207,52 @@
   text-overflow: ellipsis;
 }
 
+/* Conversation Delete Action Button */
+.conversation-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+
+/* Hiện nút delete khi hover hoặc focus vào cuộc hội thoại */
+.conversation-item:hover .conversation-delete-btn,
+.conversation-item:focus-within .conversation-delete-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Hover trực tiếp vào nút delete: đổi màu đỏ và nền đỏ mờ tinh tế */
+.conversation-delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  transform: scale(1.08);
+}
+
+.conversation-delete-btn:active {
+  transform: scale(0.95);
+  background-color: rgba(239, 68, 68, 0.25);
+}
+
+/* Hỗ trợ thiết bị cảm ứng (không có chuột hover) */
+@media (hover: none) {
+  .conversation-delete-btn {
+    opacity: 0.65;
+    transform: scale(1);
+  }
+}
+
 .conversation-empty-state {
   display: flex;
   flex-direction: column;

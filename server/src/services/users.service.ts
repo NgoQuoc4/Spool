@@ -514,8 +514,12 @@ class UsersService {
         receiver_id: true,
         content: true,
         created_at: true,
-        sender: { select: { id: true, name: true, username: true, avatar: true } },
-        receiver: { select: { id: true, name: true, username: true, avatar: true } },
+        sender: {
+          select: { id: true, name: true, username: true, avatar: true },
+        },
+        receiver: {
+          select: { id: true, name: true, username: true, avatar: true },
+        },
       },
     });
 
@@ -544,6 +548,19 @@ class UsersService {
         lastMessageAt: msg.created_at,
       };
     });
+  }
+
+  async deleteConversation(user_id: string, receiver_id: string) {
+    const deleted = await prisma.message.deleteMany({
+      where: {
+        OR: [
+          { sender_id: user_id, receiver_id: receiver_id },
+          { sender_id: receiver_id, receiver_id: user_id },
+        ],
+      },
+    });
+    if (deleted.count === 0) return { message: "Not have conversation" };
+    return { message: "Delete conversation success" };
   }
 }
 

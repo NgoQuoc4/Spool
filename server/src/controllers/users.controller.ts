@@ -234,8 +234,23 @@ export const getMessagesController = async (req: Request, res: Response) => {
 };
 
 // Lấy danh sách các cuộc hội thoại của user đang đăng nhập
-export const getConversationsController = async (req: Request, res: Response) => {
+export const getConversationsController = async (
+  req: Request,
+  res: Response,
+) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
   const result = await usersService.getConversations(user_id);
   return res.status(200).json({ message: "Get conversations success", result });
+};
+
+export const deleteConversationController = async (
+  req: Request,
+  res: Response,
+) => {
+  const { user_id } = req.decoded_authorization as TokenPayload;
+  const { receiver_id } = req.params as { receiver_id: string };
+  const result = await usersService.deleteConversation(user_id, receiver_id);
+  return res
+    .status(200)
+    .json({ message: "Delete conversation success", result });
 };

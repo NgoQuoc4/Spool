@@ -51,4 +51,9 @@ export const usersApi = {
   // Lấy danh sách những người đã từng nhắn tin (không phụ thuộc follow)
   getConversations: () =>
     http.get<{ message: string; result: any[] }>(ENDPOINTS.CONVERSATIONS),
+
+  deleteConversation: (receiver_id: string) =>
+    http.delete<{ message: string }>(
+      ENDPOINTS.CONVERSATIONS_DELETE(receiver_id),
+    ),
 };

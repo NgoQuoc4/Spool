@@ -15,6 +15,7 @@ import {
 } from "~/middlewares/users.middlewares";
 import {
   changePasswordController,
+  deleteConversationController,
   followUserController,
   forgotPasswordController,
   getConversationsController,
@@ -258,6 +259,19 @@ userRouter.get(
   "/conversations/:receiver_id/messages",
   accessTokenValidator,
   wrapAsync(getMessagesController),
+);
+
+/*
+ * Description, delete conversation
+ * Path: /user/conversations/:receiver_id
+ * Method: DELETE
+ * Header: {Authorization: Bearer <access_token>}
+ * Response: {message: string}
+ */
+userRouter.delete(
+  "/conversations/:receiver_id",
+  accessTokenValidator,
+  wrapAsync(deleteConversationController),
 );
 
 /*

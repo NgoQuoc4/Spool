@@ -19,6 +19,8 @@ export const ENDPOINTS = {
   CONVERSATIONS_MESSAGES: (receiver_id: string) =>
     `/user/conversations/${receiver_id}/messages`,
   CONVERSATIONS: "/user/conversations",
+  CONVERSATIONS_DELETE: (receiver_id: string) =>
+    `/user/conversations/${receiver_id}`,
   // User
   ME: "/user/me",
   PROFILE: (username: string) => `/user/${username}`,
