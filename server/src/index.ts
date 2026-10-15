@@ -33,9 +33,15 @@ const router = express.Router();
 const PORT = process.env.PORT || 4000;
 const httpServer = createServer(app);
 
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "http://localhost:3000",
+].filter(Boolean) as string[];
+
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
+    credentials: true,
   },
 });
 

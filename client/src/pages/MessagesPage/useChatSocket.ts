@@ -28,7 +28,7 @@ const useChatSocket = ({
   // Khởi tạo kết nối Socket.IO
   useEffect(() => {
     if (!profileId) return;
-    const socket = io(import.meta.env.VITE_API_URL, {
+    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:4000", {
       auth: { id: profileId },
       autoConnect: true,
     });

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { SpoolLogo, GoogleIcon, EyeIcon, EyeOffIcon } from "@/components/Icons";
 import { getGoogleAuthUrl } from "@/utils/auth";
+import { API_BASE_URL } from "@/constants/endpoints";
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ const Register: React.FC = () => {
     try {
       const isoDob = new Date(dateOfBirth).toISOString();
 
-      const response = await fetch("http://localhost:4000/user/sign-up", {
+      const response = await fetch(`${API_BASE_URL}/user/sign-up`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

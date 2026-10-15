@@ -198,8 +198,8 @@ export const googleOauthController = async (req: Request, res: Response) => {
     throw new ErrorWithStatus({ message: "Code is required", status: 400 });
   }
   const result = await usersService.googleOauth(code);
-
-  const urlRedirect = `http://localhost:3000/login?access_token=${result.accessToken}&refresh_token=${result.refreshToken}&new_user=${result.newUser ? 1 : 0}`;
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:3000";
+  const urlRedirect = `${clientUrl}/login?access_token=${result.accessToken}&refresh_token=${result.refreshToken}&new_user=${result.newUser ? 1 : 0}`;
 
   return res.redirect(urlRedirect);
 };

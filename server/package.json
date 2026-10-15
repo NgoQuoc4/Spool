@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon development",
-    "build": "tsc && tsc-alias",
+    "build": "prisma generate && tsc && tsc-alias",
     "start": "node dist/index.js production",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
@@ -21,6 +21,7 @@
   "type": "commonjs",
   "dependencies": {
     "@ffprobe-installer/ffprobe": "^2.1.2",
+    "@prisma/client": "^5.22.0",
     "@types/formidable": "^3.5.1",
     "@types/mime": "^3.0.4",
     "axios": "^1.20.0",
@@ -42,7 +43,6 @@
     "zx": "^7.2.4"
   },
   "devDependencies": {
-    "@prisma/client": "^5.22.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/ffmpeg-static": "^3.0.3",

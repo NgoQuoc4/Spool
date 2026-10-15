@@ -5,7 +5,6 @@ import { useAppStore } from "@/stores/useAppStore";
 import type { ThreadPost } from "@/types";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PATH } from "@/constants/path";
 import { useTweets } from "@/hooks/useTweets";
 import { formatTweets } from "@/utils/tweet.helper";
 import { useTweetActions } from "@/hooks/useTweetActions";
