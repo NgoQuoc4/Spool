@@ -1,12 +1,14 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { SpoolLogo, GoogleIcon, EyeIcon, EyeOffIcon } from "@/components/Icons";
 import { getGoogleAuthUrl } from "@/utils/auth";
 import { useAuth } from "@/contexts/AuthContext";
+import { PATH } from "@/constants/path";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { login, setAuthTokens } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +17,36 @@ const Login: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const googleAuthUrl = getGoogleAuthUrl();
+  const calledRef = useRef(false);
+
+  const accessToken = searchParams.get("access_token");
+  const refreshToken = searchParams.get("refresh_token");
+
+  // Xử lý tự động đăng nhập khi nhận callback từ Google OAuth qua URL
+  useEffect(() => {
+    if (!accessToken || !refreshToken) return;
+    if (calledRef.current) return;
+    calledRef.current = true;
+
+    setIsLoading(true);
+    setSuccessMessage("Đang đăng nhập bằng tài khoản Google...");
+
+    setAuthTokens(accessToken, refreshToken)
+      .then(() => {
+        setSuccessMessage("Đăng nhập thành công! Đang chuyển hướng...");
+        setTimeout(() => {
+          navigate(PATH.HOME, { replace: true });
+        }, 500);
+      })
+      .catch((err) => {
+        console.error("Lỗi xác thực Google OAuth:", err);
+        setErrorMessage(
+          err?.response?.data?.message ||
+            "Đăng nhập bằng Google thất bại hoặc phiên đã hết hạn.",
+        );
+        setIsLoading(false);
+      });
+  }, [accessToken, refreshToken, setAuthTokens, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,10 +175,49 @@ const Login: React.FC = () => {
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "14px" }}
-        >
+        {accessToken && refreshToken && isLoading && !errorMessage ? (
+          <div style={{ textAlign: "center", padding: "24px 0 12px" }}>
+            <div
+              style={{
+                display: "inline-block",
+                width: "36px",
+                height: "36px",
+                border: "3px solid rgba(255, 255, 255, 0.15)",
+                borderTopColor: "var(--accent-white, #fff)",
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+                marginBottom: "16px",
+              }}
+            />
+            <style>
+              {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
+            </style>
+            <p
+              style={{
+                fontSize: "15px",
+                fontWeight: "600",
+                color: "var(--text-main)",
+                marginBottom: "6px",
+              }}
+            >
+              Đang xác thực tài khoản Google...
+            </p>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "var(--text-secondary)",
+                margin: 0,
+              }}
+            >
+              Vui lòng chờ trong giây lát
+            </p>
+          </div>
+        ) : (
+          <>
+            <form
+              onSubmit={handleSubmit}
+              style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+            >
           {/* Email / Username field */}
           <div>
             <input
@@ -355,6 +426,8 @@ const Login: React.FC = () => {
             </button>
           )}
         </div>
+          </>
+        )}
       </div>
 
       {/* Switch to Register card */}
