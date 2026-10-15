@@ -408,7 +408,10 @@ class UsersService {
         },
       });
     } else if (user.verify === UserVerifyStatus.Unverified) {
-      throw new Error("User is not verified");
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { verify: UserVerifyStatus.Verified },
+      });
     }
 
     const [accessToken, refreshToken] = await this.signAccessAndRefreshToken(
