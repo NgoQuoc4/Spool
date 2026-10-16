@@ -140,8 +140,8 @@ app.use(defaultErrorHanlde);
 httpServer.listen(PORT, () => {
   console.log(`Server đang chạy tại http://localhost:${PORT}`);
 
-  // Tự động quét và đăng bài mới mỗi 30 phút (tự động loại bỏ bài trùng lặp)
-  botsService.startScheduler(1);
+  // Khởi động scheduler dựa trên cài đặt bot trong DB (chỉ chạy nếu is_active = true)
+  botsService.initScheduler();
 });
 
 export default app;

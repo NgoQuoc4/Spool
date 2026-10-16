@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
   autoPostBotController,
   botsController,
+  getBotSettingByIdController,
+  updateBotSettingsController,
 } from "~/controllers/bots.controller";
 import { isAdminValidator } from "~/middlewares/role.midlewares";
 import { accessTokenValidator } from "~/middlewares/users.middlewares";
@@ -36,6 +38,38 @@ botsRouter.post(
   accessTokenValidator,
   isAdminValidator,
   wrapAsync(autoPostBotController),
+);
+
+/*
+ * Description, create a new tweet
+ * Path: /tweets/create-tweet
+ * Method: POST
+ * Header: {Authorization: Bearer <access_token>}
+ * Body: {content: string, type: string, parent_id: string (tweet_id gốc), quoted_tweet_id: string}
+ * Response: {message: string, result: {user: User}}
+ */
+
+botsRouter.get(
+  "/settings/:bot_id",
+  accessTokenValidator,
+  isAdminValidator,
+  wrapAsync(getBotSettingByIdController),
+);
+
+/*
+ * Description, create a new tweet
+ * Path: /tweets/create-tweet
+ * Method: POST
+ * Header: {Authorization: Bearer <access_token>}
+ * Body: {content: string, type: string, parent_id: string (tweet_id gốc), quoted_tweet_id: string}
+ * Response: {message: string, result: {user: User}}
+ */
+
+botsRouter.patch(
+  "/settings/:bot_id",
+  accessTokenValidator,
+  isAdminValidator,
+  wrapAsync(updateBotSettingsController),
 );
 
 export default botsRouter;

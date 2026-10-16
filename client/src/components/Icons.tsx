@@ -1432,3 +1432,28 @@ export const TrashIcon = ({
   </svg>
 );
 
+export const ArrowDownIcon = ({
+  size = 16,
+  color = "currentColor",
+  className = "",
+}: {
+  size?: number;
+  color?: string;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+export const ChevronDownIcon = ArrowDownIcon;

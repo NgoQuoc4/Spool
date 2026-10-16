@@ -72,7 +72,7 @@ model User {
   mentions          TweetMention[]
   sent_messages     Message[]      @relation("SentMessages")
   received_messages Message[]      @relation("ReceivedMessages")
-  botSettings       BotSetting[]
+  botSettings       BotSetting?
 }
 
 model RefreshToken {

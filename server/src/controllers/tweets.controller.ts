@@ -16,7 +16,9 @@ export const createTweetController = async (req: Request, res: Response) => {
 export const autoPostTweetController = async (req: Request, res: Response) => {
   const user_id = (req.decoded_authorization as TokenPayload | undefined)
     ?.user_id;
-  const result = await botsService.autoPostLatestNews(user_id);
+
+  const botId = (req.body?.bot_id || req.query?.bot_id) as string | undefined;
+  const result = await botsService.autoPostLatestNews(botId);
   return res.json({
     message: "Tweet created successfully",
     data: result,

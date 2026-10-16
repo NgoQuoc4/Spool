@@ -18,4 +18,18 @@ export const botsApi = {
         totalItems: number;
       };
     }>(ENDPOINTS.BOTS),
+
+  updateSettingBot: (
+    id: string,
+    body: {
+      rss_url?: string;
+      interval_minutes?: number;
+      post_limit?: number;
+      website?: string;
+    },
+  ) =>
+    http.patch<{ message: string; result: any }>(
+      ENDPOINTS.BOT_SETTINGS(id),
+      body,
+    ),
 };

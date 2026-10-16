@@ -45,4 +45,5 @@ export const ENDPOINTS = {
   // bot
   BOTS: "/bots",
   BOT: (id: string) => `/bots/${id}`,
+  BOT_SETTINGS: (id: string) => `/bots/settings/${id}`,
 } as const;
