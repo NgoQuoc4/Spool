@@ -24,6 +24,7 @@ import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import VerifyForgotPasswordPage from "@/pages/VerifyForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import TweetDetailPage from "@/pages/TweetDetailPage";
+import BotsPage from "@/pages/Admin/BotsPage";
 
 export const router = createBrowserRouter([
   {
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
           { path: PATH.SETTING, element: <SettingPage /> },
           { path: PATH.REPORT, element: <ReportPage /> },
           { path: PATH.NOTFOUND, element: <NotFoundPage /> },
+          { path: PATH.BOTS, element: <BotsPage /> },
         ],
       },
     ],

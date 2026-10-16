@@ -1,11 +1,22 @@
 import tweetsService from "~/services/tweets.service";
 import { Request, Response } from "express";
 import { TokenPayload } from "~/models/requests/User.requests";
+import botsService from "~/services/bots.service";
 
 export const createTweetController = async (req: Request, res: Response) => {
   const { body } = req;
   const { user_id } = req.decoded_authorization as any;
   const result = await tweetsService.createTweet(body, user_id);
+  return res.json({
+    message: "Tweet created successfully",
+    data: result,
+  });
+};
+
+export const autoPostTweetController = async (req: Request, res: Response) => {
+  const user_id = (req.decoded_authorization as TokenPayload | undefined)
+    ?.user_id;
+  const result = await botsService.autoPostLatestNews(user_id);
   return res.json({
     message: "Tweet created successfully",
     data: result,

@@ -263,6 +263,7 @@ class UsersService {
           website: true,
           date_of_birth: true,
           verify: true,
+          role: true,
           created_at: true,
           updated_at: true,
         },

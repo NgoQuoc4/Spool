@@ -46,6 +46,7 @@ enum EncodeStatus {
 
 model User {
   id                    String           @id @default(cuid())
+  role                  UserRole         @default(User)
   name                  String           @default("")
   email                 String           @unique
   password              String
@@ -71,6 +72,7 @@ model User {
   mentions          TweetMention[]
   sent_messages     Message[]      @relation("SentMessages")
   received_messages Message[]      @relation("ReceivedMessages")
+  botSettings       BotSetting[]
 }
 
 model RefreshToken {
@@ -200,4 +202,22 @@ model Message {
 
   @@index([sender_id, receiver_id])
   @@index([receiver_id, sender_id])
+}
+
+enum UserRole {
+  User
+  Admin
+  Bot
+}
+
+model BotSetting {
+  id               String   @id @default(cuid())
+  bot_user_id      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id          String   @unique
+  rss_url          String   @default("https://vnexpress.net/rss/so-hoa.rss")
+  interval_minutes Int      @default(30) // Thời gian lặp lại (phút)
+  post_limit       Int      @default(1) // Số lượng bài đăng tối đa mỗi đợt quét
+  is_active        Boolean  @default(true) // Bật/tắt tự động
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 }

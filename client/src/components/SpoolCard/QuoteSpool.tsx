@@ -1,4 +1,5 @@
 import type { ThreadPost } from "@/types";
+import { renderFormattedContent } from "./ContentSpool";
 
 interface QuoteSpoolProps {
   post: ThreadPost;
@@ -80,7 +81,7 @@ const QuoteSpool = ({ post }: QuoteSpoolProps) => {
             wordBreak: "break-word",
           }}
         >
-          {post.content}
+          {renderFormattedContent(post.content)}
         </div>
       )}
 

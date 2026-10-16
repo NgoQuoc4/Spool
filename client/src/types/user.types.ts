@@ -6,6 +6,13 @@ export const UserVerifyStatus = {
 export type UserVerifyStatus =
   (typeof UserVerifyStatus)[keyof typeof UserVerifyStatus];
 
+export const UserRole = {
+  User: "User",
+  Admin: "Admin",
+  Bot: "Bot",
+} as const;
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
+
 export interface User {
   _id: string;
   name: string;
@@ -14,6 +21,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   verify: UserVerifyStatus;
+  role?: UserRole;
   bio: string;
   location: string;
   website: string;

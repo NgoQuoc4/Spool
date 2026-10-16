@@ -21,4 +21,6 @@ export const PATH = {
   REPORT: "/report",
   TWEET_DETAIL: "/tweet/:tweet_id",
   PROFILE_USER: "/:username",
+  //admin
+  BOTS: "/bots",
 } as const;

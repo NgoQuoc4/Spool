@@ -21,6 +21,8 @@
   "type": "commonjs",
   "dependencies": {
     "@ffprobe-installer/ffprobe": "^2.1.2",
+    "@google/genai": "^2.30.0",
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.22.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -46,6 +48,7 @@
     "mongodb": "^7.6.0",
     "nodemailer": "^10.1.0",
     "prisma": "^5.22.0",
+    "rss-parser": "^3.13.0",
     "sharp": "^0.35.5",
     "slash": "^3.0.0",
     "socket.io": "^4.8.4",

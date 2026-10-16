@@ -19,6 +19,7 @@ const pageTitles: Record<string, string> = {
   "/profile": "Profile",
   "/liked": "Liked",
   "/saved": "Saved",
+  "/bots": "Bots",
 };
 
 const TopBar = ({ type, columnId, title }: TopBarProps) => {

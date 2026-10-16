@@ -16,7 +16,7 @@ import { useFormatRelativeTime } from "@/hooks/useFormatRelativeTime";
 import SpoolsSlider from "./SpoolCard/SpoolsSlider";
 import ActionSpool from "./SpoolCard/ActionSpool";
 import VideoSpool from "./SpoolCard/VideoSpool";
-import ContentSpool from "./SpoolCard/ContentSpool";
+import ContentSpool, { renderFormattedContent } from "./SpoolCard/ContentSpool";
 import OptionsSpool from "./SpoolCard/OptionsSpool";
 import AvatarSpool from "./SpoolCard/AvatarSpool";
 import InforSpool from "./SpoolCard/InforSpool";
@@ -621,276 +621,254 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
                   };
                   const hasNextReply = rIdx < arr.length - 1;
 
-                return (
-                  <div
-                    key={reply.id}
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      position: "relative",
-                      paddingLeft: isNested ? "24px" : "0",
-                    }}
-                  >
-                    {/* Thread connector line for nested replies */}
-                    {isNested && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: "6px",
-                          top: "-8px",
-                          width: "16px",
-                          height: "22px",
-                          borderLeft: "2px solid var(--border-color)",
-                          borderBottom: "2px solid var(--border-color)",
-                          borderBottomLeftRadius: "10px",
-                          pointerEvents: "none",
-                        }}
-                      />
-                    )}
-
-                    {/* Vertical connector line running down from avatar */}
-                    {hasNextReply && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: isNested ? "22px" : "17px",
-                          top: isNested ? "32px" : "38px",
-                          bottom: "-14px",
-                          width: "2px",
-                          backgroundColor: "var(--border-color)",
-                          pointerEvents: "none",
-                        }}
-                      />
-                    )}
-
-                    {/* Avatar */}
-                    <img
-                      src={reply.author.avatar}
-                      alt={reply.author.name}
+                  return (
+                    <div
+                      key={reply.id}
                       style={{
-                        width: isNested ? "30px" : "36px",
-                        height: isNested ? "30px" : "36px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        flexShrink: 0,
-                        zIndex: 1,
+                        display: "flex",
+                        gap: "12px",
+                        position: "relative",
+                        paddingLeft: isNested ? "24px" : "0",
                       }}
-                    />
+                    >
+                      {/* Thread connector line for nested replies */}
+                      {isNested && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: "6px",
+                            top: "-8px",
+                            width: "16px",
+                            height: "22px",
+                            borderLeft: "2px solid var(--border-color)",
+                            borderBottom: "2px solid var(--border-color)",
+                            borderBottomLeftRadius: "10px",
+                            pointerEvents: "none",
+                          }}
+                        />
+                      )}
 
-                    {/* Content Column */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Header: Username, Time, Author tag & Options */}
-                      <div
+                      {/* Vertical connector line running down from avatar */}
+                      {hasNextReply && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            left: isNested ? "22px" : "17px",
+                            top: isNested ? "32px" : "38px",
+                            bottom: "-14px",
+                            width: "2px",
+                            backgroundColor: "var(--border-color)",
+                            pointerEvents: "none",
+                          }}
+                        />
+                      )}
+
+                      {/* Avatar */}
+                      <img
+                        src={reply.author.avatar}
+                        alt={reply.author.name}
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          marginBottom: "2px",
+                          width: isNested ? "30px" : "36px",
+                          height: isNested ? "30px" : "36px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                          flexShrink: 0,
+                          zIndex: 1,
                         }}
-                      >
+                      />
+
+                      {/* Content Column */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {/* Header: Username, Time, Author tag & Options */}
                         <div
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: "6px",
-                            flexWrap: "wrap",
+                            justifyContent: "space-between",
+                            marginBottom: "2px",
                           }}
                         >
-                          <span
+                          <div
                             style={{
-                              fontWeight: "600",
-                              fontSize: "14px",
-                              color: "var(--text-main)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              flexWrap: "wrap",
                             }}
                           >
-                            {reply.author.username}
-                          </span>
+                            <span
+                              style={{
+                                fontWeight: "600",
+                                fontSize: "14px",
+                                color: "var(--text-main)",
+                              }}
+                            >
+                              {reply.author.username}
+                            </span>
+                            <span
+                              style={{
+                                color: "var(--text-secondary)",
+                                fontSize: "13px",
+                              }}
+                            >
+                              {reply.createdAt}
+                            </span>
+                            {isPostAuthor && (
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  color: "var(--text-secondary)",
+                                  backgroundColor: "var(--bg-pill)",
+                                  padding: "1px 6px",
+                                  borderRadius: "4px",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                Author
+                              </span>
+                            )}
+                          </div>
+
+                          <div
+                            style={{
+                              color: "var(--text-secondary)",
+                              cursor: "pointer",
+                              padding: "2px",
+                            }}
+                            title="Options"
+                          >
+                            <MoreDotsIcon size={16} />
+                          </div>
+                        </div>
+
+                        {/* Comment text with link rendering & Translate */}
+                        <div
+                          style={{
+                            fontSize: "14px",
+                            color: "var(--text-main)",
+                            lineHeight: "1.45",
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {renderFormattedContent(reply.content)}
                           <span
                             style={{
                               color: "var(--text-secondary)",
+                              fontSize: "12px",
+                              cursor: "pointer",
+                              display: "inline-block",
+                              marginTop: "2px",
+                            }}
+                          >
+                            Translate
+                          </span>
+                        </div>
+
+                        {/* Action buttons row (Heart, Comment, Repost, Share) */}
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "18px",
+                            marginTop: "8px",
+                            color: "var(--text-secondary)",
+                          }}
+                        >
+                          {/* Heart */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleReplyLike(
+                                reply.id,
+                                reply.likes,
+                                reply.isLiked ?? false,
+                              )
+                            }
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              color: likeState.isLiked
+                                ? "var(--accent-red, #ff3040)"
+                                : "inherit",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 0,
+                              fontSize: "13px",
+                              transition: "transform 0.15s ease",
+                            }}
+                            className={likeState.isLiked ? "animate-pop" : ""}
+                          >
+                            <HeartIcon size={16} active={likeState.isLiked} />
+                            {likeState.count > 0 && (
+                              <span>{likeState.count}</span>
+                            )}
+                          </button>
+
+                          {/* Comment (reply shortcut) */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleReplyToUser(reply.author.username)
+                            }
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              color: "inherit",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 0,
                               fontSize: "13px",
                             }}
                           >
-                            {reply.createdAt}
-                          </span>
-                          {isPostAuthor && (
-                            <span
-                              style={{
-                                fontSize: "11px",
-                                color: "var(--text-secondary)",
-                                backgroundColor: "var(--bg-pill)",
-                                padding: "1px 6px",
-                                borderRadius: "4px",
-                                fontWeight: "500",
-                              }}
-                            >
-                              Author
-                            </span>
-                          )}
+                            <CommentIcon size={16} />
+                            <span>1</span>
+                          </button>
+
+                          {/* Repost */}
+                          <button
+                            type="button"
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              color: "inherit",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 0,
+                              fontSize: "13px",
+                            }}
+                          >
+                            <RepostIcon size={16} />
+                          </button>
+
+                          {/* Share */}
+                          <button
+                            type="button"
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "5px",
+                              color: "inherit",
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: 0,
+                              fontSize: "13px",
+                            }}
+                          >
+                            <ShareIcon size={16} />
+                          </button>
                         </div>
-
-                        <div
-                          style={{
-                            color: "var(--text-secondary)",
-                            cursor: "pointer",
-                            padding: "2px",
-                          }}
-                          title="Options"
-                        >
-                          <MoreDotsIcon size={16} />
-                        </div>
-                      </div>
-
-                      {/* Comment text with link rendering & Translate */}
-                      <div
-                        style={{
-                          fontSize: "14px",
-                          color: "var(--text-main)",
-                          lineHeight: "1.45",
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
-                        {reply.content.split("\n").map((line, lIdx) => (
-                          <div key={lIdx}>
-                            {line.split(" ").map((word, wIdx) => {
-                              if (
-                                word.startsWith("http") ||
-                                word.includes(".com") ||
-                                word.includes(".vn")
-                              ) {
-                                return (
-                                  <span
-                                    key={wIdx}
-                                    style={{
-                                      color: "var(--accent-blue)",
-                                      textDecoration: "underline",
-                                    }}
-                                  >
-                                    {word}{" "}
-                                  </span>
-                                );
-                              }
-                              return word + " ";
-                            })}
-                          </div>
-                        ))}
-                        <span
-                          style={{
-                            color: "var(--text-secondary)",
-                            fontSize: "12px",
-                            cursor: "pointer",
-                            display: "inline-block",
-                            marginTop: "2px",
-                          }}
-                        >
-                          Translate
-                        </span>
-                      </div>
-
-                      {/* Action buttons row (Heart, Comment, Repost, Share) */}
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "18px",
-                          marginTop: "8px",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        {/* Heart */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleToggleReplyLike(
-                              reply.id,
-                              reply.likes,
-                              reply.isLiked ?? false,
-                            )
-                          }
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            color: likeState.isLiked
-                              ? "var(--accent-red, #ff3040)"
-                              : "inherit",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 0,
-                            fontSize: "13px",
-                            transition: "transform 0.15s ease",
-                          }}
-                          className={likeState.isLiked ? "animate-pop" : ""}
-                        >
-                          <HeartIcon size={16} active={likeState.isLiked} />
-                          {likeState.count > 0 && (
-                            <span>{likeState.count}</span>
-                          )}
-                        </button>
-
-                        {/* Comment (reply shortcut) */}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleReplyToUser(reply.author.username)
-                          }
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            color: "inherit",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 0,
-                            fontSize: "13px",
-                          }}
-                        >
-                          <CommentIcon size={16} />
-                          <span>1</span>
-                        </button>
-
-                        {/* Repost */}
-                        <button
-                          type="button"
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            color: "inherit",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 0,
-                            fontSize: "13px",
-                          }}
-                        >
-                          <RepostIcon size={16} />
-                        </button>
-
-                        {/* Share */}
-                        <button
-                          type="button"
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "5px",
-                            color: "inherit",
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 0,
-                            fontSize: "13px",
-                          }}
-                        >
-                          <ShareIcon size={16} />
-                        </button>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
 
               {/* Show replies toggle at the bottom */}
               {allReplies.length > 1 && (

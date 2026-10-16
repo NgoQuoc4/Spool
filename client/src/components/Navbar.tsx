@@ -44,6 +44,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const isAdmin = profile?.role === "Admin";
+
   const handleLogout = async () => {
     await logout();
     navigate("/login");
@@ -635,6 +637,40 @@ export const Navbar: React.FC<NavbarProps> = ({
             <ArchiveIcon size={20} />
             <span>Archive</span>
           </NavLink>
+          {isAdmin && (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "16px 14px 6px",
+                  fontSize: "12px",
+                  color: "var(--text-muted)",
+                }}
+              >
+                <span>Admin</span>
+              </div>
+              <NavLink
+                to="/bots"
+                onClick={() => {
+                  setActiveTab("bots");
+                }}
+                style={navItemStyle("bots")}
+                onMouseEnter={(e) => {
+                  if (activeTab !== "bots")
+                    e.currentTarget.style.backgroundColor = "var(--bg-pill)";
+                }}
+                onMouseLeave={(e) => {
+                  if (activeTab !== "archive")
+                    e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                <ArchiveIcon size={20} />
+                <span>Bots</span>
+              </NavLink>
+            </>
+          )}
         </div>
 
         {/* Bottom subtle copyright / links */}

@@ -21,6 +21,8 @@ import bookmarkRouter from "./routers/bookmarks.router";
 import searchsRouter from "./routers/searchs.router";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import botsService from "./services/bots.service";
+import botsRouter from "./routers/bots.router";
 prisma
   .$connect()
   .then(() => console.log("Connected to PostgreSQL via Prisma ✅"))
@@ -33,10 +35,9 @@ const router = express.Router();
 const PORT = process.env.PORT || 4000;
 const httpServer = createServer(app);
 
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  "http://localhost:3000",
-].filter(Boolean) as string[];
+const allowedOrigins = [process.env.CLIENT_URL, "http://localhost:3000"].filter(
+  Boolean,
+) as string[];
 
 const io = new Server(httpServer, {
   cors: {
@@ -122,6 +123,8 @@ app.use("/tweets", tweetsRouter);
 app.use("/likes", likeRouter);
 app.use("/bookmarks", bookmarkRouter);
 app.use("/search", searchsRouter);
+app.use("/bots", botsRouter);
+
 // để public file trên mạng
 // Cách 1
 // app.use("/static/images", express.static(IMAGE_DIR));
@@ -136,6 +139,9 @@ app.use(defaultErrorHanlde);
 // Start server
 httpServer.listen(PORT, () => {
   console.log(`Server đang chạy tại http://localhost:${PORT}`);
+
+  // Tự động quét và đăng bài mới mỗi 30 phút (tự động loại bỏ bài trùng lặp)
+  botsService.startScheduler(1);
 });
 
 export default app;

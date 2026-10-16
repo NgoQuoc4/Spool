@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  autoPostTweetController,
   createTweetController,
   deleteTweetController,
   getAllTweetController,
@@ -12,6 +13,7 @@ import {
   tweetsValidator,
   tweetValidator,
 } from "~/middlewares/likes.middlewares";
+import { isAdminValidator } from "~/middlewares/role.midlewares";
 import { createTweetValidator } from "~/middlewares/tweets.middlewares";
 import { accessTokenValidator } from "~/middlewares/users.middlewares";
 import { wrapAsync } from "~/utils/handles";
@@ -30,6 +32,21 @@ tweetsRouter.post(
   accessTokenValidator,
   createTweetValidator,
   wrapAsync(createTweetController),
+);
+
+/*
+ * Description, create a new tweet
+ * Path: /tweets/create-tweet
+ * Method: POST
+ * Header: {Authorization: Bearer <access_token>}
+ * Body: {content: string, type: string, parent_id: string (tweet_id gốc), quoted_tweet_id: string}
+ * Response: {message: string, result: {user: User}}
+ */
+tweetsRouter.post(
+  "/auto-post",
+  accessTokenValidator,
+  isAdminValidator,
+  wrapAsync(autoPostTweetController),
 );
 
 /*

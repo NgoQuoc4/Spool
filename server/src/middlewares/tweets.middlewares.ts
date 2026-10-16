@@ -2,7 +2,7 @@ import { checkSchema } from "express-validator";
 import { values } from "lodash";
 import { HTTP_STATUS } from "~/constants/httpStatus";
 import { ErrorWithStatus } from "~/models/errors";
-import { TweetAudienceType, TweetType } from "~/models/schemas/Tweet.schema";
+import { TweetAudienceType, TweetType } from "~/types/tweet.types";
 import prisma from "~/services/prisma.service";
 import { validate } from "~/utils/validation";
 

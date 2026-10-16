@@ -41,4 +41,8 @@ export const ENDPOINTS = {
 
   // Search
   SEARCH: "/search",
+
+  // bot
+  BOTS: "/bots",
+  BOT: (id: string) => `/bots/${id}`,
 } as const;

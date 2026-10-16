@@ -12,7 +12,8 @@ export type ColumnKey =
   | "message"
   | "archive"
   | "setting"
-  | "other_feeds";
+  | "other_feeds"
+  | "bots";
 
 export interface ColumnItem {
   id?: string;
@@ -36,4 +37,5 @@ export const COLUMN_LABELS: Record<ColumnKey, string> = {
   ghost: "Ghost",
   setting: "Setting",
   other_feeds: "Bảng feed khác",
+  bots: "Bots",
 };

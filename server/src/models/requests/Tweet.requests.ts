@@ -1,5 +1,4 @@
-import { ObjectId } from "mongodb";
-import { Media, TweetAudienceType, TweetType } from "../schemas/Tweet.schema";
+import { Media, TweetAudienceType, TweetType } from "~/types/tweet.types";
 
 export interface TweetRequestBody {
   type: TweetType; // tweet, retwee
