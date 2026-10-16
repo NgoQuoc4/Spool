@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import type { BotItem, FormSetting } from ".";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { botsApi } from "@/apis/bots.api";
 import { useAppStore } from "@/stores/useAppStore";
@@ -9,39 +9,59 @@ interface BotSettingFormProps {
   bot: BotItem;
 }
 
+interface FormValues {
+  rss_url: string;
+  interval_minutes: number;
+  post_limit: number;
+  is_active: string;
+}
+
 const BotSettingForm = ({ bot }: BotSettingFormProps) => {
   const { showToast } = useAppStore();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit } = useForm<FormSetting>({
+  const { register, handleSubmit, reset } = useForm<FormValues>({
     defaultValues: {
       rss_url:
         bot.botSettings?.rss_url || "https://vnexpress.net/rss/so-hoa.rss",
       interval_minutes: bot.botSettings?.interval_minutes || 30,
       post_limit: bot.botSettings?.post_limit || 1,
-      is_active: bot.botSettings?.is_active ?? true,
+      is_active: String(bot.botSettings?.is_active ?? true),
     },
   });
 
-  const onSubmit = async (values: FormSetting) => {
+  // Tự động cập nhật dữ liệu vào form khi prop bot thay đổi
+  useEffect(() => {
+    reset({
+      rss_url:
+        bot.botSettings?.rss_url || "https://vnexpress.net/rss/so-hoa.rss",
+      interval_minutes: bot.botSettings?.interval_minutes || 30,
+      post_limit: bot.botSettings?.post_limit || 1,
+      is_active: String(bot.botSettings?.is_active ?? true),
+    });
+  }, [bot, reset]);
+
+  const onSubmit = async (values: FormValues) => {
     try {
+      setIsSubmitting(true);
       const payload: FormSetting = {
         rss_url: values.rss_url.trim(),
-        interval_minutes: Number(values.interval_minutes),
-        post_limit: Number(values.post_limit),
-        is_active: String(values.is_active) === "true",
+        interval_minutes: Number(values.interval_minutes) || 30,
+        post_limit: Number(values.post_limit) || 1,
+        is_active: values.is_active === "true",
       };
-      const res = await botsApi.updateSettingBot(bot.id, payload);
-      console.log("res", res);
+      await botsApi.updateSettingBot(bot.id, payload);
       queryClient.invalidateQueries({ queryKey: ["bots"] });
       showToast("Cập nhật cấu hình bot thành công!");
     } catch (error) {
-      console.error("Update profile failed:", error);
+      console.error("Update bot settings failed:", error);
+      showToast("Cập nhật cấu hình bot thất bại!");
     } finally {
       setIsSubmitting(false);
     }
   };
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
@@ -71,7 +91,8 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
         </label>
         <input
           type="url"
-          {...register("rss_url")}
+          required
+          {...register("rss_url", { required: true })}
           placeholder="https://vnexpress.net/rss/so-hoa.rss"
           style={{
             width: "100%",
@@ -106,9 +127,8 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
         </label>
         <input
           type="number"
-          {...register("interval_minutes")}
           min={1}
-          defaultValue={30}
+          {...register("interval_minutes", { valueAsNumber: true })}
           placeholder="30"
           style={{
             width: "100%",
@@ -143,10 +163,9 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
         </label>
         <input
           type="number"
-          {...register("post_limit")}
           min={1}
           max={10}
-          defaultValue={1}
+          {...register("post_limit", { valueAsNumber: true })}
           placeholder="1"
           style={{
             width: "100%",
@@ -208,6 +227,7 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
       >
         <button
           type="submit"
+          disabled={isSubmitting}
           style={{
             width: "100%",
             background: "var(--text-main)",
@@ -217,17 +237,18 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
             borderRadius: "8px",
             fontSize: "13px",
             fontWeight: "600",
-            cursor: "pointer",
+            cursor: isSubmitting ? "not-allowed" : "pointer",
+            opacity: isSubmitting ? 0.7 : 1,
             transition: "opacity 0.2s ease",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "0.9";
+            if (!isSubmitting) e.currentTarget.style.opacity = "0.9";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "1";
+            if (!isSubmitting) e.currentTarget.style.opacity = "1";
           }}
         >
-          Lưu cấu hình
+          {isSubmitting ? "Đang lưu..." : "Lưu cấu hình"}
         </button>
       </div>
     </form>
