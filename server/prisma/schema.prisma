@@ -63,16 +63,18 @@ model User {
   created_at            DateTime         @default(now())
   updated_at            DateTime         @updatedAt
 
-  tweets            Tweet[]        @relation("UserTweets")
-  refresh_tokens    RefreshToken[]
-  followers         Follow[]       @relation("Followers")
-  following         Follow[]       @relation("Following")
-  bookmarks         Bookmark[]
-  likes             Like[]
-  mentions          TweetMention[]
-  sent_messages     Message[]      @relation("SentMessages")
-  received_messages Message[]      @relation("ReceivedMessages")
-  botSettings       BotSetting?
+  tweets                 Tweet[]        @relation("UserTweets")
+  refresh_tokens         RefreshToken[]
+  followers              Follow[]       @relation("Followers")
+  following              Follow[]       @relation("Following")
+  bookmarks              Bookmark[]
+  likes                  Like[]
+  mentions               TweetMention[]
+  sent_messages          Message[]      @relation("SentMessages")
+  received_messages      Message[]      @relation("ReceivedMessages")
+  botSettings            BotSetting?
+  sent_notifications     Notification[] @relation("SentNotifications")
+  received_notifications Notification[] @relation("ReceivedNotifications")
 }
 
 model RefreshToken {
@@ -110,14 +112,15 @@ model Tweet {
   created_at  DateTime      @default(now())
   updated_at  DateTime      @updatedAt
 
-  user      User           @relation("UserTweets", fields: [user_id], references: [id], onDelete: Cascade)
-  parent    Tweet?         @relation("TweetReplies", fields: [parent_id], references: [id])
-  replies   Tweet[]        @relation("TweetReplies")
-  medias    TweetMedia[]
-  hashtags  TweetHashtag[]
-  mentions  TweetMention[]
-  bookmarks Bookmark[]
-  likes     Like[]
+  user          User           @relation("UserTweets", fields: [user_id], references: [id], onDelete: Cascade)
+  parent        Tweet?         @relation("TweetReplies", fields: [parent_id], references: [id])
+  replies       Tweet[]        @relation("TweetReplies")
+  medias        TweetMedia[]
+  hashtags      TweetHashtag[]
+  mentions      TweetMention[]
+  bookmarks     Bookmark[]
+  likes         Like[]
+  notifications Notification[]
 }
 
 model TweetMedia {
@@ -220,4 +223,31 @@ model BotSetting {
   is_active        Boolean  @default(true) // Bật/tắt tự động
   created_at       DateTime @default(now())
   updated_at       DateTime @updatedAt
+}
+
+enum NotificationType {
+  like
+  comment
+  repost
+  quote
+  follow
+  mention
+}
+
+model Notification {
+  id String @id @default(cuid())
+
+  sender_id   String //người tạo hành động 
+  receiver_id String //người nhận thông báo
+  type        NotificationType
+  tweet_id    String? // Bài viết liên quan (nếu là like, comment, repost, quote)
+  content     String           @default("") // trích dẫn nội dung bài viết
+  is_read     Boolean          @default(false)
+  created_at  DateTime         @default(now())
+
+  sender   User   @relation("SentNotifications", fields: [sender_id], references: [id], onDelete: Cascade)
+  receiver User   @relation("ReceivedNotifications", fields: [receiver_id], references: [id], onDelete: Cascade)
+  tweet    Tweet? @relation(fields: [tweet_id], references: [id], onDelete: Cascade)
+
+  @@index([receiver_id, created_at])
 }

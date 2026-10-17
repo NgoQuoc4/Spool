@@ -17,87 +17,117 @@ class BotsService {
   private parser: Parser;
 
   constructor() {
-    this.parser = new Parser();
+    this.parser = new Parser({
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "application/rss+xml, application/xml, text/xml, */*",
+      },
+      timeout: 15000,
+      customFields: {
+        item: [
+          ["media:content", "mediaContent", { keepArray: true }],
+          ["media:thumbnail", "mediaThumbnail"],
+          ["content:encoded", "contentEncoded"],
+          ["description", "description"],
+          ["image", "image"],
+        ],
+      },
+    });
   }
 
   /**
-   * Lấy danh sách tất cả Bot đang có trong database
+   * Bóc tách link ảnh thumbnail từ nhiều chuẩn RSS khác nhau (enclosure, media:content, media:thumbnail, <image> tag, thẻ img trong html)
    */
-  async getBots() {
-    const [bots, totalItems] = await prisma.$transaction([
-      prisma.user.findMany({
-        where: {
-          role: "Bot",
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          avatar: true,
-          username: true,
-          botSettings: {
-            select: {
-              id: true,
-              rss_url: true,
-              interval_minutes: true,
-              post_limit: true,
-              is_active: true,
-            },
-          },
-        },
-      }),
-      prisma.user.count({
-        where: {
-          role: "Bot",
-        },
-      }),
-    ]);
-    return { bots, totalItems };
-  }
-
-  async getBotSettingById(bot_id: string) {
-    const bot = await prisma.botSetting.findUnique({
-      where: {
-        user_id: bot_id,
-      },
-      select: {
-        id: true,
-        user_id: true,
-        rss_url: true,
-        interval_minutes: true,
-        post_limit: true,
-        is_active: true,
-        updated_at: true,
-      },
-    });
-    if (!bot) throw new Error("Bot not found");
-    return bot;
-  }
-
-  async updateBotSettings(bot_id: string, payload: any) {
-    const bot = await prisma.botSetting.findUnique({
-      where: {
-        user_id: bot_id,
-      },
-    });
-    if (!bot) throw new Error("Bot not found");
-    const botSetting = await prisma.botSetting.update({
-      where: {
-        user_id: bot_id,
-      },
-      data: {
-        ...payload,
-      },
-    });
-
-    // Đồng bộ trạng thái scheduler theo is_active và interval_minutes
-    if (botSetting.is_active) {
-      this.restartScheduler(botSetting.interval_minutes, botSetting.rss_url);
-    } else {
-      this.stopScheduler();
+  private extractImageUrl(item: any): string | undefined {
+    // 1. Chuẩn RSS 2.0 Enclosure (Dân Trí, Thanh Niên, VietnamNet...)
+    if (item.enclosure?.url) {
+      const encUrl = item.enclosure.url;
+      const type = item.enclosure.type || "";
+      if (
+        type.includes("image") ||
+        /\.(jpe?g|png|webp|gif|avif)($|\?)/i.test(encUrl)
+      ) {
+        return encUrl;
+      }
     }
 
-    return botSetting;
+    // 2. Chuẩn Media RSS media:content (BBC, CNN, TechCrunch, Zing...)
+    if (item.mediaContent) {
+      const mediaList = Array.isArray(item.mediaContent)
+        ? item.mediaContent
+        : [item.mediaContent];
+      for (const m of mediaList) {
+        const url = m?.$?.url || m?.url;
+        if (url && typeof url === "string") {
+          return url;
+        }
+      }
+    }
+
+    // 3. Chuẩn Media RSS media:thumbnail
+    if (item.mediaThumbnail) {
+      const thumb = Array.isArray(item.mediaThumbnail)
+        ? item.mediaThumbnail[0]
+        : item.mediaThumbnail;
+      const url = thumb?.$?.url || thumb?.url;
+      if (url && typeof url === "string") {
+        return url;
+      }
+    }
+
+    // 4. Thẻ <image> trực tiếp trong item (Tinh Tế / TinhTe.vn, diễn đàn XenForo...)
+    if (item.image) {
+      const raw =
+        typeof item.image === "string"
+          ? item.image
+          : item.image?.url || item.image?._;
+      if (raw && typeof raw === "string") {
+        let src = raw.trim();
+        if (src.startsWith("//")) src = `https:${src}`;
+        return src;
+      }
+    }
+
+    // 5. Bóc tách thẻ <img src="..."> từ description, content, content:encoded (VnExpress, Tuổi Trẻ, Medium...)
+    const htmlPool = [
+      item["content:encoded"],
+      item.contentEncoded,
+      item.content,
+      item.description,
+      item.summary,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const match = htmlPool.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (match && match[1]) {
+      let src = match[1].trim();
+      if (src.startsWith("//")) {
+        src = `https:${src}`;
+      }
+      return src;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Làm sạch văn bản: xóa thẻ HTML và giải mã các thực thể HTML phổ biến
+   */
+  private cleanText(rawText: string): string {
+    if (!rawText) return "";
+    return rawText
+      .replace(/<\/?[^>]+(>|$)/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&apos;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   /**
@@ -150,33 +180,48 @@ class BotsService {
    */
   async getLatestNews(
     feedUrl: string = "https://vnexpress.net/rss/so-hoa.rss",
-    limit: number = 5,
+    limit: number = 15,
   ): Promise<NewsItem[]> {
     try {
       const feed = await this.parser.parseURL(feedUrl);
 
-      const items = (feed.items || []).slice(0, limit).map((item) => {
-        // Tách link ảnh thumbnail từ thẻ <img src="..."> nằm trong content/description của VnExpress/Tuổi Trẻ
-        const rawContent = item.content || item.summary || "";
-        const imgMatch = rawContent.match(/<img[^>]+src="([^">]+)"/i);
-        const imageUrl = imgMatch ? imgMatch[1] : undefined;
+      const items: NewsItem[] = (feed.items || [])
+        .slice(0, limit)
+        .map((item: any) => {
+          const imageUrl = this.extractImageUrl(item);
 
-        // Làm sạch mô tả: loại bỏ các thẻ HTML nếu có
-        const cleanSummary = (item.contentSnippet || "")
-          .replace(/<\/?[^>]+(>|$)/g, "")
-          .trim();
+          // Bóc link: ưu tiên link, nếu không có lấy guid dạng url hoặc origlink
+          const rawLink =
+            item.link ||
+            (typeof item.guid === "string" && item.guid.startsWith("http")
+              ? item.guid
+              : "") ||
+            item.origlink ||
+            "";
 
-        return {
-          title: item.title || "",
-          link: item.link || "",
-          summary: cleanSummary,
-          pubDate: item.pubDate,
-          imageUrl,
-        };
-      });
+          // Tóm tắt nội dung: kiểm tra lần lượt các trường phổ biến
+          const rawSummary =
+            item.contentSnippet ||
+            item.summary ||
+            item.description ||
+            item.contentEncoded ||
+            item["content:encoded"] ||
+            item.content ||
+            "";
+          const cleanSummary = this.cleanText(rawSummary);
+
+          return {
+            title: this.cleanText(item.title || ""),
+            link: rawLink.trim(),
+            summary: cleanSummary,
+            pubDate: item.pubDate || item.isoDate,
+            imageUrl,
+          };
+        });
+
       return items;
     } catch (error) {
-      console.error("Lỗi khi đọc tin tức từ RSS:", error);
+      console.error(`Lỗi khi đọc tin tức từ RSS [${feedUrl}]:`, error);
       throw error;
     }
   }
@@ -372,6 +417,86 @@ class BotsService {
   ) {
     this.stopScheduler();
     this.startScheduler(newInterval, feedUrl);
+  }
+
+  /**
+   * Lấy danh sách tất cả Bot đang có trong database
+   */
+  async getBots() {
+    const [bots, totalItems] = await prisma.$transaction([
+      prisma.user.findMany({
+        where: {
+          role: "Bot",
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          avatar: true,
+          username: true,
+          botSettings: {
+            select: {
+              id: true,
+              rss_url: true,
+              interval_minutes: true,
+              post_limit: true,
+              is_active: true,
+            },
+          },
+        },
+      }),
+      prisma.user.count({
+        where: {
+          role: "Bot",
+        },
+      }),
+    ]);
+    return { bots, totalItems };
+  }
+
+  async getBotSettingById(bot_id: string) {
+    const bot = await prisma.botSetting.findUnique({
+      where: {
+        user_id: bot_id,
+      },
+      select: {
+        id: true,
+        user_id: true,
+        rss_url: true,
+        interval_minutes: true,
+        post_limit: true,
+        is_active: true,
+        updated_at: true,
+      },
+    });
+    if (!bot) throw new Error("Bot not found");
+    return bot;
+  }
+
+  async updateBotSettings(bot_id: string, payload: any) {
+    const bot = await prisma.botSetting.findUnique({
+      where: {
+        user_id: bot_id,
+      },
+    });
+    if (!bot) throw new Error("Bot not found");
+    const botSetting = await prisma.botSetting.update({
+      where: {
+        user_id: bot_id,
+      },
+      data: {
+        ...payload,
+      },
+    });
+
+    // Đồng bộ trạng thái scheduler theo is_active và interval_minutes
+    if (botSetting.is_active) {
+      this.restartScheduler(botSetting.interval_minutes, botSetting.rss_url);
+    } else {
+      this.stopScheduler();
+    }
+
+    return botSetting;
   }
 }
 

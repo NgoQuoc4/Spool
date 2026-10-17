@@ -23,6 +23,8 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import botsService from "./services/bots.service";
 import botsRouter from "./routers/bots.router";
+import notificationsRouter from "./routers/notifications.router";
+import { healthRouter } from "./routers/health.router";
 prisma
   .$connect()
   .then(() => console.log("Connected to PostgreSQL via Prisma ✅"))
@@ -39,7 +41,7 @@ const allowedOrigins = [process.env.CLIENT_URL, "http://localhost:3000"].filter(
   Boolean,
 ) as string[];
 
-const io = new Server(httpServer, {
+export const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
     credentials: true,
@@ -53,7 +55,7 @@ interface MessagePayload {
   username?: string;
 }
 // Lưu ý: Type của users là Record<string, string> vì bạn gán users[user_id] = socket.id
-const users: Record<string, string> = {};
+export const users: Record<string, string> = {};
 
 io.on("connection", (socket: any) => {
   console.log("connect", socket.id);
@@ -124,6 +126,8 @@ app.use("/likes", likeRouter);
 app.use("/bookmarks", bookmarkRouter);
 app.use("/search", searchsRouter);
 app.use("/bots", botsRouter);
+app.use("/notifications", notificationsRouter);
+app.use("/health", healthRouter);
 
 // để public file trên mạng
 // Cách 1
