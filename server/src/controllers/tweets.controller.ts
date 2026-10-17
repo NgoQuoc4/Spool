@@ -18,16 +18,16 @@ export const autoPostTweetController = async (req: Request, res: Response) => {
 };
 
 export const deleteTweetController = async (req: Request, res: Response) => {
-  const { tweet_id } = req.params;
+  const tweet_id = (req.params.tweetId || req.params.tweet_id) as string;
   const { user_id } = req.decoded_authorization as TokenPayload;
-  const data = await tweetsService.deleteTweet(tweet_id as string, user_id);
+  const data = await tweetsService.deleteTweet(tweet_id, user_id);
   return ok(res, data, "Tweet deleted successfully");
 };
 
 export const getTweetController = async (req: Request, res: Response) => {
-  const { tweet_id } = req.params;
+  const tweet_id = (req.params.tweetId || req.params.tweet_id) as string;
   const { user_id } = req.decoded_authorization as TokenPayload;
-  const data = await tweetsService.getTweet(tweet_id as string, user_id as string);
+  const data = await tweetsService.getTweet(tweet_id, user_id as string);
   return ok(res, data, "Tweet fetched successfully");
 };
 
@@ -54,12 +54,12 @@ export const getAllTweetController = async (req: Request, res: Response) => {
 };
 
 export const getTweetChildrenController = async (req: Request, res: Response) => {
-  const { tweet_id } = req.params;
+  const tweet_id = (req.params.tweetId || req.params.tweet_id) as string;
   const limit = Number(req.query.limit) || 10;
   const page = Number(req.query.page) || 1;
   const currentUserId = req.decoded_authorization?.user_id as string;
   const { tweets, total } = await tweetsService.getTweetChildren(
-    tweet_id as string,
+    tweet_id,
     limit,
     page,
     currentUserId as string,
@@ -68,8 +68,8 @@ export const getTweetChildrenController = async (req: Request, res: Response) =>
 };
 
 export const unretweetController = async (req: Request, res: Response) => {
-  const { tweet_id } = req.params;
+  const tweet_id = (req.params.tweetId || req.params.tweet_id) as string;
   const { user_id } = req.decoded_authorization as TokenPayload;
-  const data = await tweetsService.unretweet(tweet_id as string, user_id);
+  const data = await tweetsService.unretweet(tweet_id, user_id);
   return ok(res, data, "Retweet removed successfully");
 };

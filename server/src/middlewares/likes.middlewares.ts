@@ -5,20 +5,27 @@ import { validate } from "~/utils/validation";
 export const tweetValidator = validate(
   checkSchema({
     tweetId: {
-      isString: {
-        errorMessage: "Invalid tweet id",
-      },
-      notEmpty: {
-        errorMessage: "Tweet id is required",
-      },
       custom: {
-        options: async (value) => {
+        options: async (value, { req }) => {
+          const id =
+            value ||
+            req.params?.tweetId ||
+            req.params?.tweet_id ||
+            req.body?.tweetId ||
+            req.body?.tweet_id;
+
+          if (!id || typeof id !== "string" || !id.trim()) {
+            throw new Error("Invalid tweet id");
+          }
+
           const tweet = await prisma.tweet.findUnique({
-            where: { id: value },
+            where: { id: id.trim() },
           });
+
           if (!tweet) {
             throw new Error("Tweet not found");
           }
+
           return true;
         },
       },
