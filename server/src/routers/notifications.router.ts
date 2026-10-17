@@ -1,9 +1,11 @@
 import { Router } from "express";
 import {
   countUnreadNotificationsController,
-  notificationController,
+  getNotificationController,
   readAllNotificationsController,
   readNotificationController,
+  createNotificationController,
+  deleteNotificationController,
 } from "~/controllers/notification.controller";
 import { accessTokenValidator } from "~/middlewares/users.middlewares";
 import { wrapAsync } from "~/utils/handles";
@@ -13,8 +15,15 @@ const notificationsRouter = Router();
 notificationsRouter.get(
   "/",
   accessTokenValidator,
-  wrapAsync(notificationController),
+  wrapAsync(getNotificationController),
 );
+
+notificationsRouter.post(
+  "/create-notification",
+  accessTokenValidator,
+  wrapAsync(createNotificationController),
+);
+
 notificationsRouter.get(
   "/unread-count",
   accessTokenValidator,
@@ -29,5 +38,10 @@ notificationsRouter.patch(
   "/read-all",
   accessTokenValidator,
   wrapAsync(readAllNotificationsController),
+);
+notificationsRouter.delete(
+  "/:tweet_id/delete",
+  accessTokenValidator,
+  wrapAsync(deleteNotificationController),
 );
 export default notificationsRouter;

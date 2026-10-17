@@ -10,6 +10,7 @@ class NotificationService {
     tweet_id?: string;
     content?: string;
   }) {
+    console.log("data", data);
     if (data.sender_id === data.receiver_id) return null;
     const notif = await prisma.notification.create({
       data,
@@ -54,6 +55,12 @@ class NotificationService {
     return prisma.notification.update({
       where: { id },
       data: { is_read: true },
+    });
+  }
+
+  async deleteNotification(tweet_id: string) {
+    return prisma.notification.deleteMany({
+      where: { tweet_id: tweet_id },
     });
   }
 }

@@ -4,6 +4,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Author, ThreadPost, ThreadReply } from "@/types";
 import { TweetAudienceType, TweetType } from "@/types/tweet.types";
+import { notifications } from "@/apis/notifications.api";
 
 interface UseTweetActionsProps {
   threads: ThreadPost[];
@@ -50,9 +51,21 @@ export const useTweetActions = ({
     // Đồng bộ lên server
     try {
       if (willLike) {
-        await interactionsApi.like(postId);
+        Promise.all([
+          await interactionsApi.like(postId),
+          await notifications.createNotification({
+            sender_id: profile?._id || "",
+            receiver_id: targetPost.author.id,
+            type: "like",
+            tweet_id: postId,
+            content: "",
+          }),
+        ]);
       } else {
-        await interactionsApi.unlike(postId);
+        await Promise.all([
+          await interactionsApi.unlike(postId),
+          await notifications.deleteNotification(postId),
+        ]);
       }
     } catch (error) {
       console.error("Lỗi khi like/unlike:", error);

@@ -46,4 +46,11 @@ export const ENDPOINTS = {
   BOTS: "/bots",
   BOT: (id: string) => `/bots/${id}`,
   BOT_SETTINGS: (id: string) => `/bots/settings/${id}`,
+  //noti
+  GET_NOTIFICATIONS: "/notifications?limit=10&offset=0",
+  CREATE_NOTIFICATION: "/notifications/create-notification",
+  READ_NOTIFICATION: (id: string) => `/notifications/${id}/read`,
+  READ_ALL_NOTIFICATIONS: "/notifications/read-all",
+  COUNT_UNREAD_NOTIFICATIONS: "/notifications/unread-count",
+  DELETE_NOTIFICATION: (id: string) => `/notifications/${id}/delete`,
 } as const;

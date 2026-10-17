@@ -1,7 +1,20 @@
 import { NextFunction, Request, Response } from "express";
 import notificationService from "~/services/notifications.service";
 
-export const notificationController = async (
+export const createNotificationController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const data = req.body as any;
+  const notification = await notificationService.createNotification(data);
+  return res.json({
+    message: "Notification sent successfully",
+    data: notification,
+  });
+};
+
+export const getNotificationController = async (
   req: Request,
   res: Response,
   next: NextFunction,
@@ -67,5 +80,17 @@ export const readAllNotificationsController = async (
   //   });
   return res.json({
     message: "Notifications read successfully",
+  });
+};
+export const deleteNotificationController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const tweet_id = req.params.tweet_id as string;
+  const notification = await notificationService.deleteNotification(tweet_id);
+  return res.json({
+    message: "Notifications deleted successfully",
+    data: notification,
   });
 };
