@@ -26,7 +26,7 @@ class TweetsService {
         type: body.type as TweetType,
         audience: body.audience as TweetAudience,
         content: body.content,
-        parent_id: body.parent_id ?? null,
+        parent_id: body.parentId ?? (body as any).parent_id ?? null,
         medias: {
           create: (body.medias ?? []).map((m) => ({
             url: m.url,
@@ -161,7 +161,7 @@ class TweetsService {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function tweetInclude(userId?: string) {
+export function tweetInclude(userId?: string) {
   return {
     user: {
       select: {
@@ -217,7 +217,7 @@ function tweetInclude(userId?: string) {
   } satisfies Prisma.TweetInclude;
 }
 
-function formatTweet(tweet: any, userId?: string) {
+export function formatTweet(tweet: any, userId?: string) {
   const likes_count = tweet.likes?.length ?? 0;
   const bookmarks_count = tweet.bookmarks?.length ?? 0;
   const reposts_count =
@@ -234,30 +234,40 @@ function formatTweet(tweet: any, userId?: string) {
     tweet.parent.user.followers.length > 0,
   );
 
+  const isLiked = userId
+    ? tweet.likes?.some((l: any) => l.user_id === userId)
+    : false;
+  const isBookmarked = userId
+    ? tweet.bookmarks?.some((b: any) => b.user_id === userId)
+    : false;
+  const isReposted = userId
+    ? tweet.replies?.some((r: any) => r.user_id === userId)
+    : false;
+
   return {
     ...tweet,
     _id: tweet.id,
+    userId: tweet.user_id,
+    parentId: tweet.parent_id,
+    userViews: tweet.user_views ?? 0,
+    guestViews: tweet.guest_views ?? 0,
+    createdAt: tweet.created_at,
+    updatedAt: tweet.updated_at,
     hashtags: tweet.hashtags?.map((th: any) => th.hashtag),
     mentions: tweet.mentions?.map((tm: any) => tm.user),
-    likes_count,
-    bookmarks_count,
-    reposts_count,
-    replies_count,
-    is_liked: userId
-      ? tweet.likes?.some((l: any) => l.user_id === userId)
-      : false,
-    is_bookmarked: userId
-      ? tweet.bookmarks?.some((b: any) => b.user_id === userId)
-      : false,
-    is_reposted: userId
-      ? tweet.replies?.some((r: any) => r.user_id === userId)
-      : false,
-    is_following: isFollowing,
+    likesCount: likes_count,
+    bookmarksCount: bookmarks_count,
+    repostsCount: reposts_count,
+    repliesCount: replies_count,
+    isLiked,
+    isBookmarked,
+    isReposted,
     isFollowing,
     user: tweet.user
       ? {
           ...tweet.user,
-          is_following: isFollowing,
+          coverPhoto: tweet.user.cover_photo,
+          cover_photo: undefined,
           isFollowing,
           followers: undefined,
         }
@@ -265,12 +275,16 @@ function formatTweet(tweet: any, userId?: string) {
     parent: tweet.parent
       ? {
           ...tweet.parent,
-          is_following: parentIsFollowing,
+          userId: tweet.parent.user_id,
+          parentId: tweet.parent.parent_id,
+          createdAt: tweet.parent.created_at,
+          updatedAt: tweet.parent.updated_at,
           isFollowing: parentIsFollowing,
           user: tweet.parent.user
             ? {
                 ...tweet.parent.user,
-                is_following: parentIsFollowing,
+                coverPhoto: tweet.parent.user.cover_photo,
+                cover_photo: undefined,
                 isFollowing: parentIsFollowing,
                 followers: undefined,
               }

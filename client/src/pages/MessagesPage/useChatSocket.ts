@@ -39,7 +39,8 @@ const useChatSocket = ({
     // Lắng nghe tin nhắn gửi đến
     socket.on("receive-chat-message", (data: any) => {
       // 1. Nếu người gửi chính là người đang mở chat -> Đẩy vào khung chat
-      if (activeChatRef.current?.user_id === data.from) {
+      const currentActiveId = activeChatRef.current?.userId;
+      if (currentActiveId === data.from) {
         const incomingMsg: ChatMessage = {
           id: Date.now().toString() + Math.random().toString(),
           senderId: data.from,

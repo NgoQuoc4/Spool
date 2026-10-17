@@ -88,7 +88,7 @@ const EditProfileModal = () => {
       };
 
       const res = await usersApi.updateMe(payload);
-      if (res?.data?.result) {
+      if (res?.data?.data) {
         await refreshProfile();
         showToast("Profile updated successfully");
         closeEditProfileModal();

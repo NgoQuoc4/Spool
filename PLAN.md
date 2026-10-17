@@ -97,7 +97,7 @@ Tập trung hoàn thiện: **Quote tweet (đã xong), Follow system (đang hoàn
   - Nút Follow/Unfollow hoạt động với Optimistic update, tăng/giảm `followers_count`.
 - [x] **Client (`client/src/components/FollowModal.tsx`)**:
   - Modal xác nhận / thao tác Follow user trực tiếp.
-- [ ] **Client (`client/src/pages/SearchPage/index.tsx`)**:
+- [x] **Client (`client/src/pages/SearchPage/index.tsx`)**:
   - Bắt sự kiện `onClick` cho nút Follow ở tab "Profiles" để follow trực tiếp kết quả tìm kiếm.
 - [ ] **Backend (`server/src/routers/user.router.ts`) & Controller**:
   - Thêm `GET /user/:username/followers`: Trả về danh sách user theo dõi `username`.

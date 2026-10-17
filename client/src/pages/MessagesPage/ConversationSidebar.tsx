@@ -85,12 +85,12 @@ const ConversationSidebar = ({
           </div>
         ) : filteredConversations.length > 0 ? (
           filteredConversations.map((item) => {
-            const isSelected =
-              activeChat?.followed_user_id === item.followed_user_id ||
-              activeChat?.user_id === item.user_id;
+            const itemId = item.userId;
+            const activeId = activeChat?.userId;
+            const isSelected = Boolean(activeId && itemId && activeId === itemId);
             return (
               <div
-                key={`${item.followed_user_id}-${item.user_id}`}
+                key={itemId || item.username}
                 className={`conversation-item ${isSelected ? "active" : ""}`}
                 onClick={() => onSelectChat(item)}
               >
@@ -116,7 +116,7 @@ const ConversationSidebar = ({
                   type="button"
                   className="conversation-delete-btn"
                   onClick={(e) =>
-                    onDeleteChat(e, item.user_id || item.followed_user_id)
+                    onDeleteChat(e, item.userId || "")
                   }
                   title="Delete conversation"
                   aria-label="Delete conversation"

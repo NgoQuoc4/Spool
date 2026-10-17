@@ -19,13 +19,13 @@ type ActivityTab = "all" | "like" | "comment" | "repost" | "follow";
 interface NotificationItem {
   id: string;
   _id?: string;
-  sender_id: string;
-  receiver_id: string;
+  senderId: string;
+  receiverId: string;
   type: "like" | "comment" | "repost" | "quote" | "follow" | "mention";
-  tweet_id?: string;
+  tweetId?: string;
   content?: string;
-  is_read: boolean;
-  created_at: string;
+  isRead: boolean;
+  createdAt: string;
   sender?: {
     id: string;
     name?: string;
@@ -76,12 +76,12 @@ const ActivityPage = () => {
 
   const handleNavigateToNotification = (item: NotificationItem) => {
     const notifId = item.id || item._id;
-    if (notifId && !item.is_read) {
+    if (notifId && !item.isRead) {
       readMutation.mutate(notifId);
     }
 
-    if (item.tweet_id) {
-      navigate(`/tweet/${item.tweet_id}`);
+    if (item.tweetId) {
+      navigate(`/tweets/${item.tweetId}`);
     } else if (item.sender?.username) {
       navigate(`/@${item.sender.username}`);
     }
@@ -235,7 +235,7 @@ const ActivityPage = () => {
                 return (
                   <article
                     key={notifId}
-                    className={`activity-item ${!item.is_read ? "unread" : ""}`}
+                    className={`activity-item ${!item.isRead ? "unread" : ""}`}
                     onClick={() => handleNavigateToNotification(item)}
                   >
                     {/* Avatar & Floating Badge */}
@@ -271,7 +271,7 @@ const ActivityPage = () => {
                         <span className="activity-handle">@{username}</span>
                         <span className="activity-dot">·</span>
                         <span className="activity-time">
-                          {useFormatRelativeTime(item.created_at)}
+                          {useFormatRelativeTime(item.createdAt)}
                         </span>
                       </div>
 
@@ -299,7 +299,7 @@ const ActivityPage = () => {
 
                     {/* Right side indicators */}
                     <div className="activity-right">
-                      {!item.is_read && (
+                      {!item.isRead && (
                         <span
                           className="activity-unread-dot"
                           title="Chưa đọc"

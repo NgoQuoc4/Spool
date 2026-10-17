@@ -18,7 +18,7 @@ export const useProfile = (customUsername?: string) => {
     enabled: !isMyProfile && Boolean(cleanUsername),
   });
 
-  const user = isMyProfile ? authProfile : data?.data?.result;
+  const user = isMyProfile ? authProfile : data?.data?.data;
   const currentUser: Author = {
     id: authProfile?._id || "",
     name: authProfile?.name || "",
@@ -28,8 +28,8 @@ export const useProfile = (customUsername?: string) => {
       "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
     bio: authProfile?.bio || "",
     verified: true,
-    following_count: authProfile?.following_count || 0,
-    followers_count: authProfile?.followers_count || 0,
+    followingCount: authProfile?.followingCount || 0,
+    followersCount: authProfile?.followersCount || 0,
   };
 
   return {

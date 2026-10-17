@@ -1,6 +1,8 @@
 import http from "./http";
 import { ENDPOINTS } from "@/constants/endpoints";
 
+import type { ApiSuccess } from "@/types/api.types";
+
 export interface BotItem {
   id: string;
   email: string;
@@ -11,24 +13,24 @@ export interface BotItem {
 
 export const botsApi = {
   getBots: () =>
-    http.get<{
-      message: string;
-      result: {
+    http.get<
+      ApiSuccess<{
         bots: BotItem[];
         totalItems: number;
-      };
-    }>(ENDPOINTS.BOTS),
+      }>
+    >(ENDPOINTS.BOTS),
 
   updateSettingBot: (
     id: string,
     body: {
-      rss_url?: string;
-      interval_minutes?: number;
-      post_limit?: number;
+      rssUrl?: string;
+      intervalMinutes?: number;
+      postLimit?: number;
+      isActive?: boolean;
       website?: string;
     },
   ) =>
-    http.patch<{ message: string; result: any }>(
+    http.patch<ApiSuccess<any>>(
       ENDPOINTS.BOT_SETTINGS(id),
       body,
     ),

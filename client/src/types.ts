@@ -6,8 +6,8 @@ export type Author = Pick<User, "name" | "username" | "avatar" | "isFollowing"> 
   id?: string;       // = User._id (API trả về _id, ta normalize ở helper)
   verified?: boolean;
   bio?: string;
-  followers_count?: number;
-  following_count?: number;
+  followersCount?: number;
+  followingCount?: number;
   followers?: string; // legacy display string (e.g. "1.2K")
 };
 

@@ -11,13 +11,12 @@ export const defaultErrorHanlde = (
 ) => {
   console.error("❌ Error caught by defaultErrorHanlde:", err);
   if (err instanceof ErrorWithStatus) {
-    return res.status(err.status).json(omit(err, ["status"]));
+    const body = omit(err, ["status"]) as any;
+    return res.status(err.status).json({ success: false, ...body });
   }
-  Object.getOwnPropertyNames(err).forEach((key) => {
-    Object.defineProperty(err, key, { enumerable: true });
-  });
   return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-    message: err.message,
-    errorInfo: omit(err, ["stack"]),
+    success: false,
+    message: err.message ?? "Internal server error",
   });
 };
+

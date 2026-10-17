@@ -28,7 +28,7 @@ const NewMessageModal = ({
       }),
     enabled: debouncedSearch.length > 0,
   });
-  const searchUsers = searchResults?.data?.users;
+  const searchUsers = searchResults?.data?.data?.users;
 
   return (
     <>

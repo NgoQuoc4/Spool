@@ -97,9 +97,9 @@ const SettingPage = () => {
     try {
       setIsSubmittingPassword(true);
       await usersApi.changePassword({
-        old_password: oldPassword,
+        oldPassword,
         password: newPassword,
-        confirm_password: confirmPassword,
+        confirmPassword,
       });
       showToast("Đổi mật khẩu thành công!");
       setShowPasswordModal(false);

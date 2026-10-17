@@ -36,7 +36,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   openCreateModal,
   theme,
   toggleTheme,
-  unreadCount = 3,
+  unreadCount,
 }) => {
   const { profile } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -458,7 +458,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <HeartIcon size={21} active={activeTab === "activity"} />
             <span>Activity</span>
-            {unreadCount > 0 && activeTab !== "activity" && (
+            {(unreadCount ?? 0) > 0 && activeTab !== "activity" && (
               <span
                 style={{
                   position: "absolute",

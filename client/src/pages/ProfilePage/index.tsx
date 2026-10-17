@@ -45,7 +45,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   useEffect(() => {
     if (profile) {
       setLocalIsFollowing(profile.isFollowing ?? false);
-      setLocalFollowersCount(profile.followers_count ?? 0);
+      setLocalFollowersCount(profile.followersCount ?? 0);
     }
   }, [profile?._id]);
   const { data, isFetchingNextPage, isLoading, sentinelRef, isError, refetch } =
@@ -187,7 +187,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                       color: "var(--text-secondary)",
                     }}
                   >
-                    {localFollowersCount ?? profile?.followers_count ?? 0}{" "}
+                    {localFollowersCount ?? profile?.followersCount ?? 0}{" "}
                     followers
                   </span>
                   <span
@@ -196,7 +196,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                       color: "var(--text-secondary)",
                     }}
                   >
-                    {profile?.following_count ?? 0} following
+                    {profile?.followingCount ?? 0} following
                   </span>
                 </div>
 

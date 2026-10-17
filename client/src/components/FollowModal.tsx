@@ -18,12 +18,12 @@ const FollowModal = () => {
   useEffect(() => {
     if (followTarget && followTarget.id) {
       setLocalIsFollowing(followTarget.isFollowing ?? false);
-      setLocalFollowersCount(followTarget.followers_count ?? 0);
+      setLocalFollowersCount(followTarget.followersCount ?? 0);
     }
   }, [
     followTarget?.id,
     followTarget?.isFollowing,
-    followTarget?.followers_count,
+    followTarget?.followersCount,
   ]);
 
   if (!isModalFollowOpen || !followTarget?.id) return null;
@@ -34,8 +34,8 @@ const FollowModal = () => {
     username: followTarget.username,
     avatar: followTarget.avatar,
     bio: followTarget.bio,
-    followers_count: followTarget.followers_count,
-    following_count: followTarget.following_count,
+    followersCount: followTarget.followersCount,
+    followingCount: followTarget.followingCount,
     isFollowing: followTarget.isFollowing,
   };
 
@@ -176,7 +176,7 @@ const FollowModal = () => {
               color: "var(--text-secondary)",
             }}
           >
-            {localFollowersCount ?? profile.followers_count ?? 0} followers
+            {localFollowersCount ?? profile.followersCount ?? 0} followers
           </span>
           <span
             style={{
@@ -184,7 +184,7 @@ const FollowModal = () => {
               color: "var(--text-secondary)",
             }}
           >
-            {profile.following_count ?? 0} following
+            {profile.followingCount ?? 0} following
           </span>
         </div>
         <div

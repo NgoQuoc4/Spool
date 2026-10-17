@@ -27,11 +27,11 @@ const VerifyEmailPage = () => {
     authApi
       .verifyEmail(token)
       .then(async ({ data }) => {
-        if (data.result?.accessToken && data.result?.refreshToken) {
+        if (data.data?.accessToken && data.data?.refreshToken) {
           // Tự động lưu token và đăng nhập
           await setAuthTokens(
-            data.result.accessToken,
-            data.result.refreshToken,
+            data.data.accessToken,
+            data.data.refreshToken,
           );
           setStatus("success");
           setMessage("Xác thực email thành công! Đang tự động đăng nhập...");

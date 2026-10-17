@@ -38,28 +38,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     authApi
       .getMe()
-      .then(({ data }) => setProfile(data.result))
+      .then(({ data }) => setProfile(data.data))
       .catch(() => tokenStore.clear())
       .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (body: LoginBody) => {
     const { data } = await authApi.signIn(body);
-    tokenStore.setTokens(data.result.accessToken, data.result.refreshToken);
+    tokenStore.setTokens(data.data.accessToken, data.data.refreshToken);
     const { data: meData } = await authApi.getMe();
-    setProfile(meData.result);
+    setProfile(meData.data);
   };
 
   const register = async (body: RegisterBody) => {
     const { data } = await authApi.signUp(body);
-    tokenStore.setTokens(data.result.accessToken, data.result.refreshToken);
+    tokenStore.setTokens(data.data.accessToken, data.data.refreshToken);
     const { data: meData } = await authApi.getMe();
-    setProfile(meData.result);
+    setProfile(meData.data);
   };
 
   const forgotPassword = async (email: string) => {
-    const { data } = await authApi.forgotPassword(email);
-    return data.result;
+    await authApi.forgotPassword(email);
+    return "";
   };
 
   const logout = async () => {
@@ -75,12 +75,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const setAuthTokens = async (accessToken: string, refreshToken: string) => {
     tokenStore.setTokens(accessToken, refreshToken);
     const { data: meData } = await authApi.getMe();
-    setProfile(meData.result);
+    setProfile(meData.data);
   };
 
   const refreshProfile = async () => {
     const { data: meData } = await authApi.getMe();
-    setProfile(meData.result);
+    setProfile(meData.data);
   };
 
   return (

@@ -128,15 +128,15 @@ export const createTweetValidator = validate(
     medias: {
       isArray: true,
     },
-    parent_id: {
+    parentId: {
       custom: {
         options: async (value, { req }) => {
           const type = req.body.type as TweetType;
-          // RETWEET và QUOTETWEET đều cần parent_id
+          // RETWEET và QUOTETWEET đều cần parentId
           if (type === TweetType.RETWEET || type === TweetType.QUOTETWEET) {
             if (!value || typeof value !== "string") {
               throw new ErrorWithStatus({
-                message: "parent_id must be a valid tweet id",
+                message: "parentId must be a valid tweet id",
                 status: HTTP_STATUS.BAD_REQUEST,
               });
             }
@@ -146,15 +146,15 @@ export const createTweetValidator = validate(
             });
             if (!tweet) {
               throw new ErrorWithStatus({
-                message: "parent_id not found",
+                message: "parentId not found",
                 status: HTTP_STATUS.NOT_FOUND,
               });
             }
           }
-          // Tweet gốc: parent_id phải là null
+          // Tweet gốc: parentId phải là null
           if (type === TweetType.TWEET && value) {
             throw new ErrorWithStatus({
-              message: "Tweet must have null parent_id",
+              message: "Tweet must have null parentId",
               status: HTTP_STATUS.BAD_REQUEST,
             });
           }

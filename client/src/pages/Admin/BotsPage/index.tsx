@@ -8,10 +8,10 @@ import BotSettingForm from "./BotSettingForm";
 
 export interface FormSetting {
   id?: string;
-  rss_url: string;
-  interval_minutes: number;
-  post_limit: number;
-  is_active: boolean;
+  rssUrl: string;
+  intervalMinutes: number;
+  postLimit: number;
+  isActive: boolean;
 }
 export interface BotItem {
   id: string;
@@ -28,7 +28,7 @@ const BotsPage = () => {
     queryKey: ["bots"],
     queryFn: () => botsApi.getBots(),
   });
-  const bots = data?.data.result?.bots;
+  const bots = data?.data.data?.bots;
   console.log("bots", bots);
   const toggleExpand = (botId: string) => {
     setExpandedBotId((prev) => (prev === botId ? null : botId));

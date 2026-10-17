@@ -57,8 +57,8 @@ export const CreateThreadModal = () => {
     const timer = setTimeout(async () => {
       try {
         const res = await usersApi.getProfile(mentionQuery);
-        if (res?.data?.result) {
-          const user = res.data.result;
+        if (res?.data?.data) {
+          const user = res.data.data;
           setSearchUser([
             {
               id: user._id,
@@ -68,8 +68,8 @@ export const CreateThreadModal = () => {
                 user.avatar ||
                 "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
               isFollowing: false,
-              followers_count: user.followers_count,
-              following_count: user.following_count,
+              followersCount: user.followersCount,
+              followingCount: user.followingCount,
             },
           ]);
         }
@@ -206,7 +206,7 @@ export const CreateThreadModal = () => {
         content: data.content.trim(),
         type: isQuoting ? TweetType.QUOTETWEET : TweetType.TWEET,
         audience: TweetAudienceType.EVERYONE,
-        parent_id: isQuoting ? quoteTarget!.id : null,
+        parentId: isQuoting ? quoteTarget!.id : null,
         hashtags: hashtag ? [hashtag] : [],
         mentions: [],
         medias,

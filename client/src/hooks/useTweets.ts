@@ -38,10 +38,9 @@ export const useTweets = (param: {
     initialPageParam: 1, // tham số ban đầu cho page
     // Hàm này sẽ được gọi để lấy tham số cho lần fetch tiếp theo
     getNextPageParam: (lastPage) => {
-      const page = lastPage.data?.result?.page ?? 1;
-      const totalPage = lastPage.data?.result?.total_page ?? 1;
-      // trả về page tiếp theo nếu còn trang, ngược lại trả về undefined để dừng infinite scroll
-      return page < totalPage ? page + 1 : undefined;
+      const page = lastPage.data?.pagination?.page ?? 1;
+      const totalPages = lastPage.data?.pagination?.totalPages ?? 1;
+      return page < totalPages ? page + 1 : undefined;
     },
     enabled, // Tắt query khi không cần fetch
   });

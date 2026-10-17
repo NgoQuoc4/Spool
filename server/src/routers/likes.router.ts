@@ -10,7 +10,7 @@ const likeRouter = Router();
 likeRouter.post(
   "",
   accessTokenValidator,
-  filterMiddleware<LikeRequestBody>(["tweet_id"]),
+  filterMiddleware<LikeRequestBody>(["tweetId"]),
   tweetValidator,
   wrapAsync(likeController),
 );

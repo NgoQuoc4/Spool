@@ -7,5 +7,5 @@ export interface TweetRequestBody {
   hashtags: string[]; // ["js", "java"]
   mentions: string[]; // user_id[] là user_id của người được mention
   medias: Media[]; // list of media objects
-  parent_id?: null | string; // chỉ null khi tweet gốc
+  parentId?: null | string; // chỉ null khi tweet gốc
 }

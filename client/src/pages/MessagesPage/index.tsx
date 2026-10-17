@@ -25,6 +25,8 @@ const MessagesPage = () => {
     deleteConversation,
   } = useConversations(profile?._id);
 
+  const activeChatId = activeChat?.userId;
+
   const {
     chatMessages,
     setChatMessages,
@@ -33,7 +35,7 @@ const MessagesPage = () => {
     messagesEndRef,
     handleScroll,
     scrollToBottom,
-  } = useChatMessages(activeChat?.user_id);
+  } = useChatMessages(activeChatId);
 
   const { emitChatMessage } = useChatSocket({
     profileId: profile?._id,
@@ -52,9 +54,9 @@ const MessagesPage = () => {
   // HANDLER: Gửi tin nhắn — emit socket + optimistic update UI
   // ============================================================
   const handleSendMessage = (messageText: string) => {
-    if (!activeChat || !profile?._id) return;
+    if (!activeChat || !profile?._id || !activeChatId) return;
 
-    emitChatMessage(activeChat.user_id, messageText);
+    emitChatMessage(activeChatId, messageText);
 
     const myMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -68,7 +70,7 @@ const MessagesPage = () => {
     };
     setChatMessages((prev) => [...prev, myMsg]);
     setTimeout(() => scrollToBottom("smooth"), 50);
-    updateConversationPreview(activeChat.user_id, messageText, "Just now");
+    updateConversationPreview(activeChatId, messageText, "Just now");
   };
 
   return (

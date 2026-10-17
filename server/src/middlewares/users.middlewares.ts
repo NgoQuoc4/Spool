@@ -100,7 +100,7 @@ export const signUpValidator = validate(
           errorMessage: userMessage.PASSWORD_MUST_BE_STRONG,
         },
       },
-      confirm_password: {
+      confirmPassword: {
         notEmpty: {
           errorMessage: userMessage.CONFIRM_PASSWORD_IS_REQUIRED,
         },
@@ -151,7 +151,7 @@ export const signUpValidator = validate(
           errorMessage: userMessage.NAME_LENGTH_MUST_BE_FROM_2_TO_100,
         },
       },
-      date_of_birth: {
+      dateOfBirth: {
         isISO8601: {
           options: {
             strict: true,
@@ -199,6 +199,29 @@ export const accessTokenValidator = validate(
     ["headers"],
   ),
 );
+
+export const optionalAccessTokenValidator = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const authorization = req.headers.authorization;
+  if (authorization) {
+    const access_token = authorization.split(" ")[1];
+    if (access_token) {
+      try {
+        const decoded_authorization = await verifyToken({
+          token: access_token,
+          secretKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
+        });
+        (req as Request).decoded_authorization = decoded_authorization;
+      } catch (error) {
+        // Token is optional, do not throw
+      }
+    }
+  }
+  return next();
+};
 
 export const refreshTokenValidator = validate(
   checkSchema(
@@ -468,7 +491,7 @@ export const resetPasswordValidator = validate(
           errorMessage: userMessage.PASSWORD_MUST_BE_STRONG,
         },
       },
-      confirm_password: {
+      confirmPassword: {
         notEmpty: {
           errorMessage: userMessage.CONFIRM_PASSWORD_IS_REQUIRED,
         },
@@ -523,7 +546,7 @@ export const updateMeValidator = validate(
           errorMessage: userMessage.NAME_LENGTH_MUST_BE_FROM_1_TO_100,
         },
       },
-      date_of_birth: {
+      dateOfBirth: {
         optional: true,
         isISO8601: {
           options: {
@@ -603,7 +626,7 @@ export const updateMeValidator = validate(
           errorMessage: userMessage.AVATAR_LENGTH_MUST_BE_FROM_1_TO_100,
         },
       },
-      cover_photo: {
+      coverPhoto: {
         optional: true,
         isString: true,
         trim: true,
@@ -623,7 +646,7 @@ export const updateMeValidator = validate(
 export const followUserValidator = validate(
   checkSchema(
     {
-      followed_user_id: {
+      followedUserId: {
         notEmpty: {
           errorMessage: userMessage.FOLLOWED_USER_ID_IS_REQUIRED,
         },
@@ -697,7 +720,7 @@ export const changePasswordValidator = validate(
           errorMessage: userMessage.PASSWORD_MUST_BE_STRONG,
         },
       },
-      confirm_password: {
+      confirmPassword: {
         notEmpty: {
           errorMessage: userMessage.CONFIRM_PASSWORD_IS_REQUIRED,
         },
@@ -732,7 +755,7 @@ export const changePasswordValidator = validate(
           },
         },
       },
-      old_password: {
+      oldPassword: {
         notEmpty: {
           errorMessage: userMessage.OLD_PASSWORD_IS_REQUIRED,
         },

@@ -155,9 +155,9 @@ userRouter.patch(
   updateMeValidator,
   filterMiddleware<UpdateMeRequestBody>([
     "name",
-    "date_of_birth",
+    "dateOfBirth",
     "avatar",
-    "cover_photo",
+    "coverPhoto",
     "bio",
     "location",
     "website",
@@ -171,7 +171,7 @@ userRouter.post(
   "/follow",
   accessTokenValidator,
   followUserValidator,
-  filterMiddleware<FollowUserRequestBody>(["followed_user_id"]),
+  filterMiddleware<FollowUserRequestBody>(["followedUserId"]),
   wrapAsync(followUserController),
 );
 /*
@@ -187,7 +187,7 @@ userRouter.delete(
   "/follow",
   accessTokenValidator,
   followUserValidator,
-  filterMiddleware<FollowUserRequestBody>(["followed_user_id"]),
+  filterMiddleware<FollowUserRequestBody>(["followedUserId"]),
   wrapAsync(unfollowUserController),
 );
 /*
@@ -205,8 +205,8 @@ userRouter.put(
   changePasswordValidator,
   filterMiddleware<ChangePasswordRequestBody>([
     "password",
-    "confirm_password",
-    "old_password",
+    "confirmPassword",
+    "oldPassword",
   ]),
   wrapAsync(changePasswordController),
 );

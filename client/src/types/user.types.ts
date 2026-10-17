@@ -15,11 +15,12 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
 export interface User {
   _id: string;
+  id?: string;
   name: string;
   email: string;
-  date_of_birth: string;
-  created_at: string;
-  updated_at: string;
+  dateOfBirth?: string;
+  createdAt?: string;
+  updatedAt?: string;
   verify: UserVerifyStatus;
   role?: UserRole;
   bio: string;
@@ -27,19 +28,19 @@ export interface User {
   website: string;
   username: string;
   avatar: string;
-  cover_photo: string;
-  followers_count?: number;
-  following_count?: number;
+  coverPhoto?: string;
+  followersCount?: number;
+  followingCount?: number;
   isFollowing?: boolean;
 }
 
 export interface UpdateMeBody {
   name?: string;
-  date_of_birth?: string;
+  dateOfBirth?: string;
   bio?: string;
   location?: string;
   website?: string;
   username?: string;
   avatar?: string;
-  cover_photo?: string;
+  coverPhoto?: string;
 }

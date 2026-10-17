@@ -10,7 +10,7 @@ const bookmarkRouter = Router();
 bookmarkRouter.post(
   "",
   accessTokenValidator,
-  filterMiddleware<BookmarkRequestBody>(["tweet_id"]),
+  filterMiddleware<BookmarkRequestBody>(["tweetId"]),
   tweetValidator,
   wrapAsync(bookmarkController),
 );

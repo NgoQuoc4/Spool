@@ -7,6 +7,9 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useAuth } from "@/contexts/AuthContext";
 import EditProfileModal from "@/components/EditProfileModal";
 import FollowModal from "@/components/FollowModal";
+import useNotificationSocket from "@/hooks/useNotificationSocket";
+import { notifications } from "@/apis/notifications.api";
+import { useQuery } from "@tanstack/react-query";
 
 export interface LayoutContextType {
   showToast: (msg: string) => void;
@@ -19,6 +22,17 @@ const MainLayout = () => {
     useAppStore();
   const [activeNavTab, setActiveNavTab] = useState<string>("forYou");
 
+  // 👈 2. Kích hoạt Socket nhận thông báo toàn ứng dụng
+  useNotificationSocket();
+  const { data: countData } = useQuery({
+    queryKey: ["unread-notifications-count"],
+    queryFn: () => notifications.countUnreadNotifications(),
+    enabled: !!profile, // Chỉ fetch khi có profile
+    refetchOnWindowFocus: true, // Tự động refetch khi click tab notification
+  });
+  const unreadCount = countData?.data?.data ?? 0;
+
+  console.log("unreadCount", unreadCount);
   return (
     <div className="app-container">
       {/* Authentic Threads Left Navigation Rail (Desktop) & Dock (Mobile) */}
@@ -29,6 +43,7 @@ const MainLayout = () => {
         theme={theme}
         toggleTheme={toggleTheme}
         currentUser={profile || undefined}
+        unreadCount={unreadCount}
       />
 
       <main className="main-content">

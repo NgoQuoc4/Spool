@@ -10,10 +10,10 @@ interface BotSettingFormProps {
 }
 
 interface FormValues {
-  rss_url: string;
-  interval_minutes: number;
-  post_limit: number;
-  is_active: string;
+  rssUrl: string;
+  intervalMinutes: number;
+  postLimit: number;
+  isActive: string;
 }
 
 const BotSettingForm = ({ bot }: BotSettingFormProps) => {
@@ -21,35 +21,39 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const getInitialValues = (bot: BotItem): FormValues => ({
+    rssUrl:
+      bot.botSettings?.rssUrl ||
+      "https://vnexpress.net/rss/so-hoa.rss",
+    intervalMinutes:
+      bot.botSettings?.intervalMinutes ??
+      30,
+    postLimit:
+      bot.botSettings?.postLimit ??
+      1,
+    isActive: String(
+      bot.botSettings?.isActive ??
+      true,
+    ),
+  });
+
   const { register, handleSubmit, reset } = useForm<FormValues>({
-    defaultValues: {
-      rss_url:
-        bot.botSettings?.rss_url || "https://vnexpress.net/rss/so-hoa.rss",
-      interval_minutes: bot.botSettings?.interval_minutes || 30,
-      post_limit: bot.botSettings?.post_limit || 1,
-      is_active: String(bot.botSettings?.is_active ?? true),
-    },
+    defaultValues: getInitialValues(bot),
   });
 
   // Tự động cập nhật dữ liệu vào form khi prop bot thay đổi
   useEffect(() => {
-    reset({
-      rss_url:
-        bot.botSettings?.rss_url || "https://vnexpress.net/rss/so-hoa.rss",
-      interval_minutes: bot.botSettings?.interval_minutes || 30,
-      post_limit: bot.botSettings?.post_limit || 1,
-      is_active: String(bot.botSettings?.is_active ?? true),
-    });
+    reset(getInitialValues(bot));
   }, [bot, reset]);
 
   const onSubmit = async (values: FormValues) => {
     try {
       setIsSubmitting(true);
       const payload: FormSetting = {
-        rss_url: values.rss_url.trim(),
-        interval_minutes: Number(values.interval_minutes) || 30,
-        post_limit: Number(values.post_limit) || 1,
-        is_active: values.is_active === "true",
+        rssUrl: values.rssUrl.trim(),
+        intervalMinutes: Number(values.intervalMinutes) || 30,
+        postLimit: Number(values.postLimit) || 1,
+        isActive: values.isActive === "true",
       };
       await botsApi.updateSettingBot(bot.id, payload);
       queryClient.invalidateQueries({ queryKey: ["bots"] });
@@ -92,7 +96,7 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
         <input
           type="url"
           required
-          {...register("rss_url", { required: true })}
+          {...register("rssUrl", { required: true })}
           placeholder="https://vnexpress.net/rss/so-hoa.rss"
           style={{
             width: "100%",
@@ -128,7 +132,7 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
         <input
           type="number"
           min={1}
-          {...register("interval_minutes", { valueAsNumber: true })}
+          {...register("intervalMinutes", { valueAsNumber: true })}
           placeholder="30"
           style={{
             width: "100%",
@@ -165,7 +169,7 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
           type="number"
           min={1}
           max={10}
-          {...register("post_limit", { valueAsNumber: true })}
+          {...register("postLimit", { valueAsNumber: true })}
           placeholder="1"
           style={{
             width: "100%",
@@ -199,7 +203,7 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
           Trạng thái
         </label>
         <select
-          {...register("is_active")}
+          {...register("isActive")}
           style={{
             width: "100%",
             background: "var(--bg-input)",

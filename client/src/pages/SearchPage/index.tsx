@@ -17,7 +17,7 @@ import { useTweetActions } from "@/hooks/useTweetActions";
 import type { ThreadPost } from "@/types";
 import { ThreadListSkeleton, UserListSkeleton } from "@/components/Skeleton";
 import useProfile from "@/hooks/useProfile";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { usersApi } from "@/apis/users.api";
 
 type SearchTab = "top" | "recent" | "profiles";
@@ -29,8 +29,14 @@ const TABS: { key: SearchTab; label: string }[] = [
 ];
 
 const SearchPage = () => {
-  const [searchQuery, setSearchQuery] = React.useState("");
-  const [activeTab, setActiveTab] = useState<SearchTab>("top");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = searchParams.get("q") || searchParams.get("query") || "";
+  const initialTab = (searchParams.get("tab") as SearchTab) || "top";
+
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+  const [activeTab, setActiveTab] = useState<SearchTab>(
+    ["top", "recent", "profiles"].includes(initialTab) ? initialTab : "top",
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [threads, setThreads] = useState<ThreadPost[]>([]);
 
@@ -39,6 +45,15 @@ const SearchPage = () => {
   const debouncedSearch = useDebounce(searchQuery.trim(), 400);
   const menuRef = useRef<HTMLDivElement>(null);
   const { currentUser } = useProfile();
+  const navigate = useNavigate();
+
+  // Sync URL search params
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (debouncedSearch) params.q = debouncedSearch;
+    if (activeTab !== "top") params.tab = activeTab;
+    setSearchParams(params, { replace: true });
+  }, [debouncedSearch, activeTab, setSearchParams]);
 
   // Click outside to close popup
   useEffect(() => {
@@ -56,10 +71,7 @@ const SearchPage = () => {
     };
   }, [isOpen]);
 
-  const {
-    data: searchResults,
-    isLoading,
-  } = useQuery({
+  const { data: searchResults, isLoading } = useQuery({
     queryKey: ["search", debouncedSearch, activeTab],
     queryFn: () =>
       searchApi.searchUsers({
@@ -78,10 +90,7 @@ const SearchPage = () => {
 
     // Trạng thái hiện tại của user này (ưu tiên state local, sau đó đến data từ backend)
     const isCurrentlyFollowing =
-      followingMap[targetId] ??
-      profile.isFollowing ??
-      profile.is_following ??
-      false;
+      followingMap[targetId] ?? profile.isFollowing ?? false;
 
     const nextState = !isCurrentlyFollowing;
 
@@ -104,20 +113,18 @@ const SearchPage = () => {
     }
   };
 
-  const users =
-    searchResults?.data?.users ||
-    (Array.isArray(searchResults?.data) ? searchResults.data : []);
+  const searchData = searchResults?.data?.data;
+  const users = searchData?.users || [];
 
   useEffect(() => {
-    if (searchResults?.data?.tweets) {
-      const formatted = searchResults.data.tweets.map((t: any) =>
-        formatTweetToThreadPost(t),
-      );
+    const data = searchResults?.data?.data;
+    if (data?.tweets) {
+      const formatted = data.tweets.map((t: any) => formatTweetToThreadPost(t));
       setThreads(formatted);
     } else {
       setThreads([]);
     }
-  }, [searchResults?.data?.tweets]);
+  }, [searchResults?.data]);
 
   const {
     handleLikeToggle,
@@ -470,7 +477,9 @@ const SearchPage = () => {
                     ) : users && users.length > 0 ? (
                       users.map((s: any, index: number) => {
                         const userId = s.id || s._id;
-                        const isMe = currentUser?.id === userId;
+                        const isMe =
+                          currentUser?.id === userId ||
+                          (currentUser as any)?._id === userId;
                         const isFollowing =
                           followingMap[userId] ??
                           s.isFollowing ??
@@ -480,6 +489,7 @@ const SearchPage = () => {
                         return (
                           <div
                             key={s._id || s.id || `search-user-${index}`}
+                            onClick={() => navigate(`/@${s.username}`)}
                             style={{
                               display: "flex",
                               alignItems: "center",
@@ -510,6 +520,7 @@ const SearchPage = () => {
                                   textDecoration: "none",
                                 }}
                                 to={`/@${s.username}`}
+                                onClick={(e) => e.stopPropagation()}
                               >
                                 <img
                                   src={
@@ -546,11 +557,14 @@ const SearchPage = () => {
                                         textDecoration: "none",
                                       }}
                                       to={`/@${s.username}`}
+                                      onClick={(e) => e.stopPropagation()}
                                     >
                                       {s.name}
                                     </Link>
                                   </span>
-                                  {s.verified && <VerifiedBadge size={14} />}
+                                  {(s.verified || s.verify === 1) && (
+                                    <VerifiedBadge size={14} />
+                                  )}
                                 </div>
                                 <div
                                   style={{
@@ -558,16 +572,27 @@ const SearchPage = () => {
                                     color: "var(--text-secondary)",
                                   }}
                                 >
-                                  <Link
-                                    style={{
-                                      color: "inherit",
-                                      textDecoration: "none",
-                                    }}
-                                    to={`/@${s.username}`}
-                                  >
-                                    {s.name}
-                                  </Link>
+                                  <span>@{s.username}</span>
+                                  {typeof s.followersCount === "number" && (
+                                    <span> · {s.followersCount} followers</span>
+                                  )}
                                 </div>
+                                {s.bio && (
+                                  <div
+                                    style={{
+                                      fontSize: "13px",
+                                      color: "var(--text-primary)",
+                                      marginTop: "4px",
+                                      lineClamp: 1,
+                                      WebkitLineClamp: 1,
+                                      display: "-webkit-box",
+                                      WebkitBoxOrient: "vertical",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    {s.bio}
+                                  </div>
+                                )}
                               </div>
                             </div>
 

@@ -88,8 +88,8 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
       tweetsApi
         .getTweetChildren(post.id)
         .then((res) => {
-          if (res?.data?.result?.tweets) {
-            const mapped: ThreadReply[] = res.data.result.tweets.map(
+          if (res?.data?.data) {
+            const mapped: ThreadReply[] = res.data.data.map(
               (t: any) => ({
                 id: t._id || t.id,
                 author: {
@@ -102,11 +102,11 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
                   verified: true,
                 },
                 content: t.content,
-                createdAt: t.created_at
-                  ? useFormatRelativeTime(t.created_at)
+                createdAt: t.createdAt
+                  ? useFormatRelativeTime(t.createdAt)
                   : "Just now",
-                likes: t.likes_count ?? t.like ?? 0,
-                isLiked: t.is_liked ?? false,
+                likes: t.likesCount ?? t.like ?? 0,
+                isLiked: t.isLiked ?? false,
               }),
             );
             setFetchedReplies(mapped);

@@ -4,7 +4,7 @@ import { validate } from "~/utils/validation";
 
 export const tweetValidator = validate(
   checkSchema({
-    tweet_id: {
+    tweetId: {
       isString: {
         errorMessage: "Invalid tweet id",
       },

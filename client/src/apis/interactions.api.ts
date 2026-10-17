@@ -2,12 +2,12 @@ import http from "./http";
 import { ENDPOINTS } from "@/constants/endpoints";
 
 export const interactionsApi = {
-  like: (tweet_id: string) => http.post(ENDPOINTS.LIKES, { tweet_id }),
+  like: (tweetId: string) => http.post(ENDPOINTS.LIKES, { tweetId }),
 
-  unlike: (tweet_id: string) => http.post(ENDPOINTS.LIKES, { tweet_id }),
+  unlike: (tweetId: string) => http.post(ENDPOINTS.LIKES, { tweetId }),
 
-  bookmark: (tweet_id: string) => http.post(ENDPOINTS.BOOKMARKS, { tweet_id }),
+  bookmark: (tweetId: string) => http.post(ENDPOINTS.BOOKMARKS, { tweetId }),
 
-  unbookmark: (tweet_id: string) =>
-    http.delete(ENDPOINTS.BOOKMARKS, { data: { tweet_id } }),
+  unbookmark: (tweetId: string) =>
+    http.delete(ENDPOINTS.BOOKMARKS, { data: { tweetId } }),
 };

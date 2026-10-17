@@ -48,7 +48,7 @@ const ResetPasswordPage: React.FC = () => {
       await authApi.resetPassword({
         forgot_password_token,
         password,
-        confirm_password: confirmPassword,
+        confirmPassword,
       });
 
       setSuccessMessage(

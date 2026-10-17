@@ -19,7 +19,7 @@ export const PATH = {
   SEARCH: "/search",
   SETTING: "/setting",
   REPORT: "/report",
-  TWEET_DETAIL: "/tweet/:tweet_id",
+  TWEET_DETAIL: "/tweets/:tweet_id",
   PROFILE_USER: "/:username",
   //admin
   BOTS: "/bots",

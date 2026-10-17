@@ -51,20 +51,20 @@ export const useTweetActions = ({
     // Đồng bộ lên server
     try {
       if (willLike) {
-        Promise.all([
-          await interactionsApi.like(postId),
-          await notifications.createNotification({
-            sender_id: profile?._id || "",
-            receiver_id: targetPost.author.id,
+        await Promise.all([
+          interactionsApi.like(postId),
+          notifications.createNotification({
+            senderId: profile?._id || "",
+            receiverId: targetPost.author.id,
             type: "like",
-            tweet_id: postId,
+            tweetId: postId,
             content: "",
           }),
         ]);
       } else {
         await Promise.all([
-          await interactionsApi.unlike(postId),
-          await notifications.deleteNotification(postId),
+          interactionsApi.unlike(postId),
+          notifications.deleteNotification(postId),
         ]);
       }
     } catch (error) {
@@ -114,7 +114,7 @@ export const useTweetActions = ({
           type: TweetType.RETWEET,
           audience: TweetAudienceType.EVERYONE,
           content: "",
-          parent_id: postId,
+          parentId: postId,
           hashtags: [],
           mentions: [],
           medias: [],
@@ -170,7 +170,7 @@ export const useTweetActions = ({
         type: TweetType.QUOTETWEET,
         audience: TweetAudienceType.EVERYONE,
         content: "",
-        parent_id: postId,
+        parentId: postId,
         hashtags: [],
         mentions: [],
         medias: [],
@@ -224,7 +224,7 @@ export const useTweetActions = ({
 
     try {
       const response = await tweetsApi.createTweet({
-        parent_id: postId,
+        parentId: postId,
         type: TweetType.COMMENT,
         content: text,
         audience: TweetAudienceType.EVERYONE,
@@ -234,8 +234,8 @@ export const useTweetActions = ({
       });
 
       // Update real id from server if needed
-      if (response?.data?.result) {
-        const createdTweet = response.data.result;
+      if (response?.data?.data) {
+        const createdTweet = response.data.data;
         setThreads((prev) =>
           prev.map((p) => {
             if (p.id === postId) {

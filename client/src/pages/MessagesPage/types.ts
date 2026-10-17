@@ -1,6 +1,6 @@
 export interface Conversation {
-  followed_user_id: string;
-  user_id: string;
+  userId: string;
+  followedUserId?: string;
   name: string;
   username: string;
   avatar?: string;

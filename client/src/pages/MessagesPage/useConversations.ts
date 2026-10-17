@@ -17,25 +17,28 @@ export const useConversations = (profileId?: string) => {
     const fetchConversations = async () => {
       try {
         const response = await usersApi.getConversations();
-        const contacts = response.data.result.map((item: any) => ({
-          followed_user_id: item.user_id,
-          user_id: item.user_id,
-          name: item.name,
-          username: item.username,
-          avatar: item.avatar,
-          lastMessage: item.lastMessage,
-          time: item.lastMessageAt
-            ? new Date(item.lastMessageAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : undefined,
-        }));
+        const contacts = response.data.data.map((item: any) => {
+          const id = item.userId;
+          return {
+            userId: id,
+            followedUserId: id,
+            name: item.name,
+            username: item.username,
+            avatar: item.avatar,
+            lastMessage: item.lastMessage,
+            time: item.lastMessageAt
+              ? new Date(item.lastMessageAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : undefined,
+          };
+        });
 
         // Giữ lại conversations tạm thời (chưa có trong DB) như khi mở từ ProfilePage
         setConversations((prev) => {
           const unsaved = prev.filter(
-            (p) => !contacts.some((c: any) => c.user_id === p.user_id),
+            (p) => !contacts.some((c: any) => c.userId === p.userId),
           );
           return [...unsaved, ...contacts];
         });
@@ -44,7 +47,7 @@ export const useConversations = (profileId?: string) => {
         setActiveChat((current) => {
           if (!current) return current;
           const match = contacts.find(
-            (c: any) => c.user_id === current.user_id,
+            (c: any) => c.userId === current.userId,
           );
           return match ? { ...current, ...match } : current;
         });
@@ -65,23 +68,23 @@ export const useConversations = (profileId?: string) => {
     if (!targetUserId || !profileId || targetUserId === profileId) return;
 
     const targetContact: Conversation = {
-      followed_user_id: targetUserId,
-      user_id: targetUserId,
+      userId: targetUserId,
+      followedUserId: targetUserId,
       name: searchParams.get("name") || "User",
       username: searchParams.get("username") || "",
       avatar: searchParams.get("avatar") || "",
     };
 
     setConversations((prev) => {
-      const existing = prev.find((c) => c.user_id === targetUserId);
+      const existing = prev.find((c) => c.userId === targetUserId);
       if (existing) {
-        return [existing, ...prev.filter((c) => c.user_id !== targetUserId)];
+        return [existing, ...prev.filter((c) => c.userId !== targetUserId)];
       }
       return [targetContact, ...prev];
     });
 
     setActiveChat((current) => {
-      if (current?.user_id === targetUserId) return current;
+      if (current?.userId === targetUserId) return current;
       return targetContact;
     });
 
@@ -99,7 +102,7 @@ export const useConversations = (profileId?: string) => {
   ) => {
     setConversations((prev) =>
       prev.map((c) =>
-        c.followed_user_id === userId || c.user_id === userId
+        c.userId === userId || c.followedUserId === userId
           ? { ...c, lastMessage, time }
           : c,
       ),
@@ -114,7 +117,7 @@ export const useConversations = (profileId?: string) => {
     if (!targetId || !currentProfileId || targetId === currentProfileId) return;
 
     const existing = conversations.find(
-      (c) => c.followed_user_id === targetId || c.user_id === targetId,
+      (c) => c.userId === targetId || c.followedUserId === targetId,
     );
 
     let target: Conversation;
@@ -123,13 +126,13 @@ export const useConversations = (profileId?: string) => {
       setConversations((prev) => [
         existing,
         ...prev.filter(
-          (c) => c.followed_user_id !== targetId && c.user_id !== targetId,
+          (c) => c.userId !== targetId && c.followedUserId !== targetId,
         ),
       ]);
     } else {
       target = {
-        followed_user_id: targetId,
-        user_id: targetId,
+        userId: targetId,
+        followedUserId: targetId,
         avatar: selectedUser.avatar || "",
         name:
           selectedUser.name ||
@@ -166,15 +169,15 @@ export const useConversations = (profileId?: string) => {
       setConversations((prev) =>
         prev.filter(
           (c) =>
-            c.followed_user_id !== targetUserId &&
-            c.user_id !== targetUserId,
+            c.userId !== targetUserId &&
+            c.followedUserId !== targetUserId,
         ),
       );
 
       setActiveChat((current) => {
         if (
-          current?.followed_user_id === targetUserId ||
-          current?.user_id === targetUserId
+          current?.userId === targetUserId ||
+          current?.followedUserId === targetUserId
         )
           return null;
         return current;

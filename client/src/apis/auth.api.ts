@@ -8,6 +8,7 @@ import type {
   AuthTokens,
 } from "@/types/auth.types";
 import type { User } from "@/types/user.types";
+import type { ApiSuccess } from "@/types/api.types";
 
 export const authApi = {
   signIn: (body: LoginBody) => http.post<AuthResponse>(ENDPOINTS.SIGN_IN, body),
@@ -20,13 +21,13 @@ export const authApi = {
     return http.post(ENDPOINTS.LOGOUT, { refresh_token });
   },
 
-  getMe: () => http.get<{ message: string; result: User }>(ENDPOINTS.ME),
+  getMe: () => http.get<ApiSuccess<User>>(ENDPOINTS.ME),
 
   refreshToken: (refresh_token: string) =>
     http.post<RefreshTokenResponse>(ENDPOINTS.REFRESH_TOKEN, { refresh_token }),
 
   verifyEmail: (email_verify_token: string) =>
-    http.post<{ message: string; result?: AuthTokens }>(
+    http.post<ApiSuccess<AuthTokens | null>>(
       ENDPOINTS.VERIFY_EMAIL,
       { email_verify_token },
     ),
@@ -42,6 +43,6 @@ export const authApi = {
   resetPassword: (body: {
     forgot_password_token: string;
     password: string;
-    confirm_password: string;
+    confirmPassword: string;
   }) => http.post(ENDPOINTS.RESET_PASSWORD, body),
 };

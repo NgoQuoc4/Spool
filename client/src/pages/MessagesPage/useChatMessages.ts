@@ -22,9 +22,9 @@ export const useChatMessages = (activeChatUserId?: string) => {
   // Helper: chuyển đổi format tin nhắn từ backend → ChatMessage
   const formatMessage = (m: any): ChatMessage => ({
     id: m.id,
-    senderId: m.sender_id,
+    senderId: m.senderId,
     message: m.content,
-    timestamp: new Date(m.created_at).toLocaleTimeString([], {
+    timestamp: new Date(m.createdAt).toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     }),
@@ -45,7 +45,7 @@ export const useChatMessages = (activeChatUserId?: string) => {
           limit: 50,
         });
 
-        const messages = response.data.result.map(formatMessage);
+        const messages = response.data.data.map(formatMessage);
         setChatMessages(messages);
 
         if (messages.length < 50) {
@@ -83,7 +83,7 @@ export const useChatMessages = (activeChatUserId?: string) => {
           cursor: oldestMessageId,
         });
 
-        const olderMessages = response.data.result.map(formatMessage);
+        const olderMessages = response.data.data.map(formatMessage);
 
         if (olderMessages.length < 50) {
           setHasMore(false);

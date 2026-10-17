@@ -1,4 +1,5 @@
 import type { User } from './user.types';
+import type { ApiSuccess } from './api.types';
 
 export interface LoginBody {
   email: string;
@@ -9,8 +10,8 @@ export interface RegisterBody {
   name: string;
   email: string;
   password: string;
-  confirm_password: string;
-  date_of_birth: string; // ISO 8601
+  confirmPassword: string;
+  dateOfBirth: string; // ISO 8601
 }
 
 export interface AuthTokens {
@@ -18,12 +19,5 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
-export interface AuthResponse {
-  message: string;
-  result: AuthTokens & { user?: User };
-}
-
-export interface RefreshTokenResponse {
-  message: string;
-  result: AuthTokens;
-}
+export type AuthResponse = ApiSuccess<AuthTokens & { user?: User }>;
+export type RefreshTokenResponse = ApiSuccess<AuthTokens>;

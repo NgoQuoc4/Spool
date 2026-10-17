@@ -82,8 +82,8 @@ http.interceptors.response.use(
       const { data } = await http.post(ENDPOINTS.REFRESH_TOKEN, {
         refresh_token,
       });
-      const newAccess: string = data.result.accessToken;
-      const newRefresh: string = data.result.refreshToken;
+      const newAccess: string = data.data.accessToken;
+      const newRefresh: string = data.data.refreshToken;
 
       tokenStore.setTokens(newAccess, newRefresh);
       flushQueue(newAccess);

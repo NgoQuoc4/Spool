@@ -49,8 +49,8 @@ const Register: React.FC = () => {
           name,
           email,
           password,
-          confirm_password: confirmPassword,
-          date_of_birth: isoDob,
+          confirmPassword,
+          dateOfBirth: isoDob,
         }),
       });
 
@@ -63,10 +63,10 @@ const Register: React.FC = () => {
         throw new Error(firstErrorMsg || data.message || "Đăng ký thất bại.");
       }
 
-      setSuccessMessage("Đăng ký tài khoản thành công! Đang chuyển hướng...");
-      if (data.result?.access_token) {
-        localStorage.setItem("access_token", data.result.access_token);
-        localStorage.setItem("refresh_token", data.result.refresh_token);
+      const tokenData = data.data || data.result;
+      if (tokenData?.accessToken || tokenData?.access_token) {
+        localStorage.setItem("access_token", tokenData.accessToken || tokenData.access_token);
+        localStorage.setItem("refresh_token", tokenData.refreshToken || tokenData.refresh_token);
       }
 
       setTimeout(() => {

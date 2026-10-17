@@ -132,7 +132,7 @@ class UsersService {
         email: payload.email,
         password: hashedPassword,
         username: payload.email.toLowerCase().split("@")[0],
-        date_of_birth: new Date(payload.date_of_birth),
+        date_of_birth: new Date(payload.dateOfBirth),
         email_verify_token: emailVerificationToken,
       },
     });
@@ -226,10 +226,10 @@ class UsersService {
   async resetPassword(
     user_id: string,
     password: string,
-    confirm_password: string,
+    confirmPassword: string,
     forgot_password_token: string,
   ) {
-    if (password !== confirm_password)
+    if (password !== confirmPassword)
       throw new Error("Password and confirm password do not match");
 
     const user = await prisma.user.findFirst({
@@ -274,17 +274,36 @@ class UsersService {
 
     if (!user) throw new Error("User not found");
     return {
-      ...user,
+      id: user.id,
       _id: user.id,
-      followers_count: followersCount,
-      following_count: followingCount,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      verify: user.verify,
+      role: user.role,
+      dateOfBirth: user.date_of_birth,
+      coverPhoto: user.cover_photo,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      followersCount,
+      followingCount,
     };
   }
 
   async patchMe(user_id: string, payload: UpdateMeRequestBody) {
     const data: any = { ...payload };
-    if (payload.date_of_birth)
-      data.date_of_birth = new Date(payload.date_of_birth);
+    if (payload.dateOfBirth) {
+      data.date_of_birth = new Date(payload.dateOfBirth);
+      delete data.dateOfBirth;
+    }
+    if (payload.coverPhoto !== undefined) {
+      data.cover_photo = payload.coverPhoto;
+      delete data.coverPhoto;
+    }
 
     const user = await prisma.user.update({
       where: { id: user_id },
@@ -305,7 +324,22 @@ class UsersService {
         updated_at: true,
       },
     });
-    return user;
+    return {
+      id: user.id,
+      _id: user.id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      verify: user.verify,
+      dateOfBirth: user.date_of_birth,
+      coverPhoto: user.cover_photo,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    };
   }
 
   async getUserByUsername(username: string) {
@@ -328,7 +362,22 @@ class UsersService {
       },
     });
     if (!user) throw new Error("User not found");
-    return { ...user, _id: user.id };
+    return {
+      id: user.id,
+      _id: user.id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      verify: user.verify,
+      dateOfBirth: user.date_of_birth,
+      coverPhoto: user.cover_photo,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    };
   }
 
   async followUser(user_id: string, followed_user_id: string) {
@@ -465,7 +514,7 @@ class UsersService {
     });
 
     const formattedResult = result.map((item) => ({
-      followed_user_id: item.followed_user_id,
+      followedUserId: item.followed_user_id,
       id: item.followed_user.id,
       name: item.followed_user.name,
       username: item.followed_user.username,
@@ -499,7 +548,12 @@ class UsersService {
         created_at: "asc", // Tin nhắn cũ ở trên, mới ở dưới
       },
     });
-    return messages;
+    return messages.map((m) => ({
+      ...m,
+      senderId: m.sender_id,
+      receiverId: m.receiver_id,
+      createdAt: m.created_at,
+    }));
   }
 
   // Lấy danh sách các cuộc hội thoại (những người đã từng nhắn tin)
@@ -544,7 +598,7 @@ class UsersService {
       const isISender = msg.sender_id === user_id;
       const contact = isISender ? msg.receiver : msg.sender;
       return {
-        user_id: contact.id,
+        userId: contact.id,
         name: contact.name,
         username: contact.username,
         avatar: contact.avatar,

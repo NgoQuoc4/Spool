@@ -5,9 +5,9 @@ import { ParamsDictionary } from "express-serve-static-core";
 export interface RegisterRequestBody {
   email: string;
   password: string;
-  confirm_password: string;
+  confirmPassword: string;
   name: string;
-  date_of_birth: string;
+  dateOfBirth: string;
 }
 
 export interface LoginRequestBody {
@@ -27,7 +27,7 @@ export interface TokenPayload extends JwtPayload {
 
 export interface ResetPasswordRequestBody {
   password: string;
-  confirm_password: string;
+  confirmPassword: string;
   forgot_password_token: string;
 }
 export interface ForgotPasswordToken {
@@ -38,13 +38,13 @@ export interface ForgotPasswordToken {
 export interface UpdateMeRequestBody {
   name?: string;
   password?: string;
-  date_of_birth?: string;
+  dateOfBirth?: string;
   bio?: string;
   location?: string;
   website?: string;
   username?: string;
   avatar?: string;
-  cover_photo?: string;
+  coverPhoto?: string;
 }
 
 export interface GetProfileReqParams extends ParamsDictionary {
@@ -52,20 +52,20 @@ export interface GetProfileReqParams extends ParamsDictionary {
 }
 
 export interface FollowUserRequestBody {
-  followed_user_id: string;
+  followedUserId: string;
 }
 export interface ChangePasswordRequestBody {
   password: string;
-  confirm_password: string;
-  old_password: string;
+  confirmPassword: string;
+  oldPassword: string;
 }
 
 export interface RefreshTokenRequestBody {
   refresh_token: string;
 }
 export interface LikeRequestBody {
-  tweet_id: string;
+  tweetId: string;
 }
 export interface BookmarkRequestBody {
-  tweet_id: string;
+  tweetId: string;
 }

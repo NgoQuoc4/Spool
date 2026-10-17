@@ -37,32 +37,39 @@ export interface Media {
 
 export interface Tweet {
   _id: string;
-  user_id: string;
+  id?: string;
+  userId?: string;
   type: TweetType;
   audience: TweetAudienceType;
   content: string;
-  parent_id: string | null;
+  parentId?: string | null;
   hashtags: string[];
   mentions: string[];
   medias: Media[];
-  user_views: number;
-  guest_views: number;
-  like: number;
-  bookmark: number;
-  created_at: string;
-  updated_at: string;
-  parent_tweet?: Tweet | null;
+  userViews?: number;
+  guestViews?: number;
+  like?: number;
+  likesCount?: number;
+  bookmark?: number;
+  bookmarksCount?: number;
+  repostsCount?: number;
+  repliesCount?: number;
+  isLiked?: boolean;
+  isBookmarked?: boolean;
+  isReposted?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  parentTweet?: Tweet | null;
   // populated fields
-  user?: Author & { _id?: string }; // _id từ server, id được normalize ở helper
+  user?: Author & { _id?: string; coverPhoto?: string }; // _id từ server, id được normalize ở helper
   isFollowing?: boolean; // shorthand = user.isFollowing
-  is_following?: boolean; // snake_case alias từ server
 }
 
 export interface CreateTweetBody {
   content: string;
   type: TweetType;
   audience: TweetAudienceType;
-  parent_id?: string | null;
+  parentId?: string | null;
   hashtags?: string[];
   mentions?: string[];
   medias?: Media[];

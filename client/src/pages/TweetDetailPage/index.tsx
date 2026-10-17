@@ -2,12 +2,16 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { tweetsApi } from "@/apis/tweets.api";
+import { notifications } from "@/apis/notifications.api";
 import { formatTweetToThreadPost } from "@/utils/tweet.helper";
 import { ThreadCard } from "@/components/ThreadCard";
 import { ThreadCardSkeleton, ThreadListSkeleton } from "@/components/Skeleton";
 import { useTweetActions } from "@/hooks/useTweetActions";
 import useProfile from "@/hooks/useProfile";
 import type { ThreadPost } from "@/types";
+
+const DEFAULT_AVATAR =
+  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop";
 
 const TweetDetailPage: React.FC = () => {
   const { tweet_id } = useParams<{ tweet_id: string }>();
@@ -18,6 +22,11 @@ const TweetDetailPage: React.FC = () => {
   const [threads, setThreads] = useState<ThreadPost[]>([]);
   const [commentText, setCommentText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Cuộn lên đầu trang mỗi khi chuyển sang xem bài viết khác
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [tweet_id]);
 
   // 1. Query bài viết gốc
   const {
@@ -46,20 +55,23 @@ const TweetDetailPage: React.FC = () => {
     const list: ThreadPost[] = [];
 
     // Bài viết gốc ở đầu danh sách (index 0)
-    if (tweetData?.data?.result) {
-      list.push(formatTweetToThreadPost(tweetData.data.result));
+    const rawTweet = tweetData?.data?.data;
+    if (rawTweet) {
+      list.push(formatTweetToThreadPost(rawTweet));
     }
 
     // Các bình luận con ở sau
-    if (childrenData?.data?.result?.tweets) {
-      const formattedChildren = childrenData.data.result.tweets.map((t: any) =>
+    const rawChildren = childrenData?.data?.data;
+
+    if (rawChildren && Array.isArray(rawChildren)) {
+      const formattedChildren = rawChildren.map((t: any) =>
         formatTweetToThreadPost(t),
       );
       list.push(...formattedChildren);
     }
 
     setThreads(list);
-  }, [tweetData?.data?.result, childrenData?.data?.result?.tweets]);
+  }, [tweetData?.data?.data, childrenData?.data?.data]);
 
   // Hook quản lý like, repost, bookmark, reply, delete
   const {
@@ -75,16 +87,69 @@ const TweetDetailPage: React.FC = () => {
   const replies = threads.slice(1);
 
   // Xử lý gửi bình luận từ khung soạn thảo nhanh
-  const handleQuickCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commentText.trim() || !tweet_id || isSubmitting) return;
+  const handleQuickCommentSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = commentText.trim();
+    if (!trimmed || !tweet_id || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
-      await handleReplyAdded(tweet_id, commentText.trim());
+
+      // 1. Optimistic Update: Thêm ngay bình luận mới vào danh sách hiển thị
+      const tempId = `temp-reply-${Date.now()}`;
+      const optimisticReply: ThreadPost = {
+        id: tempId,
+        author: {
+          id: currentUser.id || "me",
+          name: currentUser.name || "You",
+          username: currentUser.username || "you",
+          avatar: currentUser.avatar || DEFAULT_AVATAR,
+          verified: currentUser.verified ?? true,
+        },
+        content: trimmed,
+        createdAt: "Vừa xong",
+        likes: 0,
+        repliesCount: 0,
+        repostsCount: 0,
+        isLiked: false,
+        isReposted: false,
+        isBookmarked: false,
+        medias: [],
+      };
+
+      setThreads((prev) => {
+        if (prev.length === 0) return [optimisticReply];
+        // Tăng repliesCount của bài chính và đưa reply mới lên đầu danh sách replies
+        const updatedMain = {
+          ...prev[0],
+          repliesCount: prev[0].repliesCount + 1,
+        };
+        return [updatedMain, optimisticReply, ...prev.slice(1)];
+      });
+
       setCommentText("");
-      refetchChildren();
+
+      // 2. Gọi API tạo bình luận
+      await handleReplyAdded(tweet_id, trimmed);
+
+      // 3. Bắn thông báo cho tác giả bài viết nếu bình luận vào bài người khác
+      if (mainPost?.author?.id && mainPost.author.id !== currentUser.id) {
+        notifications
+          .createNotification({
+            senderId: currentUser.id || "",
+            receiverId: mainPost.author.id,
+            type: "comment",
+            tweetId: tweet_id,
+            content: trimmed,
+          })
+          .catch((err) => console.error("Lỗi khi tạo thông báo cmt:", err));
+      }
+
+      // 4. Refetch lại danh sách replies để đồng bộ dữ liệu thật từ Server
+      await refetchChildren();
       queryClient.invalidateQueries({ queryKey: ["tweet_detail", tweet_id] });
+    } catch (error) {
+      console.error("Lỗi khi gửi bình luận:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -215,7 +280,7 @@ const TweetDetailPage: React.FC = () => {
             }}
           >
             <img
-              src={currentUser.avatar}
+              src={currentUser.avatar || DEFAULT_AVATAR}
               alt={currentUser.name}
               style={{
                 width: "40px",
@@ -224,15 +289,30 @@ const TweetDetailPage: React.FC = () => {
                 objectFit: "cover",
                 flexShrink: 0,
               }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = DEFAULT_AVATAR;
+              }}
             />
             <form
               onSubmit={handleQuickCommentSubmit}
-              style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
             >
               <textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Viết câu trả lời của bạn..."
+                onKeyDown={(e) => {
+                  // Nhấn Ctrl+Enter hoặc Cmd+Enter để gửi nhanh
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    handleQuickCommentSubmit();
+                  }
+                }}
+                placeholder="Viết câu trả lời của bạn... (Ctrl+Enter để gửi)"
                 rows={2}
                 style={{
                   width: "100%",
@@ -316,16 +396,18 @@ const TweetDetailPage: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : mainPost && (
-          <div
-            style={{
-              padding: "48px 20px",
-              textAlign: "center",
-              color: "var(--text-secondary)",
-            }}
-          >
-            Chưa có câu trả lời nào. Hãy là người đầu tiên trả lời!
-          </div>
+        ) : (
+          mainPost && (
+            <div
+              style={{
+                padding: "48px 20px",
+                textAlign: "center",
+                color: "var(--text-secondary)",
+              }}
+            >
+              Chưa có câu trả lời nào. Hãy là người đầu tiên trả lời!
+            </div>
+          )
         )}
       </section>
     </div>

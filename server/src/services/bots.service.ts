@@ -451,7 +451,19 @@ class BotsService {
         },
       }),
     ]);
-    return { bots, totalItems };
+    const mappedBots = bots.map((b) => ({
+      ...b,
+      botSettings: b.botSettings
+        ? {
+            id: b.botSettings.id,
+            rssUrl: b.botSettings.rss_url,
+            intervalMinutes: b.botSettings.interval_minutes,
+            postLimit: b.botSettings.post_limit,
+            isActive: b.botSettings.is_active,
+          }
+        : null,
+    }));
+    return { bots: mappedBots, totalItems };
   }
 
   async getBotSettingById(bot_id: string) {
@@ -470,7 +482,15 @@ class BotsService {
       },
     });
     if (!bot) throw new Error("Bot not found");
-    return bot;
+    return {
+      id: bot.id,
+      userId: bot.user_id,
+      rssUrl: bot.rss_url,
+      intervalMinutes: bot.interval_minutes,
+      postLimit: bot.post_limit,
+      isActive: bot.is_active,
+      updatedAt: bot.updated_at,
+    };
   }
 
   async updateBotSettings(bot_id: string, payload: any) {
@@ -480,13 +500,26 @@ class BotsService {
       },
     });
     if (!bot) throw new Error("Bot not found");
+
+    const updateData: any = {};
+    if (payload.rssUrl !== undefined) {
+      updateData.rss_url = payload.rssUrl;
+    }
+    if (payload.intervalMinutes !== undefined) {
+      updateData.interval_minutes = payload.intervalMinutes;
+    }
+    if (payload.postLimit !== undefined) {
+      updateData.post_limit = payload.postLimit;
+    }
+    if (payload.isActive !== undefined) {
+      updateData.is_active = payload.isActive;
+    }
+
     const botSetting = await prisma.botSetting.update({
       where: {
         user_id: bot_id,
       },
-      data: {
-        ...payload,
-      },
+      data: updateData,
     });
 
     // Đồng bộ trạng thái scheduler theo is_active và interval_minutes
@@ -496,7 +529,15 @@ class BotsService {
       this.stopScheduler();
     }
 
-    return botSetting;
+    return {
+      id: botSetting.id,
+      userId: botSetting.user_id,
+      rssUrl: botSetting.rss_url,
+      intervalMinutes: botSetting.interval_minutes,
+      postLimit: botSetting.post_limit,
+      isActive: botSetting.is_active,
+      updatedAt: botSetting.updated_at,
+    };
   }
 }
 

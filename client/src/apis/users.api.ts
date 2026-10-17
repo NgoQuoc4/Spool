@@ -1,26 +1,27 @@
 import http from "./http";
 import { ENDPOINTS } from "@/constants/endpoints";
 import type { User, UpdateMeBody } from "@/types/user.types";
+import type { ApiSuccess } from "@/types/api.types";
 
 export const usersApi = {
   getProfile: (username: string) =>
-    http.get<{ message: string; result: User }>(ENDPOINTS.PROFILE(username)),
+    http.get<ApiSuccess<User>>(ENDPOINTS.PROFILE(username)),
 
-  getMe: () => http.get<{ message: string; result: User }>(ENDPOINTS.ME),
+  getMe: () => http.get<ApiSuccess<User>>(ENDPOINTS.ME),
 
   updateMe: (body: UpdateMeBody) =>
-    http.patch<{ message: string; result: User }>(ENDPOINTS.ME, body),
+    http.patch<ApiSuccess<User>>(ENDPOINTS.ME, body),
 
-  follow: (followed_user_id: string) =>
-    http.post(ENDPOINTS.FOLLOW, { followed_user_id }),
+  follow: (followedUserId: string) =>
+    http.post(ENDPOINTS.FOLLOW, { followedUserId }),
 
-  unfollow: (followed_user_id: string) =>
-    http.delete(ENDPOINTS.FOLLOW, { data: { followed_user_id } }),
+  unfollow: (followedUserId: string) =>
+    http.delete(ENDPOINTS.FOLLOW, { data: { followedUserId } }),
 
   changePassword: (body: {
-    old_password: string;
+    oldPassword: string;
     password: string;
-    confirm_password: string;
+    confirmPassword: string;
   }) => http.put(ENDPOINTS.CHANGE_PASSWORD, body),
 
   verifyEmail: (email_verify_token: string) =>
@@ -30,30 +31,23 @@ export const usersApi = {
     http.post(ENDPOINTS.RESEND_VERIFY_EMAIL, { email }),
 
   following: (username: string) =>
-    http.get<{ message: string; result: User[] }>(
-      ENDPOINTS.FOLLOWING(username),
-    ),
+    http.get<ApiSuccess<User[]>>(ENDPOINTS.FOLLOWING(username)),
 
   followers: (username: string) =>
-    http.get<{ message: string; result: User[] }>(
-      ENDPOINTS.FOLLOWERS(username),
-    ),
+    http.get<ApiSuccess<User[]>>(ENDPOINTS.FOLLOWERS(username)),
 
   getMessages: (
     receiver_id: string,
     params?: { limit?: number; cursor?: string },
   ) =>
-    http.get<{ message: string; result: any[] }>(
+    http.get<ApiSuccess<any[]>>(
       ENDPOINTS.CONVERSATIONS_MESSAGES(receiver_id),
       { params },
     ),
 
-  // Lấy danh sách những người đã từng nhắn tin (không phụ thuộc follow)
   getConversations: () =>
-    http.get<{ message: string; result: any[] }>(ENDPOINTS.CONVERSATIONS),
+    http.get<ApiSuccess<any[]>>(ENDPOINTS.CONVERSATIONS),
 
   deleteConversation: (receiver_id: string) =>
-    http.delete<{ message: string }>(
-      ENDPOINTS.CONVERSATIONS_DELETE(receiver_id),
-    ),
+    http.delete<ApiSuccess<null>>(ENDPOINTS.CONVERSATIONS_DELETE(receiver_id)),
 };

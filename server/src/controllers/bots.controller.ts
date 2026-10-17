@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { TokenPayload } from "~/models/requests/User.requests";
 import botsService from "~/services/bots.service";
+import { ok, created } from "~/utils/api.response";
 
 export const botsController = async (
   req: Request,
@@ -8,19 +9,13 @@ export const botsController = async (
   next: NextFunction,
 ) => {
   const result = await botsService.getBots();
-  return res.json({
-    message: "Bots",
-    result,
-  });
+  return ok(res, result, "Get bots success");
 };
 
 export const autoPostBotController = async (req: Request, res: Response) => {
   const botId = (req.body?.bot_id || req.query?.bot_id) as string | undefined;
   const result = await botsService.autoPostLatestNews(botId);
-  return res.json({
-    message: "Tweet created successfully",
-    data: result,
-  });
+  return created(res, result, "Tweet created successfully");
 };
 
 export const getBotSettingByIdController = async (
@@ -28,28 +23,17 @@ export const getBotSettingByIdController = async (
   res: Response,
 ) => {
   const bot_id = req.params.bot_id as string;
-  console.log("bot_id", bot_id);
   const result = await botsService.getBotSettingById(bot_id);
-  return res.json({
-    message: "Bot",
-    data: result,
-  });
+  return ok(res, result, "Get bot setting success");
 };
 
 export const updateBotSettingsController = async (
   req: Request,
   res: Response,
 ) => {
-  const user_id = (req.decoded_authorization as TokenPayload | undefined)
-    ?.user_id;
   const bot_id = req.params.bot_id as string;
   const payload = req.body as any;
-  console.log("payload", payload);
-  console.log("bot_id", bot_id);
 
   const result = await botsService.updateBotSettings(bot_id, payload);
-  return res.json({
-    message: "Tweet created successfully",
-    // data: result,
-  });
+  return ok(res, result, "Update bot settings success");
 };
