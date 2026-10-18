@@ -26,7 +26,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   columnId,
 }) => {
   const navigate = useNavigate();
-  const { setIsModalOpen, openEditProfileModal } = useAppStore();
+  const {
+    setIsModalOpen,
+    openEditProfileModal,
+    openListFollowModal,
+  } = useAppStore();
   const {
     user: profile,
     currentUser,
@@ -89,6 +93,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     handleBookmark,
     handleShare,
   } = useTweetActions({ threads, setThreads });
+
+  const handleFollowers = () => {
+    const targetId = profile?._id || profile?.id;
+    if (targetId) openListFollowModal(targetId, "followers");
+  };
+
+  const handleFollowing = () => {
+    const targetId = profile?._id || profile?.id;
+    if (targetId) openListFollowModal(targetId, "following");
+  };
 
   return (
     <>
@@ -182,6 +196,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                   }}
                 >
                   <span
+                    onClick={handleFollowers}
                     style={{
                       fontSize: "13px",
                       color: "var(--text-secondary)",
@@ -191,6 +206,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     followers
                   </span>
                   <span
+                    onClick={handleFollowing}
                     style={{
                       fontSize: "13px",
                       color: "var(--text-secondary)",

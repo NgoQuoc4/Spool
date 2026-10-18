@@ -20,11 +20,11 @@ import likeRouter from "./routers/likes.router";
 import bookmarkRouter from "./routers/bookmarks.router";
 import searchsRouter from "./routers/searchs.router";
 import { createServer } from "http";
-import { Server } from "socket.io";
 import botsService from "./services/bots.service";
 import botsRouter from "./routers/bots.router";
 import notificationsRouter from "./routers/notifications.router";
 import { healthRouter } from "./routers/health.router";
+import { initSocket } from "./sockets";
 prisma
   .$connect()
   .then(() => console.log("Connected to PostgreSQL via Prisma ✅"))
@@ -41,63 +41,8 @@ const allowedOrigins = [process.env.CLIENT_URL, "http://localhost:3000"].filter(
   Boolean,
 ) as string[];
 
-export const io = new Server(httpServer, {
-  cors: {
-    origin: allowedOrigins.length > 0 ? allowedOrigins : "*",
-    credentials: true,
-  },
-});
-
-interface MessagePayload {
-  to: string; // id người nhận
-  from: string; // id người gửi
-  message: string; // nội dung tin nhắn
-  username?: string;
-}
-// Lưu ý: Type của users là Record<string, string> vì bạn gán users[user_id] = socket.id
-export const users: Record<string, string> = {};
-
-io.on("connection", (socket: any) => {
-  console.log("connect", socket.id);
-  const user_id = socket.handshake.auth.id;
-  if (user_id) {
-    users[user_id] = socket.id;
-  }
-
-  //  nhận tin nhắn từ client qua "chat-message"
-  socket.on("send-chat-message", async (data: MessagePayload) => {
-    try {
-      const savedMessage = await prisma.message.create({
-        data: {
-          sender_id: data.from,
-          receiver_id: data.to,
-          content: data.message,
-        },
-      });
-      // 2. Gửi realtime cho người nhận (nếu người nhận đang online)
-      const receiver_socket_id = users[data.to];
-      // gửi tin nhắn tới user khác qua event "send-chat-message"
-      if (receiver_socket_id) {
-        socket.to(receiver_socket_id).emit("receive-chat-message", {
-          id: savedMessage.id,
-          from: savedMessage.sender_id,
-          to: savedMessage.receiver_id,
-          message: savedMessage.content,
-          created_at: savedMessage.created_at,
-          username: data.username,
-        });
-      }
-    } catch (error) {
-      console.error("Lỗi khi lưu tin nhắn:", error);
-    }
-  });
-
-  socket.on("disconnect", () => {
-    delete users[user_id];
-    console.log("disconnect", socket.id);
-  });
-});
-
+// khởi tạo socket
+export const io = initSocket(httpServer);
 // Tạo tất cả thư mục upload khi khởi động (recursive tự bỏ qua nếu đã tồn tại)
 for (const dir of [
   IMAGE_DIR,

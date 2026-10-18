@@ -1,6 +1,6 @@
 import { NotificationType } from "@prisma/client";
 import prisma from "./prisma.service";
-import { io, users } from "..";
+import { emitToUser } from "~/sockets";
 
 function formatNotification(n: any) {
   if (!n) return n;
@@ -48,10 +48,7 @@ class NotificationService {
     });
 
     const formatted = formatNotification(notif);
-    const receiverSocketId = users[receiverId];
-    if (receiverSocketId && io) {
-      io.to(receiverSocketId).emit("new-notification", formatted);
-    }
+    emitToUser(receiverId, "new-notification", formatted);
 
     return formatted;
   }

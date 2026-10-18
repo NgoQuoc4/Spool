@@ -19,6 +19,7 @@ import {
   followUserController,
   forgotPasswordController,
   getConversationsController,
+  getFollowersController,
   getFollowingController,
   getMeController,
   getMessagesController,
@@ -286,6 +287,20 @@ userRouter.get(
   "/:userid/following",
   accessTokenValidator,
   wrapAsync(getFollowingController),
+);
+
+/*
+ * Description, followers user
+ * Path: /user/followers
+ * Method: GET
+ * Header: {Authorization: Bearer <access_token>}
+ * Response: {message: string, result: {user: User}}
+ */
+
+userRouter.get(
+  "/:userid/followers",
+  accessTokenValidator,
+  wrapAsync(getFollowersController),
 );
 
 /*

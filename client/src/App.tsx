@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router-dom";
 import { router } from "@/routes";
 import { AuthProvider } from "./contexts/AuthContext";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { SocketProvider } from "./contexts/SocketContext";
 // Khởi tạo queryClient
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,7 +17,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <SocketProvider>
+          <RouterProvider router={router} />
+        </SocketProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

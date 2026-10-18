@@ -33,6 +33,14 @@ interface AppState {
   openEditProfileModal: () => void;
   closeEditProfileModal: () => void;
 
+  // ---------------------- List Follow Modal -------------------
+  listFollowModal: { userId: string; initialTab: "followers" | "following" } | null;
+  openListFollowModal: (
+    userId: string,
+    initialTab?: "followers" | "following",
+  ) => void;
+  closeListFollowModal: () => void;
+
   // ---------------------- Follow Modal -------------------------
   isModalFollowOpen: boolean;
   openFollowModal: () => void;
@@ -166,6 +174,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   isModalEditProfileOpen: false,
   openEditProfileModal: () => set({ isModalEditProfileOpen: true }),
   closeEditProfileModal: () => set({ isModalEditProfileOpen: false }),
+
+  // List Follow Modal
+  listFollowModal: null,
+  openListFollowModal: (userId, initialTab = "followers") =>
+    set({ listFollowModal: { userId, initialTab } }),
+  closeListFollowModal: () => set({ listFollowModal: null }),
 
   // Follow Modal
   isModalFollowOpen: false,

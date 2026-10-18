@@ -7,7 +7,7 @@ import ChatEmptyState from "./ChatEmptyState";
 import ChatHeader from "./ChatHeader";
 import ChatInput from "./ChatInput";
 import ChatMessages from "./ChatMessages";
-import useChatSocket from "./useChatSocket";
+import useChatSocket from "../../hooks/useChatSocket";
 import useChatMessages from "./useChatMessages";
 import useConversations from "./useConversations";
 import { useState } from "react";

@@ -43,7 +43,8 @@ export const logOutController = async (
 };
 
 export const verifyEmailController = async (req: Request, res: Response) => {
-  const { user_id } = (req as Request).decoded_verify_email_token as TokenPayload;
+  const { user_id } = (req as Request)
+    .decoded_verify_email_token as TokenPayload;
   const user = await prisma.user.findUnique({ where: { id: user_id } });
   if (!user) {
     throw new ErrorWithStatus({ message: "User id not found", status: 404 });
@@ -55,7 +56,10 @@ export const verifyEmailController = async (req: Request, res: Response) => {
   return ok(res, data, "Email verify success");
 };
 
-export const resendVerifyEmailController = async (req: Request, res: Response) => {
+export const resendVerifyEmailController = async (
+  req: Request,
+  res: Response,
+) => {
   const { id } = req.user as User;
   const data = await usersService.resendVerifyEmail(id);
   return ok(res, data, "Resend verify email success");
@@ -72,8 +76,15 @@ export const forgotPasswordController = async (
   return ok(res, null, "Forgot password email sent");
 };
 
-export const verifyForgotPasswordTokenController = async (req: Request, res: Response) => {
-  return ok(res, { forgot_password_token: req.body.forgot_password_token }, "Verify forgot password token success");
+export const verifyForgotPasswordTokenController = async (
+  req: Request,
+  res: Response,
+) => {
+  return ok(
+    res,
+    { forgot_password_token: req.body.forgot_password_token },
+    "Verify forgot password token success",
+  );
 };
 
 export const resetPasswordController = async (
@@ -128,7 +139,10 @@ export const unfollowUserController = async (
   res: Response,
 ) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
-  const data = await usersService.unfollowUser(user_id, req.body.followedUserId);
+  const data = await usersService.unfollowUser(
+    user_id,
+    req.body.followedUserId,
+  );
   return ok(res, data, "Unfollow user success");
 };
 
@@ -168,6 +182,13 @@ export const getFollowingController = async (req: Request, res: Response) => {
   return ok(res, data, "Get following success");
 };
 
+export const getFollowersController = async (req: Request, res: Response) => {
+  const { userid } = req.params;
+  const data = await usersService.followers(userid as string);
+  console.log("/followers", data);
+  return ok(res, data, "Get followers success");
+};
+
 export const getMessagesController = async (req: Request, res: Response) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
   const { receiver_id } = req.params;
@@ -181,13 +202,19 @@ export const getMessagesController = async (req: Request, res: Response) => {
   return ok(res, data, "Get messages success");
 };
 
-export const getConversationsController = async (req: Request, res: Response) => {
+export const getConversationsController = async (
+  req: Request,
+  res: Response,
+) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
   const data = await usersService.getConversations(user_id);
   return ok(res, data, "Get conversations success");
 };
 
-export const deleteConversationController = async (req: Request, res: Response) => {
+export const deleteConversationController = async (
+  req: Request,
+  res: Response,
+) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
   const { receiver_id } = req.params as { receiver_id: string };
   const data = await usersService.deleteConversation(user_id, receiver_id);

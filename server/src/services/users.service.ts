@@ -524,6 +524,33 @@ class UsersService {
     return formattedResult;
   }
 
+  async followers(userid: string) {
+    const result = await prisma.follow.findMany({
+      where: { followed_user_id: userid },
+      select: {
+        user_id: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    const formattedResult = result.map((item) => ({
+      followerUserId: item.user_id,
+      id: item.user.id,
+      name: item.user.name,
+      username: item.user.username,
+      avatar: item.user.avatar,
+    }));
+
+    return formattedResult;
+  }
+
   async getMessages(
     sender_id: string,
     receiver_id: string,

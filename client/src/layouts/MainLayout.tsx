@@ -10,6 +10,7 @@ import FollowModal from "@/components/FollowModal";
 import useNotificationSocket from "@/hooks/useNotificationSocket";
 import { notifications } from "@/apis/notifications.api";
 import { useQuery } from "@tanstack/react-query";
+import ListFollowModal from "@/components/ListFollowModal";
 
 export interface LayoutContextType {
   showToast: (msg: string) => void;
@@ -32,7 +33,6 @@ const MainLayout = () => {
   });
   const unreadCount = countData?.data?.data ?? 0;
 
-  console.log("unreadCount", unreadCount);
   return (
     <div className="app-container">
       {/* Authentic Threads Left Navigation Rail (Desktop) & Dock (Mobile) */}
@@ -68,6 +68,9 @@ const MainLayout = () => {
 
       {/* Modal để edit profile */}
       <EditProfileModal />
+
+      {/* Modal để list follow */}
+      <ListFollowModal />
 
       {/* Modal để follow */}
       <FollowModal />
