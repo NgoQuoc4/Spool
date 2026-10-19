@@ -1,8 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import { SpoolLogo, GoogleIcon, EyeIcon, EyeOffIcon } from "@/components/Icons";
 import { getGoogleAuthUrl } from "@/utils/auth";
-import { API_BASE_URL } from "@/constants/endpoints";
+import { authApi } from "@/apis/auth.api";
+import { tokenStore } from "@/apis/http";
+import type { RegisterBody } from "@/types/auth.types";
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -13,12 +16,47 @@ const Register: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const googleAuthUrl = getGoogleAuthUrl();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const registerMutation = useMutation({
+    mutationFn: (body: RegisterBody) => authApi.signUp(body),
+    onSuccess: (res) => {
+      const tokenData = res.data.data;
+      if (tokenData?.accessToken && tokenData?.refreshToken) {
+        tokenStore.setTokens(tokenData.accessToken, tokenData.refreshToken);
+      }
+      setSuccessMessage("Đăng ký thành công! Đang chuyển hướng...");
+      setTimeout(() => {
+        navigate("/");
+      }, 1200);
+    },
+    onError: (err: unknown) => {
+      const errObj = err as {
+        response?: {
+          data?: {
+            message?: string;
+            errors?: Record<string, { msg: string }>;
+          };
+        };
+        message?: string;
+      };
+      const firstError = errObj.response?.data?.errors
+        ? Object.values(errObj.response.data.errors)[0]?.msg
+        : null;
+      setErrorMessage(
+        firstError ||
+          errObj.response?.data?.message ||
+          errObj.message ||
+          "Có lỗi xảy ra khi tạo tài khoản.",
+      );
+    },
+  });
+
+  const isLoading = registerMutation.isPending;
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name || !email || !password || !confirmPassword || !dateOfBirth) {
@@ -37,52 +75,15 @@ const Register: React.FC = () => {
     }
 
     setErrorMessage("");
-    setIsLoading(true);
 
-    try {
-      const isoDob = new Date(dateOfBirth).toISOString();
-
-      const response = await fetch(`${API_BASE_URL}/user/sign-up`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          confirmPassword,
-          dateOfBirth: isoDob,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        const firstErrorMsg = data.errors
-          ? (Object.values(data.errors)[0] as { msg?: string })?.msg
-          : null;
-        throw new Error(firstErrorMsg || data.message || "Đăng ký thất bại.");
-      }
-
-      const tokenData = data.data || data.result;
-      if (tokenData?.accessToken || tokenData?.access_token) {
-        localStorage.setItem("access_token", tokenData.accessToken || tokenData.access_token);
-        localStorage.setItem("refresh_token", tokenData.refreshToken || tokenData.refresh_token);
-      }
-
-      setTimeout(() => {
-        navigate("/");
-      }, 1200);
-    } catch (err: unknown) {
-      const errObj = err as { message?: string };
-      if (errObj.message?.includes("Failed to fetch")) {
-        setSuccessMessage("Chế độ demo: Đăng ký thành công!");
-        setTimeout(() => navigate("/"), 1200);
-      } else {
-        setErrorMessage(errObj.message || "Có lỗi xảy ra khi tạo tài khoản.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
+    const isoDob = new Date(dateOfBirth).toISOString();
+    registerMutation.mutate({
+      name,
+      email,
+      password,
+      confirmPassword,
+      dateOfBirth: isoDob,
+    });
   };
 
   return (

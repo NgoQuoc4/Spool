@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import type { ThreadPost, Author, ThreadReply } from "@/types";
 import {
   SortIcon,
@@ -22,6 +22,7 @@ import AvatarSpool from "./SpoolCard/AvatarSpool";
 import InforSpool from "./SpoolCard/InforSpool";
 import FileSpool from "./SpoolCard/FileSpool";
 import QuoteSpool from "./SpoolCard/QuoteSpool";
+import { useQuery } from "@tanstack/react-query";
 
 interface ThreadCardProps {
   post: ThreadPost;
@@ -47,8 +48,6 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [pollData, setPollData] = useState(post.poll);
-  const [fetchedReplies, setFetchedReplies] = useState<ThreadReply[]>([]);
-  const [isLoadingReplies, setIsLoadingReplies] = useState(false);
   const replyInputRef = useRef<HTMLInputElement>(null);
   const [likedReplies, setLikedReplies] = useState<
     Record<string, { isLiked: boolean; count: number }>
@@ -81,45 +80,37 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
     });
   };
 
-  // Tự động tải bình luận con từ API khi mở khung bình luận
-  useEffect(() => {
-    if (showReplyBox && post.id && !post.id.startsWith("thread-")) {
-      setIsLoadingReplies(true);
-      tweetsApi
-        .getTweetChildren(post.id)
-        .then((res) => {
-          if (res?.data?.data) {
-            const mapped: ThreadReply[] = res.data.data.map(
-              (t: any) => ({
-                id: t._id || t.id,
-                author: {
-                  id: t.user?._id || t.user?.id,
-                  name: t.user?.name || "Anonymous",
-                  username: t.user?.username || "user",
-                  avatar:
-                    t.user?.avatar ||
-                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-                  verified: true,
-                },
-                content: t.content,
-                createdAt: t.createdAt
-                  ? useFormatRelativeTime(t.createdAt)
-                  : "Just now",
-                likes: t.likesCount ?? t.like ?? 0,
-                isLiked: t.isLiked ?? false,
-              }),
-            );
-            setFetchedReplies(mapped);
-          }
-        })
-        .catch((err) => {
-          console.error("Lỗi khi tải bình luận:", err);
-        })
-        .finally(() => {
-          setIsLoadingReplies(false);
-        });
-    }
-  }, [showReplyBox, post.id]);
+  const { data: repliesData, isLoading: isLoadingReplies } = useQuery({
+    queryKey: ["tweet_children", post.id],
+    queryFn: () => tweetsApi.getTweetChildren(post.id),
+    enabled: showReplyBox && Boolean(post.id) && !post.id.startsWith("thread-"),
+    staleTime: 60 * 1000, // Cache 1 phút
+  });
+
+  // Chuẩn hóa dữ liệu trả về từ TanStack Query (hỗ trợ cả AxiosResponse và Array)
+  const rawChildren = (repliesData as any)?.data?.data;
+  const fetchedReplies: ThreadReply[] = Array.isArray(rawChildren)
+    ? rawChildren.map((t: any) => ({
+        id: t._id || t.id,
+        author: {
+          id: t.user?._id || t.user?.id,
+          name: t.user?.name || "Anonymous",
+          username: t.user?.username || "user",
+          avatar:
+            t.user?.avatar ||
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
+          verified: true,
+        },
+        content: t.content,
+        createdAt: t.createdAt
+          ? useFormatRelativeTime(t.createdAt)
+          : "Just now",
+        likes: t.likesCount ?? t.like ?? 0,
+        isLiked: t.isLiked ?? false,
+      }))
+    : Array.isArray(repliesData)
+      ? (repliesData as ThreadReply[])
+      : [];
 
   const handleVote = (index: number) => {
     if (!pollData || pollData.userVotedIndex !== undefined) return;

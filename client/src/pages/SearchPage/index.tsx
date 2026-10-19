@@ -18,7 +18,7 @@ import type { ThreadPost } from "@/types";
 import { ThreadListSkeleton, UserListSkeleton } from "@/components/Skeleton";
 import useProfile from "@/hooks/useProfile";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { usersApi } from "@/apis/users.api";
+import useFollowMutation from "@/hooks/useFollowMutation";
 
 type SearchTab = "top" | "recent" | "profiles";
 
@@ -29,6 +29,8 @@ const TABS: { key: SearchTab; label: string }[] = [
 ];
 
 const SearchPage = () => {
+  const followMutation = useFollowMutation();
+
   const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get("q") || searchParams.get("query") || "";
   const initialTab = (searchParams.get("tab") as SearchTab) || "top";
@@ -81,7 +83,7 @@ const SearchPage = () => {
     enabled: debouncedSearch.length > 0,
   });
 
-  const handleFollow = async (e: React.MouseEvent, profile: any) => {
+  const handleFollow = (e: React.MouseEvent, profile: any) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -90,27 +92,29 @@ const SearchPage = () => {
 
     // Trạng thái hiện tại của user này (ưu tiên state local, sau đó đến data từ backend)
     const isCurrentlyFollowing =
-      followingMap[targetId] ?? profile.isFollowing ?? false;
+      followingMap[targetId] ?? profile.isFollowing ?? profile.is_following ?? false;
 
     const nextState = !isCurrentlyFollowing;
 
-    // Optimistic update cho riêng user này
+    // 1. Optimistic update cho riêng user này
     setFollowingMap((prev) => ({ ...prev, [targetId]: nextState }));
 
-    try {
-      if (nextState) {
-        await usersApi.follow(targetId);
-      } else {
-        await usersApi.unfollow(targetId);
-      }
-    } catch (error) {
-      // Rollback nếu API lỗi
-      setFollowingMap((prev) => ({
-        ...prev,
-        [targetId]: isCurrentlyFollowing,
-      }));
-      console.error("Lỗi khi follow/unfollow:", error);
-    }
+    // 2. Kích hoạt mutation
+    followMutation.mutate(
+      {
+        targetId,
+        isFollowing: isCurrentlyFollowing, // trạng thái hiện tại (nếu true thì unfollow, nếu false thì follow)
+      },
+      {
+        onError: () => {
+          // Rollback nếu API lỗi
+          setFollowingMap((prev) => ({
+            ...prev,
+            [targetId]: isCurrentlyFollowing,
+          }));
+        },
+      },
+    );
   };
 
   const searchData = searchResults?.data?.data;

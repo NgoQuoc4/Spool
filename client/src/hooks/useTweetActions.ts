@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { Author, ThreadPost, ThreadReply } from "@/types";
 import { TweetAudienceType, TweetType } from "@/types/tweet.types";
 import { notifications } from "@/apis/notifications.api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface UseTweetActionsProps {
   threads: ThreadPost[];
@@ -17,6 +18,7 @@ export const useTweetActions = ({
 }: UseTweetActionsProps) => {
   const { showToast } = useAppStore();
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
 
   const currentUser: Author = {
     id: profile?._id || "",
@@ -28,34 +30,25 @@ export const useTweetActions = ({
     verified: true,
   };
 
-  // Like Toggle: Optimistic Update + gọi API backend
-  const handleLikeToggle = async (postId: string) => {
-    const targetPost = threads.find((p) => p.id === postId);
-    if (!targetPost) return;
-    const willLike = !targetPost.isLiked;
-
-    // Cập nhật UI ngay lập tức
-    setThreads((prev) =>
-      prev.map((p) => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            isLiked: willLike,
-            likes: willLike ? p.likes + 1 : Math.max(0, p.likes - 1),
-          };
-        }
-        return p;
-      }),
-    );
-
-    // Đồng bộ lên server
-    try {
+  // -------------------------------------------------------------
+  // 1. Like Mutation
+  // -------------------------------------------------------------
+  const likeMutation = useMutation({
+    mutationFn: async ({
+      postId,
+      willLike,
+      authorId,
+    }: {
+      postId: string;
+      willLike: boolean;
+      authorId: string | undefined;
+    }) => {
       if (willLike) {
         await Promise.all([
           interactionsApi.like(postId),
           notifications.createNotification({
             senderId: profile?._id || "",
-            receiverId: targetPost.author.id,
+            receiverId: authorId,
             type: "like",
             tweetId: postId,
             content: "",
@@ -67,9 +60,10 @@ export const useTweetActions = ({
           notifications.deleteNotification(postId),
         ]);
       }
-    } catch (error) {
+    },
+    onError: (error, { postId, willLike }) => {
       console.error("Lỗi khi like/unlike:", error);
-      // Rollback lại UI nếu lỗi mạng hoặc server fail
+      // Rollback UI
       setThreads((prev) =>
         prev.map((p) => {
           if (p.id === postId) {
@@ -83,12 +77,113 @@ export const useTweetActions = ({
         }),
       );
       showToast("Không thể cập nhật lượt thích. Vui lòng thử lại!");
-    }
+    },
+    onSettled: (_, __, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+      queryClient.invalidateQueries({ queryKey: ["liked_posts"] });
+      queryClient.invalidateQueries({ queryKey: ["tweet_detail", postId] });
+    },
+  });
+
+  const handleLikeToggle = (postId: string) => {
+    const targetPost = threads.find((p) => p.id === postId);
+    if (!targetPost) return;
+    const willLike = !targetPost.isLiked;
+
+    // Cập nhật UI ngay lập tức (Optimistic Update)
+    setThreads((prev) =>
+      prev.map((p) => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            isLiked: willLike,
+            likes: willLike ? p.likes + 1 : Math.max(0, p.likes - 1),
+          };
+        }
+        return p;
+      }),
+    );
+
+    // Kích hoạt mutation đồng bộ backend và làm mới cache
+    likeMutation.mutate({
+      postId,
+      willLike,
+      authorId: targetPost.author.id,
+    });
   };
 
-  // Repost Toggle
-  const handleRepostToggle = async (postId: string) => {
-    // kiểm tra đã đăng lại chưa
+  // -------------------------------------------------------------
+  // 2. Repost Mutation
+  // -------------------------------------------------------------
+  const repostMutation = useMutation({
+    mutationFn: async ({
+      postId,
+      willRepost,
+    }: {
+      postId: string;
+      willRepost: boolean;
+    }) => {
+      const targetPost = threads.find((p) => p.id === postId);
+      if (!targetPost) return;
+      if (willRepost) {
+        await Promise.all([
+          tweetsApi.createTweet({
+            type: TweetType.RETWEET,
+            audience: TweetAudienceType.EVERYONE,
+            content: "",
+            parentId: postId,
+            hashtags: [],
+            mentions: [],
+            medias: [],
+          }),
+          notifications.createNotification({
+            senderId: profile?._id || "",
+            receiverId: targetPost.author.id,
+            type: "repost",
+            tweetId: postId,
+            content: "",
+          }),
+        ]);
+      } else {
+        await Promise.all([
+          tweetsApi.unretweet(postId),
+          notifications.deleteNotification(postId),
+        ]);
+      }
+    },
+    onSuccess: (_, { willRepost }) => {
+      showToast(
+        willRepost
+          ? "Đã đăng lại lên trang cá nhân của bạn"
+          : "Đã gỡ lượt đăng lại",
+      );
+    },
+    onError: (error, { postId, willRepost }) => {
+      console.error("Lỗi khi đăng lại / gỡ đăng lại:", error);
+      // Rollback UI
+      setThreads((prev) =>
+        prev.map((p) => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              isReposted: !willRepost,
+              repostsCount: !willRepost
+                ? p.repostsCount + 1
+                : Math.max(0, p.repostsCount - 1),
+            };
+          }
+          return p;
+        }),
+      );
+      showToast("Không thể thực hiện thao tác. Vui lòng thử lại!");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+      queryClient.invalidateQueries({ queryKey: ["user_posts"] });
+    },
+  });
+
+  const handleRepostToggle = (postId: string) => {
     const targetPost = threads.find((p) => p.id === postId);
     if (!targetPost) return;
     const willRepost = !targetPost.isReposted;
@@ -108,43 +203,12 @@ export const useTweetActions = ({
       }),
     );
 
-    try {
-      if (willRepost) {
-        await tweetsApi.createTweet({
-          type: TweetType.RETWEET,
-          audience: TweetAudienceType.EVERYONE,
-          content: "",
-          parentId: postId,
-          hashtags: [],
-          mentions: [],
-          medias: [],
-        });
-        showToast("Đã đăng lại lên trang cá nhân của bạn");
-      } else {
-        await tweetsApi.unretweet(postId);
-        showToast("Đã gỡ lượt đăng lại");
-      }
-    } catch (error) {
-      console.error("Lỗi khi đăng lại / gỡ đăng lại:", error);
-      setThreads((prev) =>
-        prev.map((p) => {
-          if (p.id === postId) {
-            return {
-              ...p,
-              isReposted: !willRepost,
-              repostsCount: !willRepost
-                ? p.repostsCount + 1
-                : Math.max(0, p.repostsCount - 1),
-            };
-          }
-          return p;
-        }),
-      );
-      showToast("Không thể thực hiện thao tác. Vui lòng thử lại!");
-    }
+    repostMutation.mutate({ postId, willRepost });
   };
 
-  // Quote
+  // -------------------------------------------------------------
+  // 3. Quote
+  // -------------------------------------------------------------
   const handleQuote = async (postId: string) => {
     const targetPost = threads.find((p) => p.id === postId);
     if (!targetPost) return;
@@ -175,7 +239,22 @@ export const useTweetActions = ({
         mentions: [],
         medias: [],
       });
+
+      if (targetPost.author.id && targetPost.author.id !== profile?._id) {
+        notifications
+          .createNotification({
+            senderId: profile?._id || "",
+            receiverId: targetPost.author.id,
+            type: "quote",
+            tweetId: postId,
+            content: "",
+          })
+          .catch(console.error);
+      }
+
       showToast("Đã trích dẫn lên trang cá nhân của bạn");
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+      queryClient.invalidateQueries({ queryKey: ["user_posts"] });
     } catch (error) {
       console.error("Lỗi khi trích dẫn:", error);
       setThreads((prev) =>
@@ -196,33 +275,14 @@ export const useTweetActions = ({
     }
   };
 
-  // Reply Added
-  const handleReplyAdded = async (postId: string, text: string) => {
-    const tempReplyId = `reply-${Date.now()}`;
-    const newReply: ThreadReply = {
-      id: tempReplyId,
-      author: currentUser,
-      content: text,
-      createdAt: "Just now",
-      likes: 0,
-      isLiked: false,
-    };
+  // -------------------------------------------------------------
+  // 4. Reply Added Mutation
+  // -------------------------------------------------------------
+  const replyMutation = useMutation({
+    mutationFn: async ({ postId, text }: { postId: string; text: string }) => {
+      const targetPost = threads.find((p) => p.id === postId);
 
-    // Optimistic update
-    setThreads((prev) =>
-      prev.map((p) => {
-        if (p.id === postId) {
-          return {
-            ...p,
-            repliesCount: p.repliesCount + 1,
-            replies: [...(p.replies || []), newReply],
-          };
-        }
-        return p;
-      }),
-    );
-
-    try {
+      // Luôn tạo tweet bình luận
       const response = await tweetsApi.createTweet({
         parentId: postId,
         type: TweetType.COMMENT,
@@ -233,16 +293,60 @@ export const useTweetActions = ({
         medias: [],
       });
 
-      // Update real id from server if needed
-      if (response?.data?.data) {
+      // Gửi thông báo cho tác giả bài viết (không gửi cho chính mình)
+      if (targetPost && targetPost.author.id !== profile?._id) {
+        notifications
+          .createNotification({
+            senderId: profile?._id || "",
+            receiverId: targetPost.author.id,
+            type: "comment",
+            tweetId: postId,
+            content: text,
+          })
+          .catch((err) => console.error("Lỗi gửi thông báo bình luận:", err));
+      }
+
+      return response;
+    },
+    onMutate: async ({ postId, text }) => {
+      const tempReplyId = `reply-${Date.now()}`;
+      const newReply: ThreadReply = {
+        id: tempReplyId,
+        author: currentUser,
+        content: text,
+        createdAt: "Just now",
+        likes: 0,
+        isLiked: false,
+      };
+
+      // Optimistic update
+      setThreads((prev) =>
+        prev.map((p) => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              repliesCount: p.repliesCount + 1,
+              replies: [...(p.replies || []), newReply],
+            };
+          }
+          return p;
+        }),
+      );
+
+      return { tempReplyId, postId };
+    },
+    onSuccess: (response, variables, context) => {
+      if (response?.data?.data && context?.tempReplyId) {
         const createdTweet = response.data.data;
         setThreads((prev) =>
           prev.map((p) => {
-            if (p.id === postId) {
+            if (p.id === variables.postId) {
               return {
                 ...p,
                 replies: (p.replies || []).map((r) =>
-                  r.id === tempReplyId ? { ...r, id: createdTweet._id } : r,
+                  r.id === context.tempReplyId
+                    ? { ...r, id: createdTweet._id }
+                    : r,
                 ),
               };
             }
@@ -251,45 +355,101 @@ export const useTweetActions = ({
         );
       }
       showToast("Đã gửi bình luận!");
-    } catch (error) {
+      queryClient.invalidateQueries({
+        queryKey: ["tweet_children", variables.postId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["tweet_detail", variables.postId],
+      });
+    },
+    onError: (error, variables, context) => {
       console.error("Lỗi khi gửi bình luận:", error);
-      // Rollback nếu có lỗi
+      if (context?.tempReplyId) {
+        setThreads((prev) =>
+          prev.map((p) => {
+            if (p.id === variables.postId) {
+              return {
+                ...p,
+                repliesCount: Math.max(0, p.repliesCount - 1),
+                replies: (p.replies || []).filter(
+                  (r) => r.id !== context.tempReplyId,
+                ),
+              };
+            }
+            return p;
+          }),
+        );
+      }
+      showToast("Không thể gửi bình luận. Vui lòng thử lại!");
+    },
+  });
+
+  const handleReplyAdded = async (postId: string, text: string) => {
+    return replyMutation.mutateAsync({ postId, text });
+  };
+
+  // -------------------------------------------------------------
+  // 5. Delete Post Mutation
+  // -------------------------------------------------------------
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await tweetsApi.deleteTweet(id);
+    },
+    onSuccess: () => {
+      showToast("Post deleted");
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+      queryClient.invalidateQueries({ queryKey: ["user_posts"] });
+      queryClient.invalidateQueries({ queryKey: ["bookmark_posts"] });
+    },
+    onError: (error) => {
+      console.error("Lỗi khi xóa post:", error);
+      showToast("Không thể xóa post. Vui lòng thử lại!");
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+    },
+  });
+
+  const handleDeletePost = (id: string) => {
+    setThreads((prev) => prev.filter((p) => p.id !== id));
+    deleteMutation.mutate(id);
+  };
+
+  // -------------------------------------------------------------
+  // 6. Bookmark Mutation
+  // -------------------------------------------------------------
+  const bookmarkMutation = useMutation({
+    mutationFn: async ({
+      postId,
+    }: {
+      postId: string;
+      willBookmark: boolean;
+    }) => {
+      await interactionsApi.bookmark(postId);
+    },
+    onSuccess: (_, { willBookmark }) => {
+      showToast(willBookmark ? "Bookmark added" : "Bookmark removed");
+    },
+    onError: (error, { postId, willBookmark }) => {
+      console.error("Lỗi khi bookmark post:", error);
       setThreads((prev) =>
         prev.map((p) => {
           if (p.id === postId) {
             return {
               ...p,
-              repliesCount: Math.max(0, p.repliesCount - 1),
-              replies: (p.replies || []).filter((r) => r.id !== tempReplyId),
+              isBookmarked: !willBookmark,
             };
           }
           return p;
         }),
       );
-      showToast("Không thể gửi bình luận. Vui lòng thử lại!");
-    }
-  };
+      showToast("Không thể bookmark post. Vui lòng thử lại!");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookmark_posts"] });
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+    },
+  });
 
-  // Delete Post
-  const handleDeletePost = async (id: string) => {
-    setThreads((prev) => prev.filter((p) => p.id !== id));
-    try {
-      await tweetsApi.deleteTweet(id);
-      showToast("Post deleted");
-    } catch (error) {
-      console.error("Lỗi khi xóa post:", error);
-      // Rollback lại nếu lỗi mạng hoặc server fail
-      setThreads((prev) => {
-        // Ở đây bạn sẽ cần lưu lại post đã xóa để rollback
-        // Tạm thời chỉ show toast lỗi
-        return prev;
-      });
-      showToast("Không thể xóa post. Vui lòng thử lại!");
-    }
-  };
-
-  // Bookmark
-  const handleBookmark = async (post: ThreadPost) => {
+  const handleBookmark = (post: ThreadPost) => {
     const willBookmark = !post.isBookmarked;
     setThreads((prev) =>
       prev.map((p) => {
@@ -303,20 +463,9 @@ export const useTweetActions = ({
       }),
     );
 
-    try {
-      await interactionsApi.bookmark(post.id);
-      showToast(willBookmark ? "Bookmark added" : "Bookmark removed");
-    } catch (error) {
-      console.error("Lỗi khi bookmark post:", error);
-      // Rollback lại nếu lỗi mạng hoặc server fail
-      setThreads((prev) => {
-        // Ở đây bạn sẽ cần lưu lại post đã bookmark để rollback
-        // Tạm thời chỉ show toast lỗi
-        return prev;
-      });
-      showToast("Không thể bookmark post. Vui lòng thử lại!");
-    }
+    bookmarkMutation.mutate({ postId: post.id, willBookmark });
   };
+
   // Share link
   const handleShare = (post: ThreadPost) => {
     const shareUrl = `https://spool.app/@${post.author.username}/post/${post.id}`;

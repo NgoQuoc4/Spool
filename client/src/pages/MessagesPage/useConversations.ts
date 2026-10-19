@@ -2,62 +2,60 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usersApi } from "@/apis/users.api";
 import type { Conversation } from "./types";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useConversations = (profileId?: string) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeChat, setActiveChat] = useState<Conversation | null>(null);
+  const queryClient = useQueryClient();
 
   // ============================================================
-  // Lấy danh sách người trò chuyện từ lịch sử tin nhắn
+  // 1. Tải danh sách hội thoại từ API bằng useQuery
   // ============================================================
+  const { data: convResponse, isLoading } = useQuery({
+    queryKey: ["conversations", profileId],
+    queryFn: () => usersApi.getConversations(),
+    enabled: Boolean(profileId),
+  });
+
+  // Đồng bộ danh sách hội thoại từ Query Cache vào state
   useEffect(() => {
-    if (!profileId) return;
+    if (!convResponse?.data?.data) return;
 
-    const fetchConversations = async () => {
-      try {
-        const response = await usersApi.getConversations();
-        const contacts = response.data.data.map((item: any) => {
-          const id = item.userId;
-          return {
-            userId: id,
-            followedUserId: id,
-            name: item.name,
-            username: item.username,
-            avatar: item.avatar,
-            lastMessage: item.lastMessage,
-            time: item.lastMessageAt
-              ? new Date(item.lastMessageAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
-              : undefined,
-          };
-        });
+    const contacts: Conversation[] = convResponse.data.data.map((item: any) => {
+      const id = item.userId;
+      return {
+        userId: id,
+        followedUserId: id,
+        name: item.name,
+        username: item.username,
+        avatar: item.avatar,
+        lastMessage: item.lastMessage,
+        time: item.lastMessageAt
+          ? new Date(item.lastMessageAt).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : undefined,
+      };
+    });
 
-        // Giữ lại conversations tạm thời (chưa có trong DB) như khi mở từ ProfilePage
-        setConversations((prev) => {
-          const unsaved = prev.filter(
-            (p) => !contacts.some((c: any) => c.userId === p.userId),
-          );
-          return [...unsaved, ...contacts];
-        });
+    // Giữ lại conversations tạm thời (chưa có trong DB) như khi mở từ ProfilePage
+    setConversations((prev) => {
+      const unsaved = prev.filter(
+        (p) => !contacts.some((c: any) => c.userId === p.userId),
+      );
+      return [...unsaved, ...contacts];
+    });
 
-        // Đồng bộ lại activeChat với thông tin chi tiết từ DB (nếu có)
-        setActiveChat((current) => {
-          if (!current) return current;
-          const match = contacts.find(
-            (c: any) => c.userId === current.userId,
-          );
-          return match ? { ...current, ...match } : current;
-        });
-      } catch (error) {
-        console.error("Lỗi tải danh sách hội thoại:", error);
-      }
-    };
-
-    fetchConversations();
-  }, [profileId]);
+    // Đồng bộ lại activeChat với thông tin chi tiết từ DB (nếu có)
+    setActiveChat((current) => {
+      if (!current) return current;
+      const match = contacts.find((c: any) => c.userId === current.userId);
+      return match ? { ...current, ...match } : current;
+    });
+  }, [convResponse]);
 
   // ============================================================
   // Xử lý deep-link từ ProfilePage (?userId=<id>)
@@ -152,9 +150,20 @@ export const useConversations = (profileId?: string) => {
   };
 
   // ============================================================
-  // Xóa hội thoại (cả UI và API)
+  // 2. Xóa cuộc hội thoại bằng useMutation
   // ============================================================
-  const deleteConversation = async (
+  const deleteMutation = useMutation({
+    mutationFn: (targetUserId: string) =>
+      usersApi.deleteConversation(targetUserId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+    onError: (error) => {
+      console.error("Failed to delete conversation:", error);
+    },
+  });
+
+  const deleteConversation = (
     e: React.MouseEvent,
     targetUserId: string,
   ) => {
@@ -163,28 +172,25 @@ export const useConversations = (profileId?: string) => {
     if (!window.confirm("Are you sure you want to delete this conversation?"))
       return;
 
-    try {
-      await usersApi.deleteConversation(targetUserId);
+    // Optimistic UI update
+    setConversations((prev) =>
+      prev.filter(
+        (c) =>
+          c.userId !== targetUserId &&
+          c.followedUserId !== targetUserId,
+      ),
+    );
 
-      setConversations((prev) =>
-        prev.filter(
-          (c) =>
-            c.userId !== targetUserId &&
-            c.followedUserId !== targetUserId,
-        ),
-      );
+    setActiveChat((current) => {
+      if (
+        current?.userId === targetUserId ||
+        current?.followedUserId === targetUserId
+      )
+        return null;
+      return current;
+    });
 
-      setActiveChat((current) => {
-        if (
-          current?.userId === targetUserId ||
-          current?.followedUserId === targetUserId
-        )
-          return null;
-        return current;
-      });
-    } catch (error) {
-      console.error("Failed to delete conversation:", error);
-    }
+    deleteMutation.mutate(targetUserId);
   };
 
   return {
@@ -194,6 +200,7 @@ export const useConversations = (profileId?: string) => {
     updateConversationPreview,
     startNewChat,
     deleteConversation,
+    isLoading,
   };
 };
 

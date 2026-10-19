@@ -14,7 +14,7 @@ import {
   ThreadListSkeleton,
   ThreadCardSkeleton,
 } from "@/components/Skeleton";
-import { usersApi } from "@/apis/users.api";
+import useFollowMutation from "@/hooks/useFollowMutation";
 
 interface ProfilePageProps {
   username?: string;
@@ -26,11 +26,9 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   columnId,
 }) => {
   const navigate = useNavigate();
-  const {
-    setIsModalOpen,
-    openEditProfileModal,
-    openListFollowModal,
-  } = useAppStore();
+  const followMutation = useFollowMutation();
+  const { setIsModalOpen, openEditProfileModal, openListFollowModal } =
+    useAppStore();
   const {
     user: profile,
     currentUser,
@@ -63,25 +61,26 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     if (!data) return;
     setThreads((prev) => formatTweets(data, prev));
   }, [data]);
-
   const handleFollow = async (type: "follow" | "unfollow") => {
     if (!profile?._id) return;
-    // Optimistic update
-    const following = type === "follow";
-    setLocalIsFollowing(following);
-    setLocalFollowersCount((prev) => (prev ?? 0) + (following ? 1 : -1));
-    try {
-      if (following) {
-        await usersApi.follow(profile._id);
-      } else {
-        await usersApi.unfollow(profile._id);
-      }
-    } catch (error) {
-      // Rollback
-      setLocalIsFollowing(!following);
-      setLocalFollowersCount((prev) => (prev ?? 0) + (following ? -1 : 1));
-      console.error(error);
-    }
+    const willFollow = type === "follow";
+    // 1. Cập nhật UI ngay lập tức (Optimistic Update)
+    setLocalIsFollowing(willFollow);
+    setLocalFollowersCount((prev) => (prev ?? 0) + (willFollow ? 1 : -1));
+    // 2. Gọi mutation đồng bộ backend và tự làm mới cache
+    followMutation.mutate(
+      {
+        targetId: profile._id,
+        isFollowing: !willFollow, // trạng thái trước khi bấm (nếu bấm follow thì hiện tại đang là chưa follow)
+      },
+      {
+        onError: () => {
+          // Rollback
+          setLocalIsFollowing(!willFollow);
+          setLocalFollowersCount((prev) => (prev ?? 0) + (willFollow ? -1 : 1));
+        },
+      },
+    );
   };
 
   //------------- Action post -------------------
@@ -95,12 +94,12 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   } = useTweetActions({ threads, setThreads });
 
   const handleFollowers = () => {
-    const targetId = profile?._id || profile?.id;
+    const targetId = profile?._id;
     if (targetId) openListFollowModal(targetId, "followers");
   };
 
   const handleFollowing = () => {
-    const targetId = profile?._id || profile?.id;
+    const targetId = profile?._id;
     if (targetId) openListFollowModal(targetId, "following");
   };
 

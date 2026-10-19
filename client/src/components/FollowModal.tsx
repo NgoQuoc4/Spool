@@ -1,6 +1,6 @@
-import { useAppStore } from "@/stores/useAppStore";
-import { usersApi } from "@/apis/users.api";
 import { useEffect, useState } from "react";
+import { useAppStore } from "@/stores/useAppStore";
+import useFollowMutation from "@/hooks/useFollowMutation";
 
 const FollowModal = () => {
   const { showToast, followTarget, isModalFollowOpen, closeFollowModal } =
@@ -13,7 +13,8 @@ const FollowModal = () => {
     number | undefined
   >(undefined);
   const [isHovered, setIsHovered] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const followMutation = useFollowMutation();
+  const isSubmitting = followMutation.isPending;
 
   useEffect(() => {
     if (followTarget && followTarget.id) {
@@ -39,35 +40,32 @@ const FollowModal = () => {
     isFollowing: followTarget.isFollowing,
   };
 
-  const handleFollow = async (type: "follow" | "unfollow") => {
+  const handleFollow = (type: "follow" | "unfollow") => {
     if (!profile?.id || isSubmitting) return;
     const following = type === "follow";
 
-    setIsSubmitting(true);
     // Optimistic Update: Follow -> +1, Unfollow -> -1
     setLocalIsFollowing(following);
     setLocalFollowersCount((prev) =>
       Math.max(0, (prev ?? 0) + (following ? 1 : -1)),
     );
 
-    try {
-      if (type === "follow") {
-        await usersApi.follow(profile.id);
-        showToast(`Đã theo dõi @${profile.username}`);
-      } else {
-        await usersApi.unfollow(profile.id);
-        showToast(`Đã hủy theo dõi @${profile.username}`);
-      }
-    } catch (error) {
-      // Rollback nếu có lỗi
-      setLocalIsFollowing(!following);
-      setLocalFollowersCount((prev) =>
-        Math.max(0, (prev ?? 0) + (following ? -1 : 1)),
-      );
-      showToast("Thao tác thất bại, vui lòng thử lại!");
-    } finally {
-      setIsSubmitting(false);
-    }
+    followMutation.mutate(
+      {
+        targetId: profile.id,
+        isFollowing: type === "unfollow",
+      },
+      {
+        onError: () => {
+          // Rollback nếu có lỗi
+          setLocalIsFollowing(!following);
+          setLocalFollowersCount((prev) =>
+            Math.max(0, (prev ?? 0) + (following ? -1 : 1)),
+          );
+          showToast("Thao tác thất bại, vui lòng thử lại!");
+        },
+      },
+    );
   };
 
   return (

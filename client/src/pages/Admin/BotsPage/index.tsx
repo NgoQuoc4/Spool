@@ -29,7 +29,6 @@ const BotsPage = () => {
     queryFn: () => botsApi.getBots(),
   });
   const bots = data?.data.data?.bots;
-  console.log("bots", bots);
   const toggleExpand = (botId: string) => {
     setExpandedBotId((prev) => (prev === botId ? null : botId));
   };

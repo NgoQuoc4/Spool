@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import type { BotItem, FormSetting } from ".";
-import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { botsApi } from "@/apis/bots.api";
 import { useAppStore } from "@/stores/useAppStore";
 
@@ -19,7 +19,6 @@ interface FormValues {
 const BotSettingForm = ({ bot }: BotSettingFormProps) => {
   const { showToast } = useAppStore();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getInitialValues = (bot: BotItem): FormValues => ({
     rssUrl:
@@ -46,24 +45,28 @@ const BotSettingForm = ({ bot }: BotSettingFormProps) => {
     reset(getInitialValues(bot));
   }, [bot, reset]);
 
-  const onSubmit = async (values: FormValues) => {
-    try {
-      setIsSubmitting(true);
-      const payload: FormSetting = {
-        rssUrl: values.rssUrl.trim(),
-        intervalMinutes: Number(values.intervalMinutes) || 30,
-        postLimit: Number(values.postLimit) || 1,
-        isActive: values.isActive === "true",
-      };
-      await botsApi.updateSettingBot(bot.id, payload);
+  const updateBotMutation = useMutation({
+    mutationFn: (payload: FormSetting) =>
+      botsApi.updateSettingBot(bot.id, payload),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bots"] });
       showToast("Cập nhật cấu hình bot thành công!");
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Update bot settings failed:", error);
       showToast("Cập nhật cấu hình bot thất bại!");
-    } finally {
-      setIsSubmitting(false);
-    }
+    },
+  });
+  const isSubmitting = updateBotMutation.isPending;
+
+  const onSubmit = (values: FormValues) => {
+    const payload: FormSetting = {
+      rssUrl: values.rssUrl.trim(),
+      intervalMinutes: Number(values.intervalMinutes) || 30,
+      postLimit: Number(values.postLimit) || 1,
+      isActive: values.isActive === "true",
+    };
+    updateBotMutation.mutate(payload);
   };
 
   return (

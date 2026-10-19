@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useMemo } from "react";
 import type { Author } from "@/types";
 import { ChevronRightIcon, ImageIcon } from "./Icons";
 import { tweetsApi } from "@/apis/tweets.api";
@@ -13,8 +13,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { usersApi } from "@/apis/users.api";
 import { useAuth } from "@/contexts/AuthContext";
 import { mediasApi } from "@/apis/medias.api";
+import { notifications } from "@/apis/notifications.api";
 import SpoolsSlider from "./SpoolCard/SpoolsSlider";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export const CreateThreadModal = () => {
   const {
@@ -27,7 +29,6 @@ export const CreateThreadModal = () => {
 
   const queryClient = useQueryClient();
   const { profile } = useAuth();
-  const [searchUser, setSearchUser] = useState<Author[]>([]); // @mention suggestions
   const [mentionQuery, setMentionQuery] = useState<string | null>(null); // query @mention
   const [topicTag, setTopicTag] = useState(""); // query #hashtag
   const [cursorPosition, setCursorPosition] = useState<number>(0); // cursor position
@@ -45,62 +46,114 @@ export const CreateThreadModal = () => {
 
   // ---- upload image
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  // ---- upload image
 
-  useEffect(() => {
-    if (!mentionQuery || mentionQuery.trim() === "") {
-      setSearchUser([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      try {
-        const res = await usersApi.getProfile(mentionQuery);
-        if (res?.data?.data) {
-          const user = res.data.data;
-          setSearchUser([
-            {
-              id: user._id,
-              name: user.name,
-              username: user.username,
-              avatar:
-                user.avatar ||
-                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-              isFollowing: false,
-              followersCount: user.followersCount,
-              followingCount: user.followingCount,
-            },
-          ]);
-        }
-      } catch {
-        setSearchUser([]);
+  // TanStack Mutation: Upload image
+  const uploadImageMutation = useMutation({
+    mutationFn: (formData: FormData) => mediasApi.uploadImage(formData),
+    onSuccess: (res) => {
+      if (res?.data?.url && res.data.url.length > 0) {
+        setImageUrls((prev) => [...prev, ...res.data.url]);
+        showToast("Image uploaded successfully");
       }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [mentionQuery]);
-
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    reset,
-    formState: { isSubmitting },
-  } = useForm<CreateTweetFormValues>({
-    resolver: zodResolver(createTweetSchema),
-    defaultValues: {
-      content: "",
-      imageUrl: "",
+    },
+    onError: (error) => {
+      console.error(error);
+      showToast("Tải ảnh thất bại, vui lòng thử lại");
     },
   });
+  const isUploading = uploadImageMutation.isPending;
+
+  // TanStack Query: Autocomplete tìm profile theo @mention
+  const debouncedMention = useDebounce(mentionQuery || "", 400);
+  const { data: mentionUserRes } = useQuery({
+    queryKey: ["mention_search", debouncedMention],
+    queryFn: () => usersApi.getProfile(debouncedMention),
+    enabled: Boolean(debouncedMention && debouncedMention.trim().length > 0),
+    staleTime: 1000 * 60,
+  });
+
+  const searchUser: Author[] = useMemo(() => {
+    const user = mentionUserRes?.data?.data;
+    if (!user) return [];
+    return [
+      {
+        id: user._id,
+        name: user.name,
+        username: user.username,
+        avatar:
+          user.avatar ||
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+        isFollowing: false,
+        followersCount: user.followersCount,
+        followingCount: user.followingCount,
+      },
+    ];
+  }, [mentionUserRes]);
+
+  const { register, handleSubmit, watch, setValue, reset } =
+    useForm<CreateTweetFormValues>({
+      resolver: zodResolver(createTweetSchema),
+      defaultValues: {
+        content: "",
+        imageUrl: "",
+      },
+    });
 
   const content = watch("content") || "";
   const imageUrl = watch("imageUrl") || [];
 
+  // TanStack Mutation: Tạo bài viết mới hoặc Quote tweet
+  const createTweetMutation = useMutation({
+    mutationFn: async (
+      payload: Parameters<typeof tweetsApi.createTweet>[0],
+    ) => {
+      const response = await tweetsApi.createTweet(payload);
+
+      // Nếu là trích dẫn bài viết của người khác -> gửi thông báo
+      if (
+        payload.type === TweetType.QUOTETWEET &&
+        quoteTarget?.author?.id &&
+        quoteTarget.author.id !== profile?._id
+      ) {
+        notifications
+          .createNotification({
+            senderId: profile?._id || "",
+            receiverId: quoteTarget.author.id,
+            type: "quote",
+            tweetId: quoteTarget.id,
+            content: payload.content || "",
+          })
+          .catch(console.error);
+      }
+
+      return response;
+    },
+    onSuccess: (_response, variables) => {
+      const isQuoting = variables.type === TweetType.QUOTETWEET;
+      showToast(
+        isQuoting ? "Đã trích dẫn bài viết!" : "Post created successfully",
+      );
+
+      handlePostCreated();
+      reset();
+      setImageUrls([]);
+      handleCloseModal();
+
+      // Làm mới dữ liệu trên feeds và profile
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+      queryClient.invalidateQueries({ queryKey: ["user_posts"] });
+    },
+    onError: (error) => {
+      console.error(error);
+      showToast("Failed to create post");
+    },
+  });
+  const isPosting = createTweetMutation.isPending;
+
   if (!isModalOpen) return null;
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from((e.target.files as FileList) || []);
     if (files.length === 0) return;
 
@@ -122,22 +175,11 @@ export const CreateThreadModal = () => {
       formData.append("image", file);
     });
 
-    try {
-      setIsUploading(true);
-      const res = await mediasApi.uploadImage(formData);
-      console.log("🚀 ~ handleImageUpload ~ res:", res);
-      if (res?.data?.url && res.data.url.length > 0) {
-        setImageUrls((prev) => [...prev, ...res.data.url]);
-        showToast("Image uploaded successfully");
-      }
-    } catch (error) {
-      console.error(error);
-      showToast("Tải ảnh thất bại, vui lòng thử lại");
-    } finally {
-      setIsUploading(false);
-      // Reset input để có thể chọn lại cùng 1 file nếu cần
-      if (e.target) e.target.value = "";
-    }
+    uploadImageMutation.mutate(formData, {
+      onSettled: () => {
+        if (e.target) e.target.value = "";
+      },
+    });
   };
 
   const handleRemoveImage = (index: number) => {
@@ -192,40 +234,24 @@ export const CreateThreadModal = () => {
     setMentionQuery(null);
   };
 
-  const onSubmit = async (data: CreateTweetFormValues) => {
-    try {
-      // Chuẩn hóa topicTag: bỏ dấu # nếu có, lấy tối đa 1 hashtag dạng string
-      const hashtag = topicTag.trim().replace(/^#/, "");
-      const medias = imageUrls.map((url) => ({
-        url,
-        type: MediaType.IMAGE,
-      }));
+  const onSubmit = (data: CreateTweetFormValues) => {
+    // Chuẩn hóa topicTag: bỏ dấu # nếu có, lấy tối đa 1 hashtag dạng string
+    const hashtag = topicTag.trim().replace(/^#/, "");
+    const medias = imageUrls.map((url) => ({
+      url,
+      type: MediaType.IMAGE,
+    }));
 
-      const isQuoting = Boolean(quoteTarget);
-      const response = await tweetsApi.createTweet({
-        content: data.content.trim(),
-        type: isQuoting ? TweetType.QUOTETWEET : TweetType.TWEET,
-        audience: TweetAudienceType.EVERYONE,
-        parentId: isQuoting ? quoteTarget!.id : null,
-        hashtags: hashtag ? [hashtag] : [],
-        mentions: [],
-        medias,
-      });
-
-      if (response.status === 200 || response.status === 201) {
-        showToast(
-          isQuoting ? "Đã trích dẫn bài viết!" : "Post created successfully",
-        );
-
-        handlePostCreated();
-        reset();
-        setImageUrls([]);
-        handleCloseModal();
-      }
-    } catch (error) {
-      console.error(error);
-      showToast("Failed to create post");
-    }
+    const isQuoting = Boolean(quoteTarget);
+    createTweetMutation.mutate({
+      content: data.content.trim(),
+      type: isQuoting ? TweetType.QUOTETWEET : TweetType.TWEET,
+      audience: TweetAudienceType.EVERYONE,
+      parentId: isQuoting ? quoteTarget!.id : null,
+      hashtags: hashtag ? [hashtag] : [],
+      mentions: [],
+      medias,
+    });
   };
 
   return (
@@ -726,7 +752,7 @@ export const CreateThreadModal = () => {
 
             <button
               type="submit"
-              disabled={(!content.trim() && !imageUrls.length) || isSubmitting}
+              disabled={(!content.trim() && !imageUrls.length) || isPosting}
               style={{
                 backgroundColor:
                   content.trim() || imageUrls.length
@@ -745,7 +771,7 @@ export const CreateThreadModal = () => {
                 transition: "all 0.15s ease",
               }}
             >
-              {isSubmitting ? "Posting..." : "Post"}
+              {isPosting ? "Posting..." : "Post"}
             </button>
           </div>
         </form>

@@ -1,14 +1,13 @@
 import {
   createContext,
   useContext,
-  useEffect,
-  useState,
   type ReactNode,
 } from "react";
 import { authApi } from "@/apis/auth.api";
 import { tokenStore } from "@/apis/http";
 import type { User } from "@/types/user.types";
 import type { LoginBody, RegisterBody } from "@/types/auth.types";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -25,36 +24,42 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [profile, setProfile] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const token = tokenStore.getAccess();
 
-  // Khi load app: nếu có token thì fetch lại profile
-  useEffect(() => {
-    const token = tokenStore.getAccess();
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
+  // 1. Dùng useQuery quản lý thông tin User đăng nhập
+  const {
+    data: meResponse,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["me"],
+    queryFn: async () => {
+      try {
+        const res = await authApi.getMe();
+        return res.data.data;
+      } catch (err) {
+        tokenStore.clear();
+        throw err;
+      }
+    },
+    enabled: Boolean(token),
+    staleTime: 1000 * 60 * 10, // Cache 10 phút
+    retry: false,
+  });
 
-    authApi
-      .getMe()
-      .then(({ data }) => setProfile(data.data))
-      .catch(() => tokenStore.clear())
-      .finally(() => setIsLoading(false));
-  }, []);
+  const profile = meResponse || null;
 
   const login = async (body: LoginBody) => {
     const { data } = await authApi.signIn(body);
     tokenStore.setTokens(data.data.accessToken, data.data.refreshToken);
-    const { data: meData } = await authApi.getMe();
-    setProfile(meData.data);
+    await queryClient.invalidateQueries({ queryKey: ["me"] });
   };
 
   const register = async (body: RegisterBody) => {
     const { data } = await authApi.signUp(body);
     tokenStore.setTokens(data.data.accessToken, data.data.refreshToken);
-    const { data: meData } = await authApi.getMe();
-    setProfile(meData.data);
+    await queryClient.invalidateQueries({ queryKey: ["me"] });
   };
 
   const forgotPassword = async (email: string) => {
@@ -69,18 +74,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error(error);
     }
     tokenStore.clear();
-    setProfile(null);
+    queryClient.setQueryData(["me"], null);
+    queryClient.clear();
   };
 
   const setAuthTokens = async (accessToken: string, refreshToken: string) => {
     tokenStore.setTokens(accessToken, refreshToken);
-    const { data: meData } = await authApi.getMe();
-    setProfile(meData.data);
+    await queryClient.invalidateQueries({ queryKey: ["me"] });
   };
 
   const refreshProfile = async () => {
-    const { data: meData } = await authApi.getMe();
-    setProfile(meData.data);
+    await refetch();
   };
 
   return (
@@ -88,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         isAuthenticated: !!profile,
         profile,
-        isLoading,
+        isLoading: Boolean(token) && isLoading,
         login,
         register,
         logout,

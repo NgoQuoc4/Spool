@@ -3,7 +3,9 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { SpoolLogo, GoogleIcon, EyeIcon, EyeOffIcon } from "@/components/Icons";
 import { getGoogleAuthUrl } from "@/utils/auth";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMutation } from "@tanstack/react-query";
 import { PATH } from "@/constants/path";
+import type { LoginBody } from "@/types/auth.types";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +14,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -28,7 +30,7 @@ const Login: React.FC = () => {
     if (calledRef.current) return;
     calledRef.current = true;
 
-    setIsLoading(true);
+    setIsOAuthLoading(true);
     setSuccessMessage("Đang đăng nhập bằng tài khoản Google...");
 
     setAuthTokens(accessToken, refreshToken)
@@ -44,25 +46,17 @@ const Login: React.FC = () => {
           err?.response?.data?.message ||
             "Đăng nhập bằng Google thất bại hoặc phiên đã hết hạn.",
         );
-        setIsLoading(false);
+        setIsOAuthLoading(false);
       });
   }, [accessToken, refreshToken, setAuthTokens, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setErrorMessage("Vui lòng điền đầy đủ email và mật khẩu.");
-      return;
-    }
-
-    setErrorMessage("");
-    setIsLoading(true);
-
-    try {
-      await login({ email, password });
+  const loginMutation = useMutation({
+    mutationFn: (body: LoginBody) => login(body),
+    onSuccess: () => {
       setSuccessMessage("Đăng nhập thành công! Đang chuyển hướng...");
       setTimeout(() => navigate("/"), 500);
-    } catch (err: unknown) {
+    },
+    onError: (err: unknown) => {
       const errObj = err as {
         response?: {
           data?: {
@@ -81,9 +75,20 @@ const Login: React.FC = () => {
           errObj.message ||
           "Email hoặc mật khẩu không chính xác.",
       );
-    } finally {
-      setIsLoading(false);
+    },
+  });
+
+  const isLoading = loginMutation.isPending || isOAuthLoading;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setErrorMessage("Vui lòng điền đầy đủ email và mật khẩu.");
+      return;
     }
+
+    setErrorMessage("");
+    loginMutation.mutate({ email, password });
   };
 
   return (

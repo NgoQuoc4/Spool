@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   BookmarkIcon,
   CommentIcon,
@@ -29,6 +29,23 @@ const ActionSpool = ({
   isReposted?: boolean;
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Đóng menu khi click ra bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
 
   // Trong component ActionSpool:
   const { openQuoteModal } = useAppStore();
@@ -81,7 +98,7 @@ const ActionSpool = ({
         </button>
 
         {/* Repost button */}
-        <div style={{ position: "relative" }}>
+        <div ref={menuRef} style={{ position: "relative" }}>
           <button
             onClick={() => setShowMenu(!showMenu)}
             style={{

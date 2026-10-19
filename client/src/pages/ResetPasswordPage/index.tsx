@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import { authApi } from "@/apis/auth.api";
 import { PATH } from "@/constants/path";
 import { SpoolLogo, EyeIcon, EyeOffIcon } from "@/components/Icons";
@@ -13,9 +14,34 @@ const ResetPasswordPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: (body: Parameters<typeof authApi.resetPassword>[0]) =>
+      authApi.resetPassword(body),
+    onSuccess: () => {
+      setSuccessMessage(
+        "Đặt lại mật khẩu thành công! Đang chuyển hướng về trang đăng nhập...",
+      );
+      setTimeout(() => {
+        navigate(PATH.LOGIN);
+      }, 1500);
+    },
+    onError: (err: unknown) => {
+      const errObj = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      setErrorMessage(
+        errObj.response?.data?.message ||
+          errObj.message ||
+          "Có lỗi xảy ra, vui lòng thử lại.",
+      );
+    },
+  });
+
+  const isLoading = resetPasswordMutation.isPending;
 
   useEffect(() => {
     if (!forgot_password_token) {
@@ -23,7 +49,7 @@ const ResetPasswordPage: React.FC = () => {
     }
   }, [forgot_password_token, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!password || !confirmPassword) {
@@ -42,34 +68,12 @@ const ResetPasswordPage: React.FC = () => {
     }
 
     setErrorMessage("");
-    setIsLoading(true);
 
-    try {
-      await authApi.resetPassword({
-        forgot_password_token,
-        password,
-        confirmPassword,
-      });
-
-      setSuccessMessage(
-        "Đặt lại mật khẩu thành công! Đang chuyển hướng về trang đăng nhập...",
-      );
-      setTimeout(() => {
-        navigate(PATH.LOGIN);
-      }, 1500);
-    } catch (err: unknown) {
-      const errObj = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      setErrorMessage(
-        errObj.response?.data?.message ||
-          errObj.message ||
-          "Có lỗi xảy ra, vui lòng thử lại.",
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    resetPasswordMutation.mutate({
+      forgot_password_token,
+      password,
+      confirmPassword,
+    });
   };
 
   return (

@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/stores/useAppStore";
 import { usersApi } from "@/apis/users.api";
 import { VerifiedBadge } from "./Icons";
+import useFollowMutation from "@/hooks/useFollowMutation";
 
 const DEFAULT_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop";
 
 const ListFollowModal = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { listFollowModal, closeListFollowModal, showToast } = useAppStore();
+  const followMutation = useFollowMutation();
+  const { listFollowModal, closeListFollowModal } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<"followers" | "following">(
     "followers",
@@ -53,24 +54,21 @@ const ListFollowModal = () => {
     const nextState = !isCurrentlyFollowing;
     setFollowingMap((prev) => ({ ...prev, [targetId]: nextState }));
 
-    try {
-      if (nextState) {
-        await usersApi.follow(targetId);
-        showToast(`Đã theo dõi @${user.username}`);
-      } else {
-        await usersApi.unfollow(targetId);
-        showToast(`Đã hủy theo dõi @${user.username}`);
-      }
-      queryClient.invalidateQueries({
-        queryKey: ["follow-list", listFollowModal.userId],
-      });
-    } catch {
-      setFollowingMap((prev) => ({
-        ...prev,
-        [targetId]: isCurrentlyFollowing,
-      }));
-      showToast("Có lỗi xảy ra, vui lòng thử lại!");
-    }
+    followMutation.mutate(
+      {
+        targetId,
+        isFollowing: isCurrentlyFollowing, // trạng thái hiện tại (nếu true thì unfollow, nếu false thì follow)
+      },
+      {
+        onError: () => {
+          // Rollback nếu API lỗi
+          setFollowingMap((prev) => ({
+            ...prev,
+            [targetId]: isCurrentlyFollowing,
+          }));
+        },
+      },
+    );
   };
 
   return (

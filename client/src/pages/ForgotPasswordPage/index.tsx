@@ -2,30 +2,22 @@ import { SpoolLogo } from "@/components/Icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMutation } from "@tanstack/react-query";
 
-const index = () => {
+const ForgotPasswordPage = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
   const { forgotPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!email) {
-      setErrorMessage("Vui lòng điền đầy đủ email.");
-      return;
-    }
-
-    setErrorMessage("");
-    setIsLoading(true);
-    try {
-      await forgotPassword(email);
+  const forgotPasswordMutation = useMutation({
+    mutationFn: (emailStr: string) => forgotPassword(emailStr),
+    onSuccess: () => {
       setErrorMessage("");
       setSuccessMessage("Password reset link sent successfully");
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       const errorMsg =
         error?.response?.data?.message ||
         (error?.response?.data?.errors
@@ -36,9 +28,20 @@ const index = () => {
         "Có lỗi xảy ra khi gửi yêu cầu.";
       setErrorMessage(errorMsg);
       setSuccessMessage("");
-    } finally {
-      setIsLoading(false);
+    },
+  });
+  const isLoading = forgotPasswordMutation.isPending;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email) {
+      setErrorMessage("Vui lòng điền đầy đủ email.");
+      return;
     }
+
+    setErrorMessage("");
+    forgotPasswordMutation.mutate(email);
   };
 
   return (
@@ -340,4 +343,4 @@ const index = () => {
   );
 };
 
-export default index;
+export default ForgotPasswordPage;

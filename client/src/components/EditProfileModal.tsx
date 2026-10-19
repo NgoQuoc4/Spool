@@ -4,6 +4,7 @@ import { usersApi } from "@/apis/users.api";
 import { mediasApi } from "@/apis/medias.api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAppStore } from "@/stores/useAppStore";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronRightIcon } from "./Icons";
 import type { UpdateMeBody } from "@/types/user.types";
 
@@ -20,11 +21,46 @@ const EditProfileModal = () => {
   const { showToast, isModalEditProfileOpen, closeEditProfileModal } =
     useAppStore();
 
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string>("");
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 1. Mutation Upload Avatar
+  const uploadAvatarMutation = useMutation({
+    mutationFn: (formData: FormData) => mediasApi.uploadImage(formData),
+    onSuccess: (res) => {
+      if (res?.data?.url?.[0]) {
+        setAvatarUrl(res.data.url[0]);
+        showToast("Avatar uploaded!");
+      }
+    },
+    onError: (error) => {
+      console.error("Upload avatar failed:", error);
+      showToast("Failed to upload avatar");
+    },
+  });
+
+  // 2. Mutation Cập nhật Profile
+  const updateProfileMutation = useMutation({
+    mutationFn: (payload: UpdateMeBody) => usersApi.updateMe(payload),
+    onSuccess: async () => {
+      await refreshProfile();
+      // Tự động làm mới cache hồ sơ và các bài viết liên quan
+      queryClient.invalidateQueries({ queryKey: ["user_profile"] });
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
+      showToast("Profile updated successfully");
+      closeEditProfileModal();
+    },
+    onError: (error) => {
+      console.error("Update profile failed:", error);
+      showToast("Failed to update profile, please try again");
+    },
+  });
+
+  const isUploadingAvatar = uploadAvatarMutation.isPending;
+  const isSubmitting = updateProfileMutation.isPending;
 
   const { register, handleSubmit, reset } = useForm<FormValues>({
     defaultValues: {
@@ -53,52 +89,27 @@ const EditProfileModal = () => {
   if (!isModalEditProfileOpen) return null;
 
   // Xử lý upload avatar khi người dùng click vào ảnh
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const formData = new FormData();
     formData.append("image", file);
 
-    try {
-      setIsUploadingAvatar(true);
-      const res = await mediasApi.uploadImage(formData);
-      if (res?.data?.url?.[0]) {
-        setAvatarUrl(res.data.url[0]);
-        showToast("Avatar uploaded!");
-      }
-    } catch (error) {
-      console.error("Upload avatar failed:", error);
-      showToast("Failed to upload avatar");
-    } finally {
-      setIsUploadingAvatar(false);
-    }
+    uploadAvatarMutation.mutate(formData);
   };
 
-  const onSubmit = async (values: FormValues) => {
-    try {
-      setIsSubmitting(true);
-      const payload: UpdateMeBody = {
-        name: values.name.trim(),
-        username: values.username.trim(),
-        bio: values.bio.trim(),
-        location: values.location.trim(),
-        website: values.website.trim(),
-        ...(avatarUrl ? { avatar: avatarUrl } : {}),
-      };
+  const onSubmit = (values: FormValues) => {
+    const payload: UpdateMeBody = {
+      name: values.name.trim(),
+      username: values.username.trim(),
+      bio: values.bio.trim(),
+      location: values.location.trim(),
+      website: values.website.trim(),
+      ...(avatarUrl ? { avatar: avatarUrl } : {}),
+    };
 
-      const res = await usersApi.updateMe(payload);
-      if (res?.data?.data) {
-        await refreshProfile();
-        showToast("Profile updated successfully");
-        closeEditProfileModal();
-      }
-    } catch (error) {
-      console.error("Update profile failed:", error);
-      showToast("Failed to update profile, please try again");
-    } finally {
-      setIsSubmitting(false);
-    }
+    updateProfileMutation.mutate(payload);
   };
 
   return (

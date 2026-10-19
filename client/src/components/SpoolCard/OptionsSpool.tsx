@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MoreDotsIcon } from "../Icons";
 import type { ThreadPost } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,12 +13,29 @@ const OptionsSpool = ({
   onDelete: (id: string) => void;
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { profile } = useAuth();
   const isAuthor = Boolean(profile?._id && profile._id === post.author.id);
 
+  // Đóng menu khi click ra bên ngoài
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
+
   return (
     <>
-      <div style={{ position: "relative" }}>
+      <div ref={menuRef} style={{ position: "relative" }}>
         <button
           onClick={() => setShowMenu(!showMenu)}
           style={{

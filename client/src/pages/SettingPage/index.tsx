@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import TopBar from "@/components/TopBar";
 import { useAppStore } from "@/stores/useAppStore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -58,7 +59,26 @@ const SettingPage = () => {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (body: Parameters<typeof usersApi.changePassword>[0]) =>
+      usersApi.changePassword(body),
+    onSuccess: () => {
+      showToast("Đổi mật khẩu thành công!");
+      setShowPasswordModal(false);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: unknown) => {
+      const errorMsg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại!";
+      showToast(errorMsg);
+    },
+  });
+
+  const isSubmittingPassword = changePasswordMutation.isPending;
 
   const getTabTitle = (tab: SettingTab) => {
     switch (tab) {
@@ -79,7 +99,7 @@ const SettingPage = () => {
     }
   };
 
-  const handleChangePasswordSubmit = async (e: React.FormEvent) => {
+  const handleChangePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!oldPassword || !newPassword || !confirmPassword) {
       showToast("Vui lòng điền đầy đủ thông tin");
@@ -94,26 +114,11 @@ const SettingPage = () => {
       return;
     }
 
-    try {
-      setIsSubmittingPassword(true);
-      await usersApi.changePassword({
-        oldPassword,
-        password: newPassword,
-        confirmPassword,
-      });
-      showToast("Đổi mật khẩu thành công!");
-      setShowPasswordModal(false);
-      setOldPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: unknown) {
-      const errorMsg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Đổi mật khẩu thất bại. Vui lòng kiểm tra lại!";
-      showToast(errorMsg);
-    } finally {
-      setIsSubmittingPassword(false);
-    }
+    changePasswordMutation.mutate({
+      oldPassword,
+      password: newPassword,
+      confirmPassword,
+    });
   };
 
   const handleTogglePrivateProfile = () => {

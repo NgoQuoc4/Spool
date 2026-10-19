@@ -2,6 +2,7 @@ import { authApi } from "@/apis/auth.api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 
 const VerifyEmailPage = () => {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,29 @@ const VerifyEmailPage = () => {
   const { setAuthTokens, isAuthenticated } = useAuth();
   const calledRef = useRef(false);
 
+  const verifyEmailMutation = useMutation({
+    mutationFn: (verifyToken: string) => authApi.verifyEmail(verifyToken),
+    onSuccess: async ({ data }) => {
+      if (data.data?.accessToken && data.data?.refreshToken) {
+        // Tự động lưu token và đăng nhập
+        await setAuthTokens(data.data.accessToken, data.data.refreshToken);
+        setStatus("success");
+        setMessage("Xác thực email thành công! Đang tự động đăng nhập...");
+      } else {
+        setStatus("already_verified");
+        setMessage(data.message || "Email này đã được xác thực trước đó.");
+      }
+      setTimeout(() => navigate("/"), 2000);
+    },
+    onError: (err: any) => {
+      setStatus("error");
+      setMessage(
+        err.response?.data?.message ||
+          "Xác thực thất bại hoặc đường dẫn đã hết hạn!",
+      );
+    },
+  });
+
   useEffect(() => {
     if (!token) {
       setStatus("error");
@@ -24,31 +48,8 @@ const VerifyEmailPage = () => {
     if (calledRef.current) return;
     calledRef.current = true;
 
-    authApi
-      .verifyEmail(token)
-      .then(async ({ data }) => {
-        if (data.data?.accessToken && data.data?.refreshToken) {
-          // Tự động lưu token và đăng nhập
-          await setAuthTokens(
-            data.data.accessToken,
-            data.data.refreshToken,
-          );
-          setStatus("success");
-          setMessage("Xác thực email thành công! Đang tự động đăng nhập...");
-        } else {
-          setStatus("already_verified");
-          setMessage(data.message || "Email này đã được xác thực trước đó.");
-        }
-        setTimeout(() => navigate("/"), 2000);
-      })
-      .catch((err) => {
-        setStatus("error");
-        setMessage(
-          err.response?.data?.message ||
-            "Xác thực thất bại hoặc đường dẫn đã hết hạn!",
-        );
-      });
-  }, [token, navigate, setAuthTokens]);
+    verifyEmailMutation.mutate(token);
+  }, [token, verifyEmailMutation]);
 
   return (
     <div
