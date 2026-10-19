@@ -1,4 +1,4 @@
-export const useFormatRelativeTime = (dateStr: string) => {
+export const formatRelativeTime = (dateStr: string) => {
   if (!dateStr) return "Just now";
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -9,3 +9,5 @@ export const useFormatRelativeTime = (dateStr: string) => {
   const days = Math.floor(hours / 24);
   return `${days}d`;
 };
+
+export const useFormatRelativeTime = formatRelativeTime;

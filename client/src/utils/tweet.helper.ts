@@ -1,5 +1,5 @@
 import type { ApiPaginated } from "@/types/api.types";
-import { useFormatRelativeTime } from "@/hooks/useFormatRelativeTime";
+import { formatRelativeTime } from "@/hooks/useFormatRelativeTime";
 import type { ThreadPost } from "@/types";
 import { TweetType, type Tweet } from "@/types/tweet.types";
 import type { InfiniteData } from "@tanstack/react-query";
@@ -71,7 +71,7 @@ export const formatTweetToThreadPost = (tweet: Tweet): ThreadPost => {
     },
     content: displayTweet.content,
     createdAt: displayTweet.createdAt
-      ? useFormatRelativeTime(displayTweet.createdAt)
+      ? formatRelativeTime(displayTweet.createdAt)
       : "Just now",
     likes: displayTweet.likesCount ?? displayTweet.like ?? 0,
     repliesCount: displayTweet.repliesCount ?? 0,
