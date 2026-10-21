@@ -1,7 +1,7 @@
 # 🚀 Kế Hoạch Phát Triển Spool (Twitter / Threads Clone)
 
 > **Tài liệu lưu trữ:** Rà soát và cập nhật tiến độ thực tế toàn bộ hệ thống FullStack Spool.  
-> **Cập nhật:** 19/10/2026.
+> **Cập nhật:** 21/10/2026.
 
 ---
 
@@ -17,14 +17,15 @@
 | **Quote Tweet** | 🟢 95% | Modal trích dẫn `CreateThreadModal` nhận `quoteTarget`, card preview `QuoteSpool` trực quan bên trong bài viết, gửi `parent_id` và type `quote`. |
 | **Hệ thống Follow** | 🟢 95% | API follow/unfollow backend, optimistic update tăng/giảm followers/following count, `ListFollowModal` xem danh sách người theo dõi / đang theo dõi theo user, nút Follow trực tiếp tại `SearchPage` (tab Profiles) và `ProfilePage`. Feed "Following" (`FollowPage`) hiển thị đúng bài viết từ người được theo dõi. |
 | **Hồ sơ Cá nhân (Profile)** | 🟢 95% | `ProfilePage` hiển thị avatar, banner, bio, danh sách bài viết cá nhân, `EditProfileModal` cho phép cập nhật tên, tiểu sử, vị trí, website, ảnh đại diện, ảnh bìa. |
-| **Search System** | 🟢 85% | Tìm kiếm bài viết và người dùng theo từ khóa và hashtag, phân loại tabs (Top, Recent, Profiles), debounce tìm kiếm. *Chưa nối bộ lọc thời gian (Trước ngày / Sau ngày).* |
+| **Search System** | 🟢 90% | Tìm kiếm bài viết và người dùng theo từ khóa và hashtag, phân loại tabs (Top, Recent, Profiles), debounce tìm kiếm. *Chưa nối bộ lọc thời gian (Trước ngày / Sau ngày).* |
 | **Hệ thống Thông báo (Activity)** | 🟢 90% | Đã tạo model `Notification` trong DB, API lấy danh sách, đếm chưa đọc, đánh dấu đã đọc (`/notifications`), Socket realtime báo thông báo tức thì và cập nhật badge trên Navbar, `ActivityPage` phân loại theo tab (Tất cả, Thích, Bình luận, Đăng lại, Follow). |
 | **Tin nhắn trực tiếp (Direct Messages)** | 🟢 85% | Bảng `Message` trong DB, API lấy hội thoại (`/user/conversations`) và tin nhắn (`/user/conversations/:id/messages`), Socket.io chat realtime 1-1, giao diện `MessagesPage` 2 cột (sidebar danh sách chat + khung tin nhắn, cuộn tự động, gửi tin nhắn, xoá hội thoại, modal tìm người chat). |
 | **Cài đặt (Settings Page)** | 🟢 85% | Giao diện chuẩn phong cách Threads/Spool, đổi mật khẩu thật kết nối backend (`PUT /user/change-password`), toggle Theme Dark/Light, Reset cột bố cục đa luồng, Đăng xuất, các toggle Quyền riêng tư (Private profile, Private likes, Online status). |
 | **Hệ thống RSS Bot & Gemini AI** | 🟢 90% | Bảng `BotSetting`, Service cào RSS báo điện tử, dùng Google Gemini AI tóm tắt nội dung tự động tạo hashtags, cron scheduler tự động đăng bài lên feed, trang quản trị `Admin/BotsPage` cấu hình RSS URL, chu kỳ quét, giới hạn bài, bật/tắt bot. |
 | **Video & HLS Streaming** | 🟡 70% | Backend có hàng đợi mã hóa video sang HLS bằng FFmpeg, endpoint streaming chunk (`/static/video-stream/:name`) và HLS playlist (`/static/video-hls/:id/master.m3u8`), client có `VideoSpool` phát HLS (`hls.js`). *Còn thiếu giao diện chọn và tải video trực tiếp trên `CreateThreadModal`.* |
-| **Hashtags & Trending** | 🟢 90% | Bảng `Hashtag` và `TweetHashtag`, API Trending Hashtags 24h (`/search/hastag`), hiển thị danh sách thịnh hành tại `SearchPage`, click hashtag điều hướng tìm kiếm. |
-| **Lưu trữ (Archive Page)** | 🟢 100% | Thêm cờ `is_archived`, ẩn bài đã lưu trữ khỏi feed/profile công khai, API toggle lưu trữ, menu OptionsSpool có Archive/Unarchive, trang `ArchivePage` hiển thị danh sách bài đã lưu trữ kèm unarchive tức thì. |
+| **Hashtags & Trending** | 🟢 95% | Bảng `Hashtag` và `TweetHashtag`, API Trending Hashtags 24h (`/search/hastag`), hiển thị danh sách "Chủ đề thịnh hành" phong cách Twitter tại `SearchPage`, click hashtag điều hướng và tìm kiếm tức thì. |
+| **Ghost Posts (Bài viết tự huỷ 24h)** | 🟢 90% | Đã có cờ `is_ghost` và `expires_at` trong DB, toggle chọn Ghost post khi đăng bài, service dọn dẹp `ghostCleaner.service.ts`, giao diện feed `GhostPage` lọc bài viết tự huỷ. |
+| **Lưu trữ (Archive Page)** | 🟢 100% | Cờ `is_archived` trong DB, ẩn bài lưu trữ khỏi feed và profile công khai, API toggle lưu trữ, menu `OptionsSpool` có tuỳ chọn Archive / Unarchive, trang `ArchivePage` hiển thị danh sách bài đã lưu trữ kèm gỡ bỏ tức thì khi unarchive. |
 | **Insights & Thống kê** | 🔴 15% | Đã có giao diện `InsightsPage` hiển thị số liệu tĩnh (views, engagements). *Chưa có API tổng hợp và biểu đồ tương tác thời gian thực.* |
 | **Báo cáo sự cố (Report Page)** | 🔴 5% | Route `ReportPage` hiện là placeholder rỗng. |
 
@@ -36,6 +37,8 @@
 - [x] Đăng bài viết mới (hỗ trợ văn bản, tải nhiều ảnh, gắn hashtag).
 - [x] Like / Bỏ like bài viết với Optimistic update và lưu thật vào DB.
 - [x] Lưu trữ bài viết (Bookmark / Unbookmark) và trang xem danh sách đã lưu (`SavePage`).
+- [x] Kho lưu trữ bài viết cá nhân (Archive / Unarchive): Ẩn khỏi trang chủ & profile, quản lý tại `ArchivePage` (`/archive`), optimistic UI gỡ bài tức thì khi thao tác.
+- [x] Ghost Posts (Bài viết tự huỷ 24h): Đã có cờ `is_ghost`, toggle khi đăng bài, cron service `ghostCleaner.service.ts` và feed `GhostPage`.
 - [x] Xem danh sách bài viết đã like (`LikePage`).
 - [x] Đăng lại bài viết (Repost / Retweet) và hủy đăng lại (`unretweet`).
 - [x] Xóa bài viết cá nhân (`OptionsSpool` -> gọi `DELETE /tweets/delete-tweet/:tweet_id`).
@@ -60,7 +63,10 @@
 ### 3. Search & Discovery
 - [x] Tìm kiếm theo từ khóa văn bản và hashtag (search debounce 400ms).
 - [x] Phân trang kết quả theo 3 tab: Top, Recent, Profiles.
-- [x] Đồng bộ query và tab lên URL search params (`?q=...&tab=...`).
+- [x] Đồng bộ query và tab lên URL search params (`?q=...&tab=...`), xử lý chống xung đột race condition.
+- [x] API Trending Hashtags 24h (`GET /search/hastag`) thống kê các hashtag thịnh hành từ bảng `TweetHashtag`.
+- [x] Khối "Chủ đề thịnh hành" phong cách Twitter/Threads trên `SearchPage` (click để tìm kiếm tức thì).
+- [x] Clickable Hashtags: Bấm vào `#hashtag` trong nội dung bài viết (`ContentSpool`) tự động chuyển hướng tìm kiếm.
 
 ### 4. Real-time Notifications & Activity
 - [x] Bảng `Notification` trong Prisma Schema liên kết Sender, Receiver, Tweet.
@@ -118,20 +124,21 @@ Dưới đây là các hạng mục kỹ thuật cần tiếp tục triển khai
 ### 🎯 GIAI ĐOẠN 3: HASHTAGS & DISCOVERY
 
 #### 1. Trending Hashtags
-- [ ] Backend API `GET /search/trending-hashtags`: Thống kê các hashtag được dùng nhiều nhất trong 24 giờ qua.
-- [ ] Hiển thị danh sách hashtag nổi bật tại sidebar / trang Search.
+- [x] Backend API `GET /search/hastag`: Thống kê các hashtag được dùng nhiều nhất trong 24 giờ qua từ `TweetHashtag`.
+- [x] Hiển thị danh sách "Chủ đề thịnh hành" chuẩn phong cách Threads/Twitter tại `SearchPage`.
+- [x] Khi click vào `#hashtag` trong nội dung bài viết (`ContentSpool`), tự động điều hướng sang trang tìm kiếm theo thẻ đó.
+- [x] Xử lý đồng bộ 2 chiều URL params và debounce input không bị xung đột/revert link.
 - [ ] Tạo trang xem bài viết theo hashtag riêng biệt (`/hashtag/:name`).
-- [ ] Khi click vào `#hashtag` trong nội dung bài viết, tự động điều hướng sang trang hashtag tương ứng.
 
 ---
 
 ### 🎯 GIAI ĐOẠN 4: ADVANCED FEATURES (NÂNG CAO)
 
 #### 1. Ghost Posts (Bài Viết Tự Hủy Sau 24h)
-- [ ] Thêm cờ `is_ghost: Boolean` hoặc trường `expires_at: DateTime?` trong model `Tweet`.
-- [ ] Client: Thêm checkbox "Ghost Post (tự xóa sau 24h)" trong modal tạo bài viết.
-- [ ] Backend: Cron job quét các bài viết ghost đã quá 24h và tự động xóa.
-- [ ] Trang `GhostPage`: Hiển thị danh sách các bài viết ghost đang hoạt động kèm đồng hồ đếm ngược thời gian còn lại.
+- [x] Thêm cờ `is_ghost: Boolean` và trường `expires_at: DateTime?` trong model `Tweet`.
+- [x] Client: Thêm toggle "Ghost Post (tự xóa sau 24h)" trong modal tạo bài viết `CreateThreadModal`.
+- [x] Backend: Service quét dọn bài viết ghost quá hạn `ghostCleaner.service.ts`.
+- [x] Trang `GhostPage`: Hiển thị danh sách các bài viết ghost đang hoạt động.
 
 #### 2. Lưu Trữ Bài Viết (Archive Posts)
 - [x] Thêm trường `is_archived: Boolean @default(false)` vào model `Tweet`.
@@ -164,6 +171,9 @@ Dưới đây là các hạng mục kỹ thuật cần tiếp tục triển khai
 - [x] Nhắn tin realtime 1-1 qua Socket.io -> Hai tài khoản nhắn tin nhận phản hồi tức thì mà không cần reload.
 - [x] Đổi mật khẩu trong Settings -> Đăng nhập lại bằng mật khẩu mới thành công.
 - [x] Cấu hình và chạy Bot RSS AI -> Tự động tóm tắt tin tức và đăng bài có hashtag lên feed.
+- [x] Bấm vào `#hashtag` trong nội dung bài viết -> Chuyển hướng đến tìm kiếm bài viết theo thẻ.
+- [x] Bấm vào hashtag trong mục "Chủ đề thịnh hành" trên Search Page -> Tự động điền từ khóa và lọc bài viết ngay lập tức.
+- [x] Lưu trữ bài viết (Archive) -> Ẩn bài khỏi Profile/Feed và hiển thị trong `ArchivePage` (/archive).
+- [x] Khôi phục bài viết (Unarchive) -> Bài viết biến mất khỏi kho lưu trữ và hiển thị lại trên trang cá nhân.
 - [ ] Chọn upload video trực tiếp khi tạo bài viết từ trình duyệt.
-- [ ] Bấm vào thẻ `#hashtag` mở trang tổng hợp các bài viết cùng hashtag.
-- [ ] Đăng bài viết Ghost và kiểm tra tính năng tự xóa sau thời gian hết hạn.
+- [ ] Thống kê phân tích tương tác thực tế cho trang Insights.
