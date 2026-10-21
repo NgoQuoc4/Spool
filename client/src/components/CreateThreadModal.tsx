@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from "react";
 import type { Author } from "@/types";
-import { ChevronRightIcon, ImageIcon } from "./Icons";
+import { ChevronRightIcon, ImageIcon, GhostIcon } from "./Icons";
 import { tweetsApi } from "@/apis/tweets.api";
 import { TweetAudienceType, TweetType, MediaType } from "@/types/tweet.types";
 import { useAppStore } from "@/stores/useAppStore";
@@ -32,6 +32,7 @@ export const CreateThreadModal = () => {
   const [mentionQuery, setMentionQuery] = useState<string | null>(null); // query @mention
   const [topicTag, setTopicTag] = useState(""); // query #hashtag
   const [cursorPosition, setCursorPosition] = useState<number>(0); // cursor position
+  const [isGhost, setIsGhost] = useState(false); // Ghost post toggle (tự xoá sau 24h)
 
   // Apply theme to document
   const handlePostCreated = () => {
@@ -42,6 +43,7 @@ export const CreateThreadModal = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setQuoteTarget(null); // Reset bài viết quote khi đóng
+    setIsGhost(false);
   };
 
   // ---- upload image
@@ -143,6 +145,8 @@ export const CreateThreadModal = () => {
       // Làm mới dữ liệu trên feeds và profile
       queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
       queryClient.invalidateQueries({ queryKey: ["user_posts"] });
+      queryClient.invalidateQueries({ queryKey: ["ghost_posts"] });
+      setIsGhost(false);
     },
     onError: (error) => {
       console.error(error);
@@ -251,6 +255,7 @@ export const CreateThreadModal = () => {
       hashtags: hashtag ? [hashtag] : [],
       mentions: [],
       medias,
+      isGhost: isGhost,
     });
   };
 
@@ -594,37 +599,86 @@ export const CreateThreadModal = () => {
                 )}
               </div>
 
-              {/* Action Icons */}
+              {/* Action Icons & Ghost Post Checkbox */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "14px",
+                  justifyContent: "space-between",
                   color: "var(--text-secondary)",
                 }}
               >
-                {/* Image upload button */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
+                <div
                   style={{
-                    cursor: isUploading ? "not-allowed" : "pointer",
-                    color: imageUrl
-                      ? "var(--accent-blue, #0095f6)"
-                      : "var(--text-secondary)",
-                    padding: "4px",
-                    background: "none",
-                    border: "none",
                     display: "flex",
                     alignItems: "center",
+                    gap: "14px",
                   }}
-                  title="Attach Image"
                 >
-                  <ImageIcon size={20} />
-                </button>
+                  {/* Image upload button */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    style={{
+                      cursor: isUploading ? "not-allowed" : "pointer",
+                      color: imageUrl
+                        ? "var(--accent-blue, #0095f6)"
+                        : "var(--text-secondary)",
+                      padding: "4px",
+                      background: "none",
+                      border: "none",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                    title="Attach Image"
+                  >
+                    <ImageIcon size={20} />
+                  </button>
+                </div>
 
-                {/* <button
+                {/* Ghost Post Checkbox Button */}
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    cursor: "pointer",
+                    padding: "4px 10px",
+                    borderRadius: "9999px",
+                    border: isGhost
+                      ? "1px solid rgba(168, 85, 247, 0.45)"
+                      : "1px solid var(--border-color)",
+                    backgroundColor: isGhost
+                      ? "rgba(168, 85, 247, 0.12)"
+                      : "transparent",
+                    color: isGhost ? "#c084fc" : "var(--text-secondary)",
+                    fontSize: "13px",
+                    fontWeight: isGhost ? "600" : "400",
+                    transition: "all 0.15s ease",
+                    userSelect: "none",
+                  }}
+                  title="Ghost Post: Bài viết sẽ tự động xóa sau 24h và chỉ hiển thị ở tab Ghost"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isGhost}
+                    onChange={(e) => setIsGhost(e.target.checked)}
+                    style={{
+                      cursor: "pointer",
+                      accentColor: "#a855f7",
+                      width: "14px",
+                      height: "14px",
+                      margin: 0,
+                      display: "none",
+                    }}
+                  />
+                  <GhostIcon size={16} />
+                  <span>Ghost post</span>
+                </label>
+              </div>
+
+              {/* <button
                   type="button"
                   onClick={() => {
                     setValue(
@@ -638,7 +692,7 @@ export const CreateThreadModal = () => {
                 >
                   <GifIcon size={20} />
                 </button> */}
-                {/* <button
+              {/* <button
                   type="button"
                   onClick={() =>
                     setValue(
@@ -651,67 +705,67 @@ export const CreateThreadModal = () => {
                 >
                   <TagIcon size={20} />
                 </button> */}
-              </div>
-              {quoteTarget && (
+            </div>
+            {quoteTarget && (
+              <div
+                style={{
+                  marginTop: "12px",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: "1px solid var(--border-color)",
+                  backgroundColor: "var(--bg-card)",
+                }}
+              >
                 <div
                   style={{
-                    marginTop: "12px",
-                    padding: "12px",
-                    borderRadius: "12px",
-                    border: "1px solid var(--border-color)",
-                    backgroundColor: "var(--bg-card)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    marginBottom: "6px",
                   }}
                 >
-                  <div
+                  <img
+                    src={quoteTarget.author.avatar}
+                    alt=""
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      marginBottom: "6px",
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
                     }}
-                  >
-                    <img
-                      src={quoteTarget.author.avatar}
-                      alt=""
-                      style={{
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontWeight: "600",
-                        fontSize: "13px",
-                        color: "var(--text-main)",
-                      }}
-                    >
-                      {quoteTarget.author.name}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      @{quoteTarget.author.username}
-                    </span>
-                  </div>
-                  <p
+                  />
+                  <span
                     style={{
+                      fontWeight: "600",
                       fontSize: "13px",
                       color: "var(--text-main)",
-                      margin: 0,
-                      lineClamp: 2,
                     }}
                   >
-                    {quoteTarget.content}
-                  </p>
+                    {quoteTarget.author.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "12px",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    @{quoteTarget.author.username}
+                  </span>
                 </div>
-              )}
-              {/* Add to spool prompt */}
-              {/* <div
+                <p
+                  style={{
+                    fontSize: "13px",
+                    color: "var(--text-main)",
+                    margin: 0,
+                    lineClamp: 2,
+                  }}
+                >
+                  {quoteTarget.content}
+                </p>
+              </div>
+            )}
+            {/* Add to spool prompt */}
+            {/* <div
                 style={{
                   color: "var(--text-muted)",
                   fontSize: "14px",
@@ -724,7 +778,6 @@ export const CreateThreadModal = () => {
               >
                 <span>Add to spool</span>
               </div> */}
-            </div>
           </div>
 
           {/* Modal Footer */}
@@ -744,10 +797,24 @@ export const CreateThreadModal = () => {
                 fontSize: "13px",
                 display: "flex",
                 alignItems: "center",
-                gap: "4px",
+                gap: "6px",
               }}
             >
               <span>Anyone can reply & quote</span>
+              {isGhost && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    color: "#c084fc",
+                    fontWeight: "500",
+                    fontSize: "12px",
+                  }}
+                >
+                  • 👻 Tự huỷ sau 24h
+                </span>
+              )}
             </div>
 
             <button

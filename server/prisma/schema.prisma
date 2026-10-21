@@ -101,17 +101,19 @@ model Follow {
 }
 
 model Tweet {
-  id          String        @id @default(cuid())
-  user_id     String
-  type        TweetType     @default(tweet)
-  audience    TweetAudience @default(everyone)
-  content     String        @default("")
-  parent_id   String?
-  user_views  Int           @default(0)
-  guest_views Int           @default(0)
-  created_at  DateTime      @default(now())
-  updated_at  DateTime      @updatedAt
-
+  id            String         @id @default(cuid())
+  user_id       String
+  type          TweetType      @default(tweet)
+  audience      TweetAudience  @default(everyone)
+  content       String         @default("")
+  parent_id     String?
+  user_views    Int            @default(0)
+  guest_views   Int            @default(0)
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  is_ghost      Boolean        @default(false)
+  expires_at    DateTime?
+  is_archived   Boolean        @default(false)
   user          User           @relation("UserTweets", fields: [user_id], references: [id], onDelete: Cascade)
   parent        Tweet?         @relation("TweetReplies", fields: [parent_id], references: [id])
   replies       Tweet[]        @relation("TweetReplies")

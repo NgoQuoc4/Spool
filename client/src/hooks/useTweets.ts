@@ -9,6 +9,8 @@ export const useTweets = (param: {
   following_only?: string;
   liked_only?: string;
   bookmark_only?: string;
+  ghost_only?: string;
+  archivedOnly?: string;
 }) => {
   const {
     queryKey,
@@ -17,9 +19,19 @@ export const useTweets = (param: {
     following_only,
     liked_only,
     bookmark_only,
+    ghost_only,
+    archivedOnly,
   } = param;
   const query = useInfiniteQuery({
-    queryKey: [queryKey, author_id || "all"],
+    queryKey: [
+      queryKey,
+      author_id,
+      following_only,
+      liked_only,
+      bookmark_only,
+      ghost_only,
+      archivedOnly,
+    ],
     queryFn: async ({ pageParam = 1 }) => {
       try {
         return await tweetsApi.getAllTweets({
@@ -29,12 +41,15 @@ export const useTweets = (param: {
           following_only,
           liked_only,
           bookmark_only,
+          ghost_only,
+          archivedOnly,
         });
       } catch (error) {
         console.error("Lỗi khi fetch tweets:", error);
         throw error;
       }
     },
+    staleTime: 1000 * 60 * 2,
     initialPageParam: 1, // tham số ban đầu cho page
     // Hàm này sẽ được gọi để lấy tham số cho lần fetch tiếp theo
     getNextPageParam: (lastPage) => {

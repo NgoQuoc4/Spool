@@ -7,15 +7,18 @@ const OptionsSpool = ({
   post,
   onShare,
   onDelete,
+  onArchived,
 }: {
   post: ThreadPost;
   onShare: (post: ThreadPost) => void;
   onDelete: (id: string) => void;
+  onArchived?: (post: ThreadPost) => void | undefined;
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { profile } = useAuth();
   const isAuthor = Boolean(profile?._id && profile._id === post.author.id);
+  const isAdmin = profile?.role === "Admin";
 
   // Đóng menu khi click ra bên ngoài
   useEffect(() => {
@@ -94,6 +97,30 @@ const OptionsSpool = ({
               Copy link
             </button>
 
+            <button
+              onClick={() => {
+                onArchived?.(post);
+                setShowMenu(false);
+              }}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "8px 12px",
+                fontSize: "14px",
+                borderRadius: "8px",
+                color: "var(--text-main)",
+                display: "block",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "var(--bg-pill)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "transparent")
+              }
+            >
+              {post.isArchived ? "Unarchive" : "Archive"}
+            </button>
+
             {!isAuthor && (
               <button
                 onClick={() => setShowMenu(false)}
@@ -117,7 +144,7 @@ const OptionsSpool = ({
               </button>
             )}
 
-            {isAuthor && (
+            {(isAuthor || isAdmin) && (
               <button
                 onClick={() => {
                   onDelete(post.id);

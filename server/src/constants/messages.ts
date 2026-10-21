@@ -100,4 +100,6 @@ export const userMessage = {
   UNLIKE_SUCCESS: "You unliked this tweet",
   BOOKMARK_SUCCESS: "You bookmarked this tweet",
   UNBOOKMARK_SUCCESS: "You unbookmarked this tweet",
+  ARCHIVED_SUCCESS: "You archived this tweet",
+  UNARCHIVED_SUCCESS: "You unarchived this tweet",
 } as const;

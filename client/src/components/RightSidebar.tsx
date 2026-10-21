@@ -111,11 +111,17 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
               }}
             >
               <div
+                onClick={() => {
+                  if (user.username) {
+                    navigate(`/@${user.username}`);
+                  }
+                }}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
                   minWidth: 0,
+                  cursor: "pointer",
                 }}
               >
                 <img
@@ -146,6 +152,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                       }}
+                      onMouseEnter={(e) =>
+                        (e.currentTarget.style.textDecoration = "underline")
+                      }
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.textDecoration = "none")
+                      }
                     >
                       {user.username}
                     </span>

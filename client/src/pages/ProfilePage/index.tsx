@@ -4,7 +4,7 @@ import TopBar from "@/components/TopBar";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ThreadPost } from "@/types";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useTweets } from "@/hooks/useTweets";
 import { formatTweets } from "@/utils/tweet.helper";
 import { useTweetActions } from "@/hooks/useTweetActions";
@@ -26,6 +26,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
   columnId,
 }) => {
   const navigate = useNavigate();
+  const { username: routeUsername } = useParams<{ username: string }>();
   const followMutation = useFollowMutation();
   const { setIsModalOpen, openEditProfileModal, openListFollowModal } =
     useAppStore();
@@ -34,6 +35,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     currentUser,
     isMyProfile,
     isLoading: isProfileLoading,
+    isError: isProfileError,
   } = useProfile(propUsername);
   const [threads, setThreads] = useState<ThreadPost[]>([]);
   const [localIsFollowing, setLocalIsFollowing] = useState<boolean | undefined>(
@@ -43,6 +45,14 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     number | undefined
   >(undefined);
 
+  // Bắt buộc URL profile phải có tiền tố @ (VD: /@username). Nếu người dùng gõ /abc (không có @) -> 404
+  if (!propUsername && routeUsername && !routeUsername.startsWith("@")) {
+    return <Navigate to="/404" replace />;
+  }
+
+  if (!isProfileLoading && isProfileError) {
+    return <Navigate to="/404" replace />;
+  }
   // Sync local follow state when profile loads
   useEffect(() => {
     if (profile) {
@@ -91,6 +101,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
     handleDeletePost,
     handleBookmark,
     handleShare,
+    handleArchived,
   } = useTweetActions({ threads, setThreads });
 
   const handleFollowers = () => {
@@ -371,6 +382,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({
                     onShare={handleShare}
                     onDelete={handleDeletePost}
                     onBookmark={handleBookmark}
+                    onArchived={handleArchived}
                   />
                 ))
               ) : (

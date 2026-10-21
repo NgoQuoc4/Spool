@@ -8,4 +8,5 @@ export interface TweetRequestBody {
   mentions: string[]; // user_id[] là user_id của người được mention
   medias: Media[]; // list of media objects
   parentId?: null | string; // chỉ null khi tweet gốc
+  isGhost?: boolean;
 }

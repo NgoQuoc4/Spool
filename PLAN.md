@@ -23,9 +23,8 @@
 | **Cài đặt (Settings Page)** | 🟢 85% | Giao diện chuẩn phong cách Threads/Spool, đổi mật khẩu thật kết nối backend (`PUT /user/change-password`), toggle Theme Dark/Light, Reset cột bố cục đa luồng, Đăng xuất, các toggle Quyền riêng tư (Private profile, Private likes, Online status). |
 | **Hệ thống RSS Bot & Gemini AI** | 🟢 90% | Bảng `BotSetting`, Service cào RSS báo điện tử, dùng Google Gemini AI tóm tắt nội dung tự động tạo hashtags, cron scheduler tự động đăng bài lên feed, trang quản trị `Admin/BotsPage` cấu hình RSS URL, chu kỳ quét, giới hạn bài, bật/tắt bot. |
 | **Video & HLS Streaming** | 🟡 70% | Backend có hàng đợi mã hóa video sang HLS bằng FFmpeg, endpoint streaming chunk (`/static/video-stream/:name`) và HLS playlist (`/static/video-hls/:id/master.m3u8`), client có `VideoSpool` phát HLS (`hls.js`). *Còn thiếu giao diện chọn và tải video trực tiếp trên `CreateThreadModal`.* |
-| **Hashtags & Trending** | 🟡 50% | Bảng `Hashtag` và `TweetHashtag` lưu trữ hashtag khi đăng bài (kể cả Bot AI) và hỗ trợ tìm kiếm qua search query. *Còn thiếu API Top Trending Hashtags 24h và trang xem bài viết theo hashtag (`/hashtag/:name`).* |
-| **Ghost Posts (Bài viết tự huỷ 24h)** | 🔴 10% | Đã có route và giao diện placeholder `GhostPage`. *Chưa có cron job xóa bài sau 24h và tuỳ chọn đánh dấu Ghost post khi đăng bài.* |
-| **Lưu trữ (Archive Page)** | 🔴 10% | Đã có route và giao diện placeholder `ArchivePage`. *Chưa có tính năng ẩn/lưu trữ bài viết khỏi trang cá nhân.* |
+| **Hashtags & Trending** | 🟢 90% | Bảng `Hashtag` và `TweetHashtag`, API Trending Hashtags 24h (`/search/hastag`), hiển thị danh sách thịnh hành tại `SearchPage`, click hashtag điều hướng tìm kiếm. |
+| **Lưu trữ (Archive Page)** | 🟢 100% | Thêm cờ `is_archived`, ẩn bài đã lưu trữ khỏi feed/profile công khai, API toggle lưu trữ, menu OptionsSpool có Archive/Unarchive, trang `ArchivePage` hiển thị danh sách bài đã lưu trữ kèm unarchive tức thì. |
 | **Insights & Thống kê** | 🔴 15% | Đã có giao diện `InsightsPage` hiển thị số liệu tĩnh (views, engagements). *Chưa có API tổng hợp và biểu đồ tương tác thời gian thực.* |
 | **Báo cáo sự cố (Report Page)** | 🔴 5% | Route `ReportPage` hiện là placeholder rỗng. |
 
@@ -135,10 +134,10 @@ Dưới đây là các hạng mục kỹ thuật cần tiếp tục triển khai
 - [ ] Trang `GhostPage`: Hiển thị danh sách các bài viết ghost đang hoạt động kèm đồng hồ đếm ngược thời gian còn lại.
 
 #### 2. Lưu Trữ Bài Viết (Archive Posts)
-- [ ] Thêm trường `is_archived: Boolean @default(false)` vào model `Tweet`.
-- [ ] Thêm tuỳ chọn "Archive spool" trong menu `OptionsSpool`.
-- [ ] Ẩn các bài viết đã archive khỏi trang chủ và profile công khai.
-- [ ] Trang `ArchivePage`: Hiển thị danh sách bài viết đã lưu trữ và cho phép khôi phục (Unarchive).
+- [x] Thêm trường `is_archived: Boolean @default(false)` vào model `Tweet`.
+- [x] Thêm tuỳ chọn "Archive / Unarchive spool" trong menu `OptionsSpool`.
+- [x] Ẩn các bài viết đã archive khỏi trang chủ và profile công khai.
+- [x] Trang `ArchivePage`: Hiển thị danh sách bài viết đã lưu trữ và cho phép khôi phục (Unarchive).
 
 #### 3. Thống Kê & Phân Tích (Insights)
 - [ ] Backend: Thống kê tổng số lượt views (`user_views`, `guest_views`), lượt thích, bình luận của user trong 7 ngày gần nhất.

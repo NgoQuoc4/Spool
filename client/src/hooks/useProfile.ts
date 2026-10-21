@@ -16,6 +16,7 @@ export const useProfile = (customUsername?: string) => {
     queryKey: ["user_profile", cleanUsername],
     queryFn: () => usersApi.getProfile(cleanUsername!),
     enabled: !isMyProfile && Boolean(cleanUsername),
+    // retry: false,
   });
 
   const user = isMyProfile ? authProfile : data?.data?.data;

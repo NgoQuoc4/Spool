@@ -1,4 +1,5 @@
 import type { ThreadPost } from "@/types";
+import { Link } from "react-router-dom";
 
 export const renderFormattedContent = (content: string) => {
   if (!content) return null;
@@ -34,17 +35,52 @@ export const renderFormattedContent = (content: string) => {
     const tokens = part.split(tagRegex);
 
     return tokens.map((token, tIdx) => {
-      if (token.startsWith("#") || token.startsWith("@")) {
+      if (token.startsWith("@")) {
+        const username = token.slice(1);
         return (
-          <span
-            key={`tag-${pIdx}-${tIdx}`}
+          <Link
+            key={`mention-${pIdx}-${tIdx}`}
+            to={`/@${username}`}
+            onClick={(e) => e.stopPropagation()}
             style={{
               color: "var(--accent-blue)",
               fontWeight: "500",
+              textDecoration: "none",
+              cursor: "pointer",
             }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.textDecoration = "underline")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.textDecoration = "none")
+            }
           >
             {token}
-          </span>
+          </Link>
+        );
+      }
+      if (token.startsWith("#")) {
+        const username = token.slice(1);
+        return (
+          <Link
+            key={`tag-${pIdx}-${tIdx}`}
+            to={`/search?q=${username}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              color: "var(--accent-blue)",
+              fontWeight: "500",
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.textDecoration = "underline")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.textDecoration = "none")
+            }
+          >
+            {token}
+          </Link>
         );
       }
       return token;
@@ -81,6 +117,9 @@ const ContentSpool = ({ post }: { post: ThreadPost }) => {
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
             marginBottom: "10px",
+            border: `${post.isGhost === true ? "dotted" : "none"} 2px var(--border-color)`,
+            borderRadius: "10px",
+            padding: `${post.isGhost === true ? "10px" : "0px"}`,
           }}
         >
           {renderFormattedContent(post.content)}
@@ -91,4 +130,3 @@ const ContentSpool = ({ post }: { post: ThreadPost }) => {
 };
 
 export default ContentSpool;
-

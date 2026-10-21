@@ -14,7 +14,6 @@ export const formatTweetToThreadPost = (tweet: Tweet): ThreadPost => {
 
   // Nếu là retweet -> lấy thông tin bài gốc để hiển thị; nếu không -> lấy chính bài tweet
   const displayTweet = isRetweet ? parent! : tweet;
-
   // 2. Lấy thông tin người đã bấm Retweet (nếu có)
   const repostedBy =
     isRetweet && tweet.user
@@ -65,8 +64,7 @@ export const formatTweetToThreadPost = (tweet: Tweet): ThreadPost => {
         "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
       verified: true,
       isFollowing: Boolean(
-        displayTweet.user?.isFollowing ??
-        displayTweet.isFollowing,
+        displayTweet.user?.isFollowing ?? displayTweet.isFollowing,
       ),
     },
     content: displayTweet.content,
@@ -80,11 +78,10 @@ export const formatTweetToThreadPost = (tweet: Tweet): ThreadPost => {
     isLiked: Boolean(displayTweet.isLiked),
     isReposted: Boolean(displayTweet.isReposted),
     isBookmarked: Boolean(displayTweet.isBookmarked),
+    isGhost: Boolean(displayTweet.isGhost ?? (displayTweet as any).is_ghost),
+    expiresAt: displayTweet.expiresAt ?? (displayTweet as any).expires_at,
     isQuote: Boolean(isQuote),
-    quotedPost:
-      isQuote && parent
-        ? formatTweetToThreadPost(parent)
-        : undefined,
+    quotedPost: isQuote && parent ? formatTweetToThreadPost(parent) : undefined,
     tags: hashtags,
     media,
     medias,
@@ -98,9 +95,7 @@ export const formatTweets = (
 ): ThreadPost[] => {
   if (!data?.pages) return [];
   const prevMap = new Map(prevThreads.map((item) => [item.id, item]));
-  const serverTweets = data.pages.flatMap(
-    (page) => page.data?.data || [],
-  );
+  const serverTweets = data.pages.flatMap((page) => page.data?.data || []);
 
   // Lọc trùng lặp bài viết (deduplication) để tránh warning React duplicate/missing key
   const seenIds = new Set<string>();

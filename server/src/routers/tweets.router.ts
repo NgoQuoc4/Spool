@@ -6,6 +6,7 @@ import {
   getAllTweetController,
   getTweetChildrenController,
   getTweetController,
+  totalArchivedTweetController,
   unretweetController,
 } from "~/controllers/tweets.controller";
 import { filterMiddleware } from "~/middlewares/common.midlewares";
@@ -75,6 +76,19 @@ tweetsRouter.delete(
   accessTokenValidator,
   tweetValidator,
   wrapAsync(unretweetController),
+);
+
+/*
+ * Description: Total archived tweet
+ * Path: /tweets/total-archived-tweet/:tweet_id
+ * Method: PATCH
+ * Header: {Authorization: Bearer <access_token>}
+ */
+tweetsRouter.patch(
+  "/total-archived-tweet/:tweet_id",
+  accessTokenValidator,
+  tweetValidator,
+  wrapAsync(totalArchivedTweetController),
 );
 
 /*

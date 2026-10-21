@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ThreadPost, Author, ThreadReply } from "@/types";
 import {
   SortIcon,
@@ -33,6 +34,7 @@ interface ThreadCardProps {
   onShare: (post: ThreadPost) => void;
   onDelete: (id: string) => void;
   onBookmark: (post: ThreadPost) => void;
+  onArchived?: (post: ThreadPost) => void | undefined;
 }
 
 export const ThreadCard: React.FC<ThreadCardProps> = ({
@@ -44,7 +46,9 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
   onShare,
   onDelete,
   onBookmark,
+  onArchived,
 }) => {
+  const navigate = useNavigate();
   const [showReplyBox, setShowReplyBox] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [pollData, setPollData] = useState(post.poll);
@@ -246,6 +250,7 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
               onDelete={(id) => {
                 onDelete(id);
               }}
+              onArchived={onArchived}
             />
           </div>
           <ContentSpool post={post} />
@@ -658,6 +663,12 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
                       <img
                         src={reply.author.avatar}
                         alt={reply.author.name}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (reply.author.username) {
+                            navigate(`/@${reply.author.username}`);
+                          }
+                        }}
                         style={{
                           width: isNested ? "30px" : "36px",
                           height: isNested ? "30px" : "36px",
@@ -665,6 +676,7 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
                           objectFit: "cover",
                           flexShrink: 0,
                           zIndex: 1,
+                          cursor: "pointer",
                         }}
                       />
 
@@ -688,11 +700,25 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
                             }}
                           >
                             <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (reply.author.username) {
+                                  navigate(`/@${reply.author.username}`);
+                                }
+                              }}
                               style={{
                                 fontWeight: "600",
                                 fontSize: "14px",
                                 color: "var(--text-main)",
+                                cursor: "pointer",
                               }}
+                              onMouseEnter={(e) =>
+                                (e.currentTarget.style.textDecoration =
+                                  "underline")
+                              }
+                              onMouseLeave={(e) =>
+                                (e.currentTarget.style.textDecoration = "none")
+                              }
                             >
                               {reply.author.username}
                             </span>

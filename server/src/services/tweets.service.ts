@@ -1,6 +1,7 @@
 import { TweetRequestBody } from "~/models/requests/Tweet.requests";
 import prisma from "./prisma.service";
 import { TweetType, TweetAudience, MediaType, Prisma } from "@prisma/client";
+import ghostCleanerService from "./ghostCleaner.service";
 
 class TweetsService {
   private async checkAndCreateHashtags(hashtags: string[]) {
@@ -20,12 +21,21 @@ class TweetsService {
       body.hashtags as string[],
     );
 
+    const isGhost = Boolean(body.isGhost);
+    const expiresAt = isGhost
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000)
+      : null;
+    if (isGhost) {
+      ghostCleanerService.scheduleNextRun();
+    }
     const tweet = await prisma.tweet.create({
       data: {
         user_id: userId,
         type: body.type as TweetType,
         audience: body.audience as TweetAudience,
         content: body.content,
+        is_ghost: isGhost,
+        expires_at: expiresAt,
         parent_id: body.parentId ?? (body as any).parent_id ?? null,
         medias: {
           create: (body.medias ?? []).map((m) => ({
@@ -89,23 +99,50 @@ class TweetsService {
     following_only?: string,
     liked_only?: string,
     bookmark_only?: string,
+    ghost_only?: string,
+    archived_only?: string,
   ) {
     let where: Prisma.TweetWhereInput = {};
 
+    // 1. Logic ẩn/hiện Ghost Tweets
+    if (ghost_only) {
+      where.is_ghost = true;
+      where.OR = [{ expires_at: null }, { expires_at: { gt: new Date() } }];
+    }
+
+    // 2. Lọc theo Tác giả cụ thể
     if (author_id) {
-      where = { user_id: author_id };
-    } else if (bookmark_only) {
-      where = { bookmarks: { some: { user_id: currentUserId } } };
-    } else if (liked_only) {
-      where = { likes: { some: { user_id: currentUserId } } };
-    } else if (following_only) {
+      where.user_id = author_id;
+    }
+
+    // 3. Lọc chỉ lấy bài đã Bookmark
+    if (bookmark_only && currentUserId) {
+      where.bookmarks = { some: { user_id: currentUserId } };
+    }
+
+    // 4. Lọc chỉ lấy bài đã Like
+    if (liked_only && currentUserId) {
+      where.likes = { some: { user_id: currentUserId } };
+    }
+
+    // 5. Lọc chỉ lấy bài đã lưu trữ
+    if (archived_only) {
+      where.is_archived = true;
+      where.user_id = currentUserId;
+    } else {
+      where.is_archived = false;
+    }
+
+    // 5. Lọc theo Following
+    if (following_only && currentUserId) {
       const followedIds = await prisma.follow
         .findMany({
           where: { user_id: currentUserId },
           select: { followed_user_id: true },
         })
         .then((rows) => rows.map((r) => r.followed_user_id));
-      where = { user_id: { in: [...followedIds, currentUserId] } };
+
+      where.user_id = { in: [...followedIds, currentUserId] };
     }
 
     const [tweets, total] = await Promise.all([
@@ -156,6 +193,19 @@ class TweetsService {
       limit,
       total_page: Math.ceil(total / limit),
     };
+  }
+  async totalArchivedTweet(userId: string, tweet_id: string) {
+    const tweet = await prisma.tweet.findUnique({
+      where: { user_id: userId, id: tweet_id },
+      select: { is_archived: true },
+    });
+
+    if (!tweet) return null;
+    const data = await prisma.tweet.update({
+      where: { user_id: userId, id: tweet_id },
+      data: { is_archived: !tweet.is_archived },
+    });
+    return data;
   }
 }
 
@@ -244,6 +294,8 @@ export function formatTweet(tweet: any, userId?: string) {
     ? tweet.replies?.some((r: any) => r.user_id === userId)
     : false;
 
+  const isGhost = Boolean(tweet.is_ghost);
+
   return {
     ...tweet,
     _id: tweet.id,
@@ -260,9 +312,11 @@ export function formatTweet(tweet: any, userId?: string) {
     repostsCount: reposts_count,
     repliesCount: replies_count,
     isLiked,
+    isGhost,
     isBookmarked,
     isReposted,
     isFollowing,
+    isArchived: tweet.is_archived,
     user: tweet.user
       ? {
           ...tweet.user,

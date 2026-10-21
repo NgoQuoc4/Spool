@@ -14,6 +14,9 @@ interface TweetsQuery {
   liked_only?: string;
   bookmarkOnly?: string;
   bookmark_only?: string;
+  ghost_only?: string;
+  ghostOnly?: string;
+  archivedOnly?: string;
 }
 
 export const tweetsApi = {
@@ -29,11 +32,17 @@ export const tweetsApi = {
   getTweetChildren: (
     tweet_id: string,
     params?: { limit?: number; page?: number },
-  ) => http.get<ApiPaginated<Tweet>>(ENDPOINTS.TWEET_CHILDREN(tweet_id), { params }),
+  ) =>
+    http.get<ApiPaginated<Tweet>>(ENDPOINTS.TWEET_CHILDREN(tweet_id), {
+      params,
+    }),
 
   deleteTweet: (tweet_id: string) =>
     http.delete<ApiSuccess<Tweet>>(ENDPOINTS.DELETE_TWEET(tweet_id)),
 
   unretweet: (tweet_id: string) =>
     http.delete<ApiSuccess<unknown>>(ENDPOINTS.UNRETWEET(tweet_id)),
+
+  totalArchivedTweet: (tweet_id: string) =>
+    http.patch<ApiSuccess<unknown>>(ENDPOINTS.TOTAL_ARCHIVED_TWEET(tweet_id)),
 };

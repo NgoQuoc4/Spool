@@ -49,13 +49,43 @@ const SearchPage = () => {
   const { currentUser } = useProfile();
   const navigate = useNavigate();
 
-  // Sync URL search params
+  // 1. Đồng bộ URL searchParams vào state (khi mở trang, back/forward)
   useEffect(() => {
+    const q = searchParams.get("q") || searchParams.get("query") || "";
+    setSearchQuery(q);
+    const tab = searchParams.get("tab") as SearchTab;
+    if (tab && ["top", "recent", "profiles"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  // 2. Chỉ đẩy lên URL khi người dùng gõ tìm kiếm và debouncedSearch khác với URL hiện tại
+  useEffect(() => {
+    const currentQ = searchParams.get("q") || searchParams.get("query") || "";
+    if (debouncedSearch !== currentQ) {
+      const params: Record<string, string> = {};
+      if (debouncedSearch) params.q = debouncedSearch;
+      if (activeTab !== "top") params.tab = activeTab;
+      setSearchParams(params, { replace: true });
+    }
+  }, [debouncedSearch]);
+
+  const handleTabChange = (tab: SearchTab) => {
+    setActiveTab(tab);
     const params: Record<string, string> = {};
-    if (debouncedSearch) params.q = debouncedSearch;
-    if (activeTab !== "top") params.tab = activeTab;
+    const q = searchQuery.trim();
+    if (q) params.q = q;
+    if (tab !== "top") params.tab = tab;
     setSearchParams(params, { replace: true });
-  }, [debouncedSearch, activeTab, setSearchParams]);
+  };
+
+  const handleSelectHashtag = (e: React.MouseEvent, tagName: string) => {
+    e.preventDefault();
+    setSearchQuery(tagName);
+    const params: Record<string, string> = { q: tagName };
+    if (activeTab !== "top") params.tab = activeTab;
+    setSearchParams(params);
+  };
 
   // Click outside to close popup
   useEffect(() => {
@@ -83,6 +113,11 @@ const SearchPage = () => {
     enabled: debouncedSearch.length > 0,
   });
 
+  const { data: searchHashTagResults, isLoading: isLoadingHashTag } = useQuery({
+    queryKey: ["searchhastag"],
+    queryFn: () => searchApi.searchHastag(),
+  });
+  const hastag = searchHashTagResults?.data?.data;
   const handleFollow = (e: React.MouseEvent, profile: any) => {
     e.preventDefault();
     e.stopPropagation();
@@ -92,7 +127,10 @@ const SearchPage = () => {
 
     // Trạng thái hiện tại của user này (ưu tiên state local, sau đó đến data từ backend)
     const isCurrentlyFollowing =
-      followingMap[targetId] ?? profile.isFollowing ?? profile.is_following ?? false;
+      followingMap[targetId] ??
+      profile.isFollowing ??
+      profile.is_following ??
+      false;
 
     const nextState = !isCurrentlyFollowing;
 
@@ -228,7 +266,7 @@ const SearchPage = () => {
                 <button
                   key={tab.key}
                   type="button"
-                  onClick={() => setActiveTab(tab.key)}
+                  onClick={() => handleTabChange(tab.key)}
                   style={{
                     flex: 1,
                     padding: "16px 0 0 0",
@@ -292,14 +330,91 @@ const SearchPage = () => {
                 {activeTab === "top" && (
                   <div>
                     {!searchQuery ? (
-                      <div
-                        style={{
-                          textAlign: "center",
-                          padding: "60px 20px",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        Nhập từ khóa để tìm kiếm bài viết nổi bật
+                      <div>
+                        <div
+                          style={{
+                            padding: "16px 16px 8px",
+                            fontSize: "17px",
+                            fontWeight: "700",
+                            color: "var(--text-main)",
+                          }}
+                        >
+                          Chủ đề thịnh hành
+                        </div>
+                        {isLoadingHashTag ? (
+                          <div
+                            style={{
+                              padding: "24px 16px",
+                              color: "var(--text-secondary)",
+                              fontSize: "14px",
+                              textAlign: "center",
+                            }}
+                          >
+                            Đang tải xu hướng...
+                          </div>
+                        ) : hastag && hastag.length > 0 ? (
+                          hastag.map((tag: any, idx: number) => (
+                            <Link
+                              key={tag?.id || idx}
+                              to={`/search?q=${encodeURIComponent(tag?.name)}`}
+                              onClick={(e) => handleSelectHashtag(e, tag?.name)}
+                              style={{
+                                display: "block",
+                                padding: "12px 16px",
+                                textDecoration: "none",
+                                borderBottom: "1px solid var(--border-color)",
+                                transition: "background-color 0.15s ease",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor =
+                                  "var(--bg-hover)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor =
+                                  "transparent";
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: "12px",
+                                  color: "var(--text-secondary)",
+                                  marginBottom: "2px",
+                                }}
+                              >
+                                #{idx + 1} · Xu hướng
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: "15px",
+                                  fontWeight: "700",
+                                  color: "var(--text-main)",
+                                }}
+                              >
+                                #{tag?.name}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: "13px",
+                                  color: "var(--text-secondary)",
+                                  marginTop: "2px",
+                                }}
+                              >
+                                {tag?.postCount} bài viết
+                              </div>
+                            </Link>
+                          ))
+                        ) : (
+                          <div
+                            style={{
+                              textAlign: "center",
+                              padding: "50px 20px",
+                              color: "var(--text-secondary)",
+                              fontSize: "14px",
+                            }}
+                          >
+                            Chưa có chủ đề nổi bật nào trong 24 giờ qua
+                          </div>
+                        )}
                       </div>
                     ) : threads.length > 0 ? (
                       threads.map((post, index) => (

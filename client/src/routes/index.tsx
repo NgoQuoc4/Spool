@@ -48,8 +48,9 @@ export const router = createBrowserRouter([
           { path: PATH.SEARCH, element: <SearchPage /> },
           { path: PATH.SETTING, element: <SettingPage /> },
           { path: PATH.REPORT, element: <ReportPage /> },
-          { path: PATH.NOTFOUND, element: <NotFoundPage /> },
           { path: PATH.BOTS, element: <BotsPage /> },
+          { path: PATH.NOTFOUND, element: <NotFoundPage /> },
+          { path: "/404", element: <NotFoundPage /> },
         ],
       },
     ],
@@ -68,4 +69,6 @@ export const router = createBrowserRouter([
   { path: PATH.FORGOT_PASSWORD, element: <ForgotPasswordPage /> },
   { path: PATH.VERIFY_FORGOT_PASSWORD, element: <VerifyForgotPasswordPage /> },
   { path: PATH.RESET_PASSWORD, element: <ResetPasswordPage /> },
+  { path: PATH.NOTFOUND, element: <NotFoundPage /> },
+  { path: "/404", element: <NotFoundPage /> },
 ]);

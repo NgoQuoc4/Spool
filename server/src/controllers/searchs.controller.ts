@@ -5,7 +5,9 @@ import { ok } from "~/utils/api.response";
 export const searchController = async (req: Request, res: Response) => {
   const { query, tab = "top" } = req.query;
   if (!query || typeof query !== "string" || !query.trim()) {
-    return res.status(400).json({ success: false, message: "Query is required" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Query is required" });
   }
   const userId = req.decoded_authorization?.user_id;
   const data = await searchsService.searchQuery({
@@ -14,4 +16,9 @@ export const searchController = async (req: Request, res: Response) => {
     userId,
   });
   return ok(res, data, "Search results fetched successfully");
+};
+
+export const hastagController = async (req: Request, res: Response) => {
+  const data = await searchsService.hastag();
+  return ok(res, data, "Hashtags fetched successfully");
 };

@@ -6,7 +6,6 @@ export const PATH = {
   FORGOT_PASSWORD: "/forgot-password",
   VERIFY_FORGOT_PASSWORD: "/verify-forgot-password",
   RESET_PASSWORD: "/reset-password",
-  NOTFOUND: "*",
   // page
   LIKE: "/like",
   FOLLOW: "/follow",
@@ -20,7 +19,8 @@ export const PATH = {
   SETTING: "/setting",
   REPORT: "/report",
   TWEET_DETAIL: "/tweets/:tweet_id",
-  PROFILE_USER: "/:username",
   //admin
   BOTS: "/bots",
+  NOTFOUND: "*",
+  PROFILE_USER: "/:username",
 } as const;

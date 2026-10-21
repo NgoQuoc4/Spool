@@ -474,6 +474,49 @@ export const useTweetActions = ({
     }
     showToast("Link copied to clipboard");
   };
+  // -------------------------------------------------------------
+  // 6. Archived Mutation
+  // -------------------------------------------------------------
+  const archivedMutation = useMutation({
+    mutationFn: async ({
+      postId,
+    }: {
+      postId: string;
+      willArchived: boolean;
+    }) => {
+      await tweetsApi.totalArchivedTweet(postId);
+    },
+    onSuccess: (_, { willArchived }) => {
+      showToast(willArchived ? "Archived added" : "Archived removed");
+    },
+    onError: (error, { postId, willArchived }) => {
+      console.error("Lỗi khi Archived post:", error);
+      setThreads((prev) =>
+        prev.map((p) => {
+          if (p.id === postId) {
+            return {
+              ...p,
+              isArchived: !willArchived,
+            };
+          }
+          return p;
+        }),
+      );
+      showToast("Không thể archived post. Vui lòng thử lại!");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["feeds_post"] });
+      queryClient.invalidateQueries({ queryKey: ["archivedOnly"] });
+      queryClient.invalidateQueries({ queryKey: ["user_posts"] });
+    },
+  });
+  const handleArchived = (post: ThreadPost) => {
+    console.log("handleArchived");
+    const willArchived = !post.isArchived;
+    setThreads((prev) => prev.filter((p) => p.id !== post.id));
+
+    archivedMutation.mutate({ postId: post.id, willArchived });
+  };
 
   return {
     handleLikeToggle,
@@ -483,5 +526,6 @@ export const useTweetActions = ({
     handleBookmark,
     handleShare,
     handleQuote,
+    handleArchived,
   };
 };

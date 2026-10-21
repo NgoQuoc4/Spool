@@ -59,6 +59,8 @@ export interface Tweet {
   isReposted?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  isGhost?: boolean;
+  expiresAt?: string;
   parentTweet?: Tweet | null;
   // populated fields
   user?: Author & { _id?: string; coverPhoto?: string }; // _id từ server, id được normalize ở helper
@@ -73,4 +75,5 @@ export interface CreateTweetBody {
   hashtags?: string[];
   mentions?: string[];
   medias?: Media[];
+  isGhost?: boolean;
 }

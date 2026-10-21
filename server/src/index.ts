@@ -22,6 +22,7 @@ import searchsRouter from "./routers/searchs.router";
 import { createServer } from "http";
 import botsService from "./services/bots.service";
 import botsRouter from "./routers/bots.router";
+import ghostCleanerService from "./services/ghostCleaner.service";
 import notificationsRouter from "./routers/notifications.router";
 import { healthRouter } from "./routers/health.router";
 import { initSocket } from "./sockets";
@@ -91,6 +92,10 @@ httpServer.listen(PORT, () => {
 
   // Khởi động scheduler dựa trên cài đặt bot trong DB (chỉ chạy nếu is_active = true)
   botsService.initScheduler();
+
+  // Khởi động bộ lập lịch dọn rác Ghost Posts quá hạn (mỗi 5 phút)
+  // ghostCleanerService.startScheduler(1);
+  ghostCleanerService.initScheduler();
 });
 
 export default app;

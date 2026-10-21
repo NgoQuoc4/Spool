@@ -162,5 +162,9 @@ export const createTweetValidator = validate(
         },
       },
     },
+    isGhost: {
+      optional: true,
+      isBoolean: true,
+    },
   }),
 );

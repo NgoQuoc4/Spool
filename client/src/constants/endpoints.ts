@@ -32,6 +32,7 @@ export const ENDPOINTS = {
   TWEET_CHILDREN: (id: string) => `/tweets/${id}/children`,
   DELETE_TWEET: (id: string) => `/tweets/delete-tweet/${id}`,
   UNRETWEET: (id: string) => `/tweets/unretweet/${id}`,
+  TOTAL_ARCHIVED_TWEET: (id: string) => `/tweets/total-archived-tweet/${id}`,
   // Interactions
   LIKES: "/likes",
   BOOKMARKS: "/bookmarks",
@@ -41,6 +42,7 @@ export const ENDPOINTS = {
 
   // Search
   SEARCH: "/search",
+  SEARCH_HASTAG: "/search/hastag",
 
   // bot
   BOTS: "/bots",

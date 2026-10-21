@@ -2,8 +2,11 @@ import type { User } from "@/types/user.types";
 
 // Lightweight view-model dùng trong tweet cards, sidebar, follow modal…
 // Pick những field chung với User để không lặp lại định nghĩa.
-export type Author = Pick<User, "name" | "username" | "avatar" | "isFollowing"> & {
-  id?: string;       // = User._id (API trả về _id, ta normalize ở helper)
+export type Author = Pick<
+  User,
+  "name" | "username" | "avatar" | "isFollowing"
+> & {
+  id?: string; // = User._id (API trả về _id, ta normalize ở helper)
   verified?: boolean;
   bio?: string;
   followersCount?: number;
@@ -69,6 +72,9 @@ export interface ThreadPost {
   tags?: string[];
   replyAvatars?: string[];
   quotedPost?: ThreadPost;
+  isGhost?: boolean;
+  expiresAt?: string;
+  isArchived?: boolean;
 
   //Thông tin khi repost
   repostedBy?: Author;

@@ -1,4 +1,5 @@
 import type { ThreadPost } from "@/types";
+import { useNavigate } from "react-router-dom";
 import { renderFormattedContent } from "./ContentSpool";
 
 interface QuoteSpoolProps {
@@ -6,7 +7,15 @@ interface QuoteSpoolProps {
 }
 
 const QuoteSpool = ({ post }: QuoteSpoolProps) => {
+  const navigate = useNavigate();
   const imageUrl = post.media?.urls?.[0];
+
+  const handleAuthorClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (post.author?.username) {
+      navigate(`/@${post.author.username}`);
+    }
+  };
 
   return (
     <div
@@ -36,31 +45,47 @@ const QuoteSpool = ({ post }: QuoteSpoolProps) => {
           marginBottom: "6px",
         }}
       >
-        <img
-          src={
-            post.author.avatar ||
-            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop"
-          }
-          alt={post.author.name}
+        <div
+          onClick={handleAuthorClick}
           style={{
-            width: "20px",
-            height: "20px",
-            borderRadius: "50%",
-            objectFit: "cover",
-          }}
-        />
-        <span
-          style={{
-            fontWeight: "600",
-            fontSize: "13px",
-            color: "var(--text-main)",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            cursor: "pointer",
           }}
         >
-          {post.author.name}
-        </span>
-        <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
-          @{post.author.username}
-        </span>
+          <img
+            src={
+              post.author.avatar ||
+              "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop"
+            }
+            alt={post.author.name}
+            style={{
+              width: "20px",
+              height: "20px",
+              borderRadius: "50%",
+              objectFit: "cover",
+            }}
+          />
+          <span
+            style={{
+              fontWeight: "600",
+              fontSize: "13px",
+              color: "var(--text-main)",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.textDecoration = "underline")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.textDecoration = "none")
+            }
+          >
+            {post.author.name}
+          </span>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+            @{post.author.username}
+          </span>
+        </div>
         <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
           ·
         </span>

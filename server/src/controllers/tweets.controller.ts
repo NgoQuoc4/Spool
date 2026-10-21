@@ -35,10 +35,23 @@ export const getAllTweetController = async (req: Request, res: Response) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
   const limit = Number(req.query.limit) || 10;
   const page = Number(req.query.page) || 1;
-  const author_id = (req.query.authorId ?? req.query.author_id) as string | undefined;
-  const following_only = (req.query.followingOnly ?? req.query.following_only) as string | undefined;
-  const liked_only = (req.query.likedOnly ?? req.query.liked_only) as string | undefined;
-  const bookmark_only = (req.query.bookmarkOnly ?? req.query.bookmark_only) as string | undefined;
+  const author_id = (req.query.authorId ?? req.query.author_id) as
+    | string
+    | undefined;
+  const following_only = (req.query.followingOnly ??
+    req.query.following_only) as string | undefined;
+  const liked_only = (req.query.likedOnly ?? req.query.liked_only) as
+    | string
+    | undefined;
+  const bookmark_only = (req.query.bookmarkOnly ?? req.query.bookmark_only) as
+    | string
+    | undefined;
+  const ghost_only = (req.query.ghostOnly ?? req.query.ghost_only) as
+    | string
+    | undefined;
+  const archived_only = (req.query.archivedOnly ?? req.query.archived_only) as
+    | string
+    | undefined;
 
   const { tweets, total } = await tweetsService.getAllTweet(
     limit,
@@ -48,12 +61,22 @@ export const getAllTweetController = async (req: Request, res: Response) => {
     following_only as string,
     liked_only as string,
     bookmark_only as string,
+    ghost_only as string,
+    archived_only as string,
   );
 
-  return paginated(res, tweets, { page, limit, total }, "Tweets fetched successfully");
+  return paginated(
+    res,
+    tweets,
+    { page, limit, total },
+    "Tweets fetched successfully",
+  );
 };
 
-export const getTweetChildrenController = async (req: Request, res: Response) => {
+export const getTweetChildrenController = async (
+  req: Request,
+  res: Response,
+) => {
   const tweet_id = (req.params.tweetId || req.params.tweet_id) as string;
   const limit = Number(req.query.limit) || 10;
   const page = Number(req.query.page) || 1;
@@ -64,7 +87,12 @@ export const getTweetChildrenController = async (req: Request, res: Response) =>
     page,
     currentUserId as string,
   );
-  return paginated(res, tweets, { page, limit, total }, "Tweet children fetched successfully");
+  return paginated(
+    res,
+    tweets,
+    { page, limit, total },
+    "Tweet children fetched successfully",
+  );
 };
 
 export const unretweetController = async (req: Request, res: Response) => {
@@ -72,4 +100,14 @@ export const unretweetController = async (req: Request, res: Response) => {
   const { user_id } = req.decoded_authorization as TokenPayload;
   const data = await tweetsService.unretweet(tweet_id, user_id);
   return ok(res, data, "Retweet removed successfully");
+};
+
+export const totalArchivedTweetController = async (
+  req: Request,
+  res: Response,
+) => {
+  const { user_id } = req.decoded_authorization as TokenPayload;
+  const tweet_id = (req.params.tweetId || req.params.tweet_id) as string;
+  const data = await tweetsService.totalArchivedTweet(user_id, tweet_id);
+  return ok(res, data, "Total archived tweets fetched successfully");
 };

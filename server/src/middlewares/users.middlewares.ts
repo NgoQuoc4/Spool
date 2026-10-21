@@ -173,6 +173,7 @@ export const accessTokenValidator = validate(
         custom: {
           options: async (value: string, { req }) => {
             const access_token = (value || "").split(" ")[1];
+            console.log("access_token", access_token);
             if (!access_token) {
               throw new ErrorWithStatus({
                 message: userMessage.ACCESS_TOKEN_IS_REQUIRED,
@@ -186,6 +187,7 @@ export const accessTokenValidator = validate(
               });
               (req as Request).decoded_authorization = decoded_authorization;
             } catch (error) {
+              console.log("error", error);
               throw new ErrorWithStatus({
                 message: userMessage.ACCESS_TOKEN_IS_INVALID,
                 status: HTTP_STATUS.UNAUTHORIZED,
