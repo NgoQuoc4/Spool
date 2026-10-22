@@ -21,6 +21,7 @@ import {
   getConversationsController,
   getFollowersController,
   getFollowingController,
+  getInsightsController,
   getMeController,
   getMessagesController,
   getUserByUsernameController,
@@ -273,6 +274,20 @@ userRouter.delete(
   "/conversations/:receiver_id",
   accessTokenValidator,
   wrapAsync(deleteConversationController),
+);
+
+/*
+ * Description, get insights
+ * Path: /user/insights
+ * Method: GET
+ * Header: {Authorization: Bearer <access_token>}
+ * Response: {message: string, result: {Insights}}
+ */
+
+userRouter.get(
+  "/insights",
+  accessTokenValidator,
+  wrapAsync(getInsightsController),
 );
 
 /*

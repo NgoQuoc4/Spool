@@ -1,6 +1,6 @@
 import http from "./http";
 import { ENDPOINTS } from "@/constants/endpoints";
-import type { User, UpdateMeBody } from "@/types/user.types";
+import type { User, UpdateMeBody, InsightsData } from "@/types/user.types";
 import type { ApiSuccess } from "@/types/api.types";
 
 export const usersApi = {
@@ -40,14 +40,14 @@ export const usersApi = {
     receiver_id: string,
     params?: { limit?: number; cursor?: string },
   ) =>
-    http.get<ApiSuccess<any[]>>(
-      ENDPOINTS.CONVERSATIONS_MESSAGES(receiver_id),
-      { params },
-    ),
+    http.get<ApiSuccess<any[]>>(ENDPOINTS.CONVERSATIONS_MESSAGES(receiver_id), {
+      params,
+    }),
 
-  getConversations: () =>
-    http.get<ApiSuccess<any[]>>(ENDPOINTS.CONVERSATIONS),
+  getConversations: () => http.get<ApiSuccess<any[]>>(ENDPOINTS.CONVERSATIONS),
 
   deleteConversation: (receiver_id: string) =>
     http.delete<ApiSuccess<null>>(ENDPOINTS.CONVERSATIONS_DELETE(receiver_id)),
+
+  getInsights: () => http.get<ApiSuccess<InsightsData>>(ENDPOINTS.INSIGHTS),
 };

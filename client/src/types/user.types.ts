@@ -44,3 +44,15 @@ export interface UpdateMeBody {
   avatar?: string;
   coverPhoto?: string;
 }
+
+export interface InsightsData {
+  totalViews: number;
+  followersViews: number;
+  nonFollowersViews: number;
+  followersThisWeek: number;
+  followersLastWeek: number;
+  likesCount: number;
+  repliesCount: number;
+  repostsCount: number;
+}
+

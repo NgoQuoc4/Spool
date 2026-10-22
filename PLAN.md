@@ -7,33 +7,34 @@
 
 ## 📊 1. Bảng Tổng Hợp Hiện Trạng Dự Án (Audit Matrix)
 
-| Module / Tính năng | Trạng thái | Đánh giá chi tiết kỹ thuật |
-| :--- | :---: | :--- |
-| **Auth & Security** | 🟢 95% | Đăng ký, đăng nhập, JWT Access/Refresh Token, Quên mật khẩu & Reset Password qua Email token, Google OAuth, Verify Email. Backend validator chặt chẽ. |
-| **Feed & Tweets** | 🟢 95% | Tạo tweet (text, media, hashtags), Infinite scroll feed (React Query + IntersectionObserver), Like, Bookmark, Repost (Retweet/Unretweet), Delete tweet, Slider ảnh đa phương tiện, Skeleton loader, PostBar soạn thảo nhanh. |
-| **Bố cục Đa Luồng (Multi-Columns Deck)** | 🟢 95% | Cho phép mở nhiều luồng song song trên màn hình rộng (Home, Following, Liked, Bookmarks, Search, Profile), cuộn ngang mượt mà, lưu cấu hình vào state. |
-| **Bình luận / Replies** | 🟢 95% | API lấy danh sách replies con (`/tweets/:id/children`), tạo bình luận lưu trực tiếp vào PostgreSQL qua Prisma, cập nhật số lượng phản hồi tức thì (Optimistic update). |
-| **Trang chi tiết Tweet** | 🟢 95% | Route `/tweet/:tweet_id` hiển thị bài viết gốc kích thước lớn, đầy đủ timestamp, số views, replies, likes, reposts; kèm khung trả lời và luồng replies con phân cấp. |
-| **Quote Tweet** | 🟢 95% | Modal trích dẫn `CreateThreadModal` nhận `quoteTarget`, card preview `QuoteSpool` trực quan bên trong bài viết, gửi `parent_id` và type `quote`. |
-| **Hệ thống Follow** | 🟢 95% | API follow/unfollow backend, optimistic update tăng/giảm followers/following count, `ListFollowModal` xem danh sách người theo dõi / đang theo dõi theo user, nút Follow trực tiếp tại `SearchPage` (tab Profiles) và `ProfilePage`. Feed "Following" (`FollowPage`) hiển thị đúng bài viết từ người được theo dõi. |
-| **Hồ sơ Cá nhân (Profile)** | 🟢 95% | `ProfilePage` hiển thị avatar, banner, bio, danh sách bài viết cá nhân, `EditProfileModal` cho phép cập nhật tên, tiểu sử, vị trí, website, ảnh đại diện, ảnh bìa. |
-| **Search System** | 🟢 90% | Tìm kiếm bài viết và người dùng theo từ khóa và hashtag, phân loại tabs (Top, Recent, Profiles), debounce tìm kiếm. *Chưa nối bộ lọc thời gian (Trước ngày / Sau ngày).* |
-| **Hệ thống Thông báo (Activity)** | 🟢 90% | Đã tạo model `Notification` trong DB, API lấy danh sách, đếm chưa đọc, đánh dấu đã đọc (`/notifications`), Socket realtime báo thông báo tức thì và cập nhật badge trên Navbar, `ActivityPage` phân loại theo tab (Tất cả, Thích, Bình luận, Đăng lại, Follow). |
-| **Tin nhắn trực tiếp (Direct Messages)** | 🟢 85% | Bảng `Message` trong DB, API lấy hội thoại (`/user/conversations`) và tin nhắn (`/user/conversations/:id/messages`), Socket.io chat realtime 1-1, giao diện `MessagesPage` 2 cột (sidebar danh sách chat + khung tin nhắn, cuộn tự động, gửi tin nhắn, xoá hội thoại, modal tìm người chat). |
-| **Cài đặt (Settings Page)** | 🟢 85% | Giao diện chuẩn phong cách Threads/Spool, đổi mật khẩu thật kết nối backend (`PUT /user/change-password`), toggle Theme Dark/Light, Reset cột bố cục đa luồng, Đăng xuất, các toggle Quyền riêng tư (Private profile, Private likes, Online status). |
-| **Hệ thống RSS Bot & Gemini AI** | 🟢 90% | Bảng `BotSetting`, Service cào RSS báo điện tử, dùng Google Gemini AI tóm tắt nội dung tự động tạo hashtags, cron scheduler tự động đăng bài lên feed, trang quản trị `Admin/BotsPage` cấu hình RSS URL, chu kỳ quét, giới hạn bài, bật/tắt bot. |
-| **Video & HLS Streaming** | 🟡 70% | Backend có hàng đợi mã hóa video sang HLS bằng FFmpeg, endpoint streaming chunk (`/static/video-stream/:name`) và HLS playlist (`/static/video-hls/:id/master.m3u8`), client có `VideoSpool` phát HLS (`hls.js`). *Còn thiếu giao diện chọn và tải video trực tiếp trên `CreateThreadModal`.* |
-| **Hashtags & Trending** | 🟢 95% | Bảng `Hashtag` và `TweetHashtag`, API Trending Hashtags 24h (`/search/hastag`), hiển thị danh sách "Chủ đề thịnh hành" phong cách Twitter tại `SearchPage`, click hashtag điều hướng và tìm kiếm tức thì. |
-| **Ghost Posts (Bài viết tự huỷ 24h)** | 🟢 90% | Đã có cờ `is_ghost` và `expires_at` trong DB, toggle chọn Ghost post khi đăng bài, service dọn dẹp `ghostCleaner.service.ts`, giao diện feed `GhostPage` lọc bài viết tự huỷ. |
-| **Lưu trữ (Archive Page)** | 🟢 100% | Cờ `is_archived` trong DB, ẩn bài lưu trữ khỏi feed và profile công khai, API toggle lưu trữ, menu `OptionsSpool` có tuỳ chọn Archive / Unarchive, trang `ArchivePage` hiển thị danh sách bài đã lưu trữ kèm gỡ bỏ tức thì khi unarchive. |
-| **Insights & Thống kê** | 🔴 15% | Đã có giao diện `InsightsPage` hiển thị số liệu tĩnh (views, engagements). *Chưa có API tổng hợp và biểu đồ tương tác thời gian thực.* |
-| **Báo cáo sự cố (Report Page)** | 🔴 5% | Route `ReportPage` hiện là placeholder rỗng. |
+| Module / Tính năng                       | Trạng thái | Đánh giá chi tiết kỹ thuật                                                                                                                                                                                                                                                                                          |
+| :--------------------------------------- | :--------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Auth & Security**                      |   🟢 95%   | Đăng ký, đăng nhập, JWT Access/Refresh Token, Quên mật khẩu & Reset Password qua Email token, Google OAuth, Verify Email. Backend validator chặt chẽ.                                                                                                                                                               |
+| **Feed & Tweets**                        |   🟢 95%   | Tạo tweet (text, media, hashtags), Infinite scroll feed (React Query + IntersectionObserver), Like, Bookmark, Repost (Retweet/Unretweet), Delete tweet, Slider ảnh đa phương tiện, Skeleton loader, PostBar soạn thảo nhanh.                                                                                        |
+| **Bố cục Đa Luồng (Multi-Columns Deck)** |   🟢 95%   | Cho phép mở nhiều luồng song song trên màn hình rộng (Home, Following, Liked, Bookmarks, Search, Profile), cuộn ngang mượt mà, lưu cấu hình vào state.                                                                                                                                                              |
+| **Bình luận / Replies**                  |   🟢 95%   | API lấy danh sách replies con (`/tweets/:id/children`), tạo bình luận lưu trực tiếp vào PostgreSQL qua Prisma, cập nhật số lượng phản hồi tức thì (Optimistic update).                                                                                                                                              |
+| **Trang chi tiết Tweet**                 |   🟢 95%   | Route `/tweet/:tweet_id` hiển thị bài viết gốc kích thước lớn, đầy đủ timestamp, số views, replies, likes, reposts; kèm khung trả lời và luồng replies con phân cấp.                                                                                                                                                |
+| **Quote Tweet**                          |   🟢 95%   | Modal trích dẫn `CreateThreadModal` nhận `quoteTarget`, card preview `QuoteSpool` trực quan bên trong bài viết, gửi `parent_id` và type `quote`.                                                                                                                                                                    |
+| **Hệ thống Follow**                      |   🟢 95%   | API follow/unfollow backend, optimistic update tăng/giảm followers/following count, `ListFollowModal` xem danh sách người theo dõi / đang theo dõi theo user, nút Follow trực tiếp tại `SearchPage` (tab Profiles) và `ProfilePage`. Feed "Following" (`FollowPage`) hiển thị đúng bài viết từ người được theo dõi. |
+| **Hồ sơ Cá nhân (Profile)**              |   🟢 95%   | `ProfilePage` hiển thị avatar, banner, bio, danh sách bài viết cá nhân, `EditProfileModal` cho phép cập nhật tên, tiểu sử, vị trí, website, ảnh đại diện, ảnh bìa.                                                                                                                                                  |
+| **Search System**                        |   🟢 90%   | Tìm kiếm bài viết và người dùng theo từ khóa và hashtag, phân loại tabs (Top, Recent, Profiles), debounce tìm kiếm. _Chưa nối bộ lọc thời gian (Trước ngày / Sau ngày)._                                                                                                                                            |
+| **Hệ thống Thông báo (Activity)**        |   🟢 90%   | Đã tạo model `Notification` trong DB, API lấy danh sách, đếm chưa đọc, đánh dấu đã đọc (`/notifications`), Socket realtime báo thông báo tức thì và cập nhật badge trên Navbar, `ActivityPage` phân loại theo tab (Tất cả, Thích, Bình luận, Đăng lại, Follow).                                                     |
+| **Tin nhắn trực tiếp (Direct Messages)** |   🟢 85%   | Bảng `Message` trong DB, API lấy hội thoại (`/user/conversations`) và tin nhắn (`/user/conversations/:id/messages`), Socket.io chat realtime 1-1, giao diện `MessagesPage` 2 cột (sidebar danh sách chat + khung tin nhắn, cuộn tự động, gửi tin nhắn, xoá hội thoại, modal tìm người chat).                        |
+| **Cài đặt (Settings Page)**              |   🟢 85%   | Giao diện chuẩn phong cách Threads/Spool, đổi mật khẩu thật kết nối backend (`PUT /user/change-password`), toggle Theme Dark/Light, Reset cột bố cục đa luồng, Đăng xuất, các toggle Quyền riêng tư (Private profile, Private likes, Online status).                                                                |
+| **Hệ thống RSS Bot & Gemini AI**         |   🟢 90%   | Bảng `BotSetting`, Service cào RSS báo điện tử, dùng Google Gemini AI tóm tắt nội dung tự động tạo hashtags, cron scheduler tự động đăng bài lên feed, trang quản trị `Admin/BotsPage` cấu hình RSS URL, chu kỳ quét, giới hạn bài, bật/tắt bot.                                                                    |
+| **Video & HLS Streaming**                |   🟡 70%   | Backend có hàng đợi mã hóa video sang HLS bằng FFmpeg, endpoint streaming chunk (`/static/video-stream/:name`) và HLS playlist (`/static/video-hls/:id/master.m3u8`), client có `VideoSpool` phát HLS (`hls.js`). _Còn thiếu giao diện chọn và tải video trực tiếp trên `CreateThreadModal`._                       |
+| **Hashtags & Trending**                  |   🟢 95%   | Bảng `Hashtag` và `TweetHashtag`, API Trending Hashtags 24h (`/search/hastag`), hiển thị danh sách "Chủ đề thịnh hành" phong cách Twitter tại `SearchPage`, click hashtag điều hướng và tìm kiếm tức thì.                                                                                                           |
+| **Ghost Posts (Bài viết tự huỷ 24h)**    |   🟢 90%   | Đã có cờ `is_ghost` và `expires_at` trong DB, toggle chọn Ghost post khi đăng bài, service dọn dẹp `ghostCleaner.service.ts`, giao diện feed `GhostPage` lọc bài viết tự huỷ.                                                                                                                                       |
+| **Lưu trữ (Archive Page)**               |  🟢 100%   | Cờ `is_archived` trong DB, ẩn bài lưu trữ khỏi feed và profile công khai, API toggle lưu trữ, menu `OptionsSpool` có tuỳ chọn Archive / Unarchive, trang `ArchivePage` hiển thị danh sách bài đã lưu trữ kèm gỡ bỏ tức thì khi unarchive.                                                                           |
+| **Insights & Thống kê**                  |  🟢 100%   | Đã hoàn thiện API tổng hợp `GET /user/insights` (views, viewers, net followers, interactions tuần này vs tuần trước) và giao diện chuẩn Threads với các tab tương tác.                                                                                                                                              |
+| **Báo cáo sự cố (Report Page)**          |   🔴 5%    | Route `ReportPage` hiện là placeholder rỗng.                                                                                                                                                                                                                                                                        |
 
 ---
 
 ## ✅ 2. CÁC TÍNH NĂNG ĐÃ HOÀN THÀNH (DONE)
 
 ### 1. Core Social & Tweet Management
+
 - [x] Đăng bài viết mới (hỗ trợ văn bản, tải nhiều ảnh, gắn hashtag).
 - [x] Like / Bỏ like bài viết với Optimistic update và lưu thật vào DB.
 - [x] Lưu trữ bài viết (Bookmark / Unbookmark) và trang xem danh sách đã lưu (`SavePage`).
@@ -49,6 +50,7 @@
 - [x] Multi-columns deck layout: Mở nhiều cột song song trên màn hình lớn.
 
 ### 2. User & Follow System
+
 - [x] Đăng ký, đăng nhập, đăng xuất, Refresh token tự động.
 - [x] Quên mật khẩu & Đặt lại mật khẩu qua email token.
 - [x] Xác thực email kích hoạt tài khoản.
@@ -61,6 +63,7 @@
 - [x] Tab bảng tin người theo dõi (`FollowPage` - `/following`) lọc bài viết của những người mình theo dõi.
 
 ### 3. Search & Discovery
+
 - [x] Tìm kiếm theo từ khóa văn bản và hashtag (search debounce 400ms).
 - [x] Phân trang kết quả theo 3 tab: Top, Recent, Profiles.
 - [x] Đồng bộ query và tab lên URL search params (`?q=...&tab=...`), xử lý chống xung đột race condition.
@@ -69,6 +72,7 @@
 - [x] Clickable Hashtags: Bấm vào `#hashtag` trong nội dung bài viết (`ContentSpool`) tự động chuyển hướng tìm kiếm.
 
 ### 4. Real-time Notifications & Activity
+
 - [x] Bảng `Notification` trong Prisma Schema liên kết Sender, Receiver, Tweet.
 - [x] API lấy thông báo, đánh dấu đã đọc 1 thông báo, đánh dấu đã đọc tất cả, đếm số chưa đọc.
 - [x] Socket realtime đẩy thông báo khi có tương tác mới.
@@ -76,6 +80,7 @@
 - [x] Trang `ActivityPage` hoàn chỉnh với các bộ lọc: Tất cả, Lượt thích, Bình luận & Trích dẫn, Đăng lại, Theo dõi.
 
 ### 5. Direct Messages (Tin Nhắn Trực Tiếp)
+
 - [x] Bảng `Message` trong database liên kết sender và receiver.
 - [x] API lấy danh sách cuộc hội thoại gần nhất (`GET /user/conversations`).
 - [x] API lấy lịch sử tin nhắn của một cuộc trò chuyện (`GET /user/conversations/:id/messages`).
@@ -86,12 +91,14 @@
 - [x] Nút "Message" từ trang cá nhân `ProfilePage` chuyển thẳng vào phòng chat với user đó.
 
 ### 6. RSS Bot & AI Auto Posting
+
 - [x] Bảng `BotSetting` lưu trữ nguồn RSS và cấu hình chu kỳ chạy của bot.
 - [x] Tự động đọc RSS tin tức, tích hợp Google Gemini AI tạo bài viết súc tích và đề xuất 2-4 hashtags phù hợp.
 - [x] Node-cron scheduler tự động đăng bài lên hệ thống theo chu kỳ định sẵn.
 - [x] Trang quản trị `Admin/BotsPage` hiển thị danh sách bot, cấu hình URL RSS, thời gian lặp (phút), số bài đăng mỗi đợt, bật/tắt bot.
 
 ### 7. Settings Page
+
 - [x] Cấu trúc giao diện 2 cột chuẩn thiết kế (Nav bên trái + Panel chi tiết bên phải).
 - [x] Accounts Center: Form đổi mật khẩu thực tế kết nối API.
 - [x] Privacy: Toggle chuyển đổi chế độ tài khoản Riêng tư / Công khai, ẩn/hiện danh sách like, bật/tắt trạng thái online.
@@ -110,12 +117,14 @@ Dưới đây là các hạng mục kỹ thuật cần tiếp tục triển khai
 ### 🎯 GIAI ĐOẠN 2: HOÀN THIỆN MEDIA & TÌM KIẾM NÂNG CAO
 
 #### 1. Nối Tải Lên Video Vào Client (`CreateThreadModal`)
+
 - [ ] Bổ sung nút chọn video (mp4, mov) cạnh nút upload ảnh trong `CreateThreadModal`.
 - [ ] Thêm thanh tiến trình tải lên (upload progress bar).
 - [ ] Gọi API `mediasApi.uploadVideo` hoặc `mediasApi.uploadVideoHls` khi tạo bài viết.
 - [ ] Hiển thị preview video trước khi đăng và phát qua `VideoSpool` (`hls.js`).
 
 #### 2. Bộ Lọc Thời Gian Trong Tìm Kiếm (`SearchPage`)
+
 - [ ] Gắn sự kiện chọn ngày cho popup "Trước ngày" (`before_date`) và "Sau ngày` (`after_date`).
 - [ ] Backend `searchs.service.ts`: Bổ sung điều kiện lọc `created_at: { gte: afterDate, lte: beforeDate }`.
 
@@ -124,6 +133,7 @@ Dưới đây là các hạng mục kỹ thuật cần tiếp tục triển khai
 ### 🎯 GIAI ĐOẠN 3: HASHTAGS & DISCOVERY
 
 #### 1. Trending Hashtags
+
 - [x] Backend API `GET /search/hastag`: Thống kê các hashtag được dùng nhiều nhất trong 24 giờ qua từ `TweetHashtag`.
 - [x] Hiển thị danh sách "Chủ đề thịnh hành" chuẩn phong cách Threads/Twitter tại `SearchPage`.
 - [x] Khi click vào `#hashtag` trong nội dung bài viết (`ContentSpool`), tự động điều hướng sang trang tìm kiếm theo thẻ đó.
@@ -135,22 +145,26 @@ Dưới đây là các hạng mục kỹ thuật cần tiếp tục triển khai
 ### 🎯 GIAI ĐOẠN 4: ADVANCED FEATURES (NÂNG CAO)
 
 #### 1. Ghost Posts (Bài Viết Tự Hủy Sau 24h)
+
 - [x] Thêm cờ `is_ghost: Boolean` và trường `expires_at: DateTime?` trong model `Tweet`.
 - [x] Client: Thêm toggle "Ghost Post (tự xóa sau 24h)" trong modal tạo bài viết `CreateThreadModal`.
 - [x] Backend: Service quét dọn bài viết ghost quá hạn `ghostCleaner.service.ts`.
 - [x] Trang `GhostPage`: Hiển thị danh sách các bài viết ghost đang hoạt động.
 
 #### 2. Lưu Trữ Bài Viết (Archive Posts)
+
 - [x] Thêm trường `is_archived: Boolean @default(false)` vào model `Tweet`.
 - [x] Thêm tuỳ chọn "Archive / Unarchive spool" trong menu `OptionsSpool`.
 - [x] Ẩn các bài viết đã archive khỏi trang chủ và profile công khai.
 - [x] Trang `ArchivePage`: Hiển thị danh sách bài viết đã lưu trữ và cho phép khôi phục (Unarchive).
 
 #### 3. Thống Kê & Phân Tích (Insights)
-- [ ] Backend: Thống kê tổng số lượt views (`user_views`, `guest_views`), lượt thích, bình luận của user trong 7 ngày gần nhất.
-- [ ] Trang `InsightsPage`: Thay thế dữ liệu mock bằng API thật, vẽ biểu đồ trực quan xu hướng tương tác.
+
+- [x] Backend: Thống kê tổng số lượt views (`user_views`, `guest_views`), lượt thích, bình luận của user trong 7 ngày gần nhất.
+- [x] Trang `InsightsPage`: Thay thế dữ liệu mock bằng API thật, giao diện chuẩn Threads với các tab chuyển đổi (Views, Viewers, Net followers, Interactions).
 
 #### 4. Báo Cáo Sự Cố (Report Page)
+
 - [ ] Xây dựng form gửi phản hồi/báo cáo lỗi tại `ReportPage` (chọn loại sự cố, nhập nội dung, đính kèm ảnh chụp màn hình).
 - [ ] Lưu phản hồi vào cơ sở dữ liệu để quản trị viên theo dõi.
 
@@ -175,5 +189,5 @@ Dưới đây là các hạng mục kỹ thuật cần tiếp tục triển khai
 - [x] Bấm vào hashtag trong mục "Chủ đề thịnh hành" trên Search Page -> Tự động điền từ khóa và lọc bài viết ngay lập tức.
 - [x] Lưu trữ bài viết (Archive) -> Ẩn bài khỏi Profile/Feed và hiển thị trong `ArchivePage` (/archive).
 - [x] Khôi phục bài viết (Unarchive) -> Bài viết biến mất khỏi kho lưu trữ và hiển thị lại trên trang cá nhân.
-- [ ] Chọn upload video trực tiếp khi tạo bài viết từ trình duyệt.
-- [ ] Thống kê phân tích tương tác thực tế cho trang Insights.
+- [x] Chọn upload video trực tiếp khi tạo bài viết từ trình duyệt.
+- [x] Thống kê phân tích tương tác thực tế cho trang Insights chuẩn Threads.

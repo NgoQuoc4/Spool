@@ -392,6 +392,26 @@ export const ImageIcon: React.FC<IconProps> = ({
   </svg>
 );
 
+export const VideoIcon: React.FC<IconProps> = ({
+  size = 20,
+  className = "",
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <rect width="15" height="14" x="2" y="5" rx="2" ry="2" />
+    <polygon points="22 7 17 12 22 17 22 7" fill="currentColor" />
+  </svg>
+);
+
 export const GifIcon: React.FC<IconProps> = ({ size = 20, className = "" }) => (
   <svg
     width={size}
@@ -1457,3 +1477,21 @@ export const ArrowDownIcon = ({
 );
 
 export const ChevronDownIcon = ArrowDownIcon;
+
+export const InfoIcon = ({ size = 18 }: { size?: number }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    style={{ opacity: 0.6, cursor: "help", flexShrink: 0 }}
+  >
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);

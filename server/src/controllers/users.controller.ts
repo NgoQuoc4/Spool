@@ -220,3 +220,9 @@ export const deleteConversationController = async (
   const data = await usersService.deleteConversation(user_id, receiver_id);
   return ok(res, data, "Delete conversation success");
 };
+
+export const getInsightsController = async (req: Request, res: Response) => {
+  const { user_id } = req.decoded_authorization as TokenPayload;
+  const data = await usersService.getInsights(user_id as string);
+  return ok(res, data, "Get insights success");
+};

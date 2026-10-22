@@ -21,6 +21,7 @@ export const ENDPOINTS = {
   CONVERSATIONS: "/user/conversations",
   CONVERSATIONS_DELETE: (receiver_id: string) =>
     `/user/conversations/${receiver_id}`,
+  INSIGHTS: "/user/insights",
   // User
   ME: "/user/me",
   PROFILE: (username: string) => `/user/${username}`,
@@ -39,7 +40,7 @@ export const ENDPOINTS = {
   // Media
   UPLOAD_IMAGE: "/medias/upload-image",
   UPLOAD_VIDEO: "/medias/upload-video",
-
+  UPLOAD_VIDEO_HLS: "/medias/upload-video-hls",
   // Search
   SEARCH: "/search",
   SEARCH_HASTAG: "/search/hastag",

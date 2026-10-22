@@ -156,7 +156,7 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
         .flatMap((m) => m.urls) || []),
     ]),
   );
-  const videoItems = [
+  const allVideoItems = [
     ...(post.media?.type === "video" || post.media?.type === "hls"
       ? [{ type: post.media.type, urls: post.media.urls }]
       : []),
@@ -164,6 +164,13 @@ export const ThreadCard: React.FC<ThreadCardProps> = ({
       ?.filter((m) => m.type === "video" || m.type === "hls")
       .map((m) => ({ type: m.type, urls: m.urls })) || []),
   ];
+  const seenVideoUrls = new Set<string>();
+  const videoItems = allVideoItems.filter((vid) => {
+    const key = vid.urls?.[0];
+    if (!key || seenVideoUrls.has(key)) return false;
+    seenVideoUrls.add(key);
+    return true;
+  });
 
   const fileItems = [
     ...(post.media?.type === "file"

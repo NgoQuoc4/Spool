@@ -80,6 +80,7 @@ const VideoSpool = ({ post }: { post: ThreadPost }) => {
         ref={videoRef}
         controls
         playsInline
+        preload="metadata"
         style={{
           width: "100%",
           maxHeight: "420px",

@@ -94,17 +94,20 @@ export const serveVideoStreamingController = (
   res: Response,
   next: NextFunction,
 ) => {
-  // Browser/client gửi header "Range" để yêu cầu một đoạn byte cụ thể của video
-  // Ví dụ: "Range: bytes=0-" hoặc "Range: bytes=1048576-2097151"
-  // Nếu không có Range header → báo lỗi 400, vì endpoint này chỉ hỗ trợ streaming
-  const range = req.headers.range;
-  if (!range) {
-    return res.status(HTTP_STATUS.BAD_REQUEST).send("Range header is required");
-  }
-
   // Lấy tên file từ URL param, rồi tạo đường dẫn tuyệt đối tới file video
   const { name } = req.params;
   const videoPath = path.resolve(VIDEO_DIR, name as string);
+
+  if (!fs.existsSync(videoPath)) {
+    return res.status(HTTP_STATUS.NOT_FOUND).json({ message: userMessage.NOT_FOUND });
+  }
+
+  // Browser/client gửi header "Range" để yêu cầu một đoạn byte cụ thể của video
+  // Nếu không có Range header → phục vụ toàn bộ file video qua sendFile
+  const range = req.headers.range;
+  if (!range) {
+    return res.sendFile(videoPath);
+  }
 
   // Lấy tổng dung lượng file (bytes) để tính toán range và Content-Range header
   const videoSize = fs.statSync(videoPath).size;
@@ -161,6 +164,8 @@ export const uploadVideoHlsController = async (
   const result = await mediasService.uploadVideoHls(req);
   return res.json({
     message: userMessage.UPLOAD_VIDEO_HLS_SUCCESS,
+    url: result,
     result,
+    type: MediaType.HLS,
   });
 };

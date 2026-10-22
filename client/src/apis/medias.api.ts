@@ -11,8 +11,9 @@ export interface UploadImageResponse {
 export interface UploadVideoResponse {
   message: string;
   url: string[];
-  duration: number;
-  type: number;
+  duration?: number;
+  type?: number | string;
+  result?: string[];
 }
 
 export const mediasApi = {
@@ -23,6 +24,11 @@ export const mediasApi = {
 
   uploadVideo: (formData: FormData) =>
     http.post<UploadVideoResponse>(ENDPOINTS.UPLOAD_VIDEO, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  uploadVideoHls: (formData: FormData) =>
+    http.post<UploadVideoResponse>(ENDPOINTS.UPLOAD_VIDEO_HLS, formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
 };

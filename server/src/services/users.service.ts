@@ -647,6 +647,70 @@ class UsersService {
     if (deleted.count === 0) return { message: "Not have conversation" };
     return { message: "Delete conversation success" };
   }
+
+  async getInsights(user_id: string) {
+    // 1. Tổng Views (user_views + guest_views)
+    const viewsAgg = await prisma.tweet.aggregate({
+      where: { user_id, is_archived: false },
+      _sum: { user_views: true, guest_views: true },
+    });
+    const followersViews = viewsAgg._sum.user_views || 0;
+    const nonFollowersViews = viewsAgg._sum.guest_views || 0;
+    const totalViews = followersViews + nonFollowersViews;
+
+    // 2. Net Followers (7 ngày qua)
+    const today = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const followersThisWeek = await prisma.follow.count({
+      where: {
+        followed_user_id: user_id,
+        created_at: { gte: sevenDaysAgo },
+      },
+    });
+    const followersLastWeek = await prisma.follow.count({
+      where: {
+        followed_user_id: user_id,
+        created_at: { gte: fourteenDaysAgo, lt: sevenDaysAgo },
+      },
+    });
+    // 3. Interactions (Likes + Replies + Reposts trong 7 ngày qua)
+    const likesCount = await prisma.like.count({
+      where: {
+        tweet: { user_id },
+        created_at: { gte: sevenDaysAgo },
+      },
+    });
+    const repliesCount = await prisma.tweet.count({
+      where: {
+        parent: { user_id },
+        created_at: { gte: sevenDaysAgo },
+      },
+    });
+    const repostsCount = await prisma.tweet.count({
+      where: {
+        parent: { user_id },
+        type: "retweet",
+        created_at: { gte: sevenDaysAgo },
+      },
+    });
+
+    const formatData = {
+      totalViews,
+      followersViews,
+      nonFollowersViews,
+      followersThisWeek,
+      followersLastWeek,
+      likesCount,
+      repliesCount,
+      repostsCount,
+    };
+
+    return formatData;
+  }
 }
 
 const usersService = new UsersService();
