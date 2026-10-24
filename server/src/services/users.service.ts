@@ -13,6 +13,8 @@ import { TokenType } from "~/constants/enums";
 import "dotenv/config";
 import { SignOptions } from "jsonwebtoken";
 import { userMessage } from "~/constants/messages";
+import { HTTP_STATUS } from "~/constants/httpStatus";
+import { ErrorWithStatus } from "~/models/errors";
 import axios from "axios";
 import {
   sendForgotPasswordEmail,
@@ -272,7 +274,12 @@ class UsersService {
       prisma.follow.count({ where: { user_id } }),
     ]);
 
-    if (!user) throw new Error("User not found");
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: userMessage.USER_NOT_FOUND,
+        status: HTTP_STATUS.UNAUTHORIZED,
+      });
+    }
     return {
       id: user.id,
       _id: user.id,
@@ -361,7 +368,12 @@ class UsersService {
         updated_at: true,
       },
     });
-    if (!user) throw new Error("User not found");
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: userMessage.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND,
+      });
+    }
     return {
       id: user.id,
       _id: user.id,
