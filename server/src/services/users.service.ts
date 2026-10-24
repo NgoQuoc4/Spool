@@ -458,7 +458,18 @@ class UsersService {
       where: { email: profile.email },
     });
 
+    const isNewUser = !user;
+
     if (!user) {
+      let baseUsername = profile.email.toLowerCase().split("@")[0];
+      let username = baseUsername;
+      const existingUser = await prisma.user.findUnique({
+        where: { username },
+      });
+      if (existingUser) {
+        username = `${baseUsername}_${Math.random().toString(36).substring(2, 7)}`;
+      }
+
       user = await prisma.user.create({
         data: {
           name: profile.name,
@@ -466,7 +477,7 @@ class UsersService {
           avatar: profile.picture,
           password: hashPassword(Math.random().toString(36).substring(2, 15)),
           verify: UserVerifyStatus.Verified,
-          username: profile.email.toLowerCase().split("@")[0],
+          username,
         },
       });
     } else if (user.verify === UserVerifyStatus.Unverified) {
@@ -488,7 +499,7 @@ class UsersService {
         exp: new Date(exp * 1000),
       },
     });
-    return { accessToken, refreshToken, newUser: !user };
+    return { accessToken, refreshToken, newUser: isNewUser };
   }
 
   async refreshToken(user_id: string, refresh_token: string, exp: number) {
